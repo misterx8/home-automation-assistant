@@ -1,0 +1,107 @@
+automation:
+  - alias: "Allarme Core - Reset sensori esclusi al disarm"
+    id: allarme_core_aut_reset_sensori_esclusi
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "disarmed"
+
+    action:
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.allarme_core_sensori_esclusi
+          value: "[]"
+
+  - alias: "Allarme Core - Memorizza sensori esclusi all'arming"
+    id: allarme_core_aut_memorizza_sensori_esclusi
+    mode: single
+
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "armed"
+
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "arming"
+
+    action:
+      - wait_for_trigger:
+          - platform: state
+            entity_id: binary_sensor.allarme_core_sensori_aperti_su_profilo_attivo
+            to: "on"
+        timeout: "00:00:15"
+        continue_on_timeout: true  # Continua anche se non diventa on, per sicurezza
+
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.allarme_core_sensori_esclusi
+          value: >
+            {% set sensori = state_attr('binary_sensor.allarme_core_sensori_aperti_su_profilo_attivo', 'sensori_aperti_ids') %}
+            {{ sensori | default([]) | to_json }}
+
+  - alias: "Allarme Core - Memorizza sensori esclusi con Var"
+    id: allarme_core_aut_memorizza_sensori_esclusi_var
+    mode: single
+
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "armed"
+
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "arming"
+
+    action:
+      - wait_for_trigger:
+          - platform: state
+            entity_id: binary_sensor.allarme_core_sensori_aperti_su_profilo_attivo
+            to: "on"
+        timeout: "00:00:15"
+        continue_on_timeout: true
+
+      - service: var.set
+        data:
+          entity_id:
+            - var.allarme_core_sensori_esclusi_var
+          value: >
+            {{ state_attr('binary_sensor.allarme_core_sensori_aperti_su_profilo_attivo','sensori_aperti_ids') | default([]) }}
+
+  - alias: "Allarme Core - Reset sensori esclusi al disarm con Var"
+    id: allarme_core_aut_reset_sensori_esclusi_var
+    mode: single
+
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "disarmed"
+
+    action:
+      - service: var.set
+        data:
+          entity_id:
+            - var.allarme_core_sensori_esclusi_var
+          value: []  # Resetta la lista a vuoto
+
+  - alias: "Allarme Core - Memorizza sensori che provocano allarme"
+    id: allarme_core_aut_memorizza_sensori_causa_allarme
+    mode: queued
+    max: 50
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "triggered"
+    variables:
+      aperti: "{{ state_attr('sensor.allarme_core_sensori_aperti_filtrati', 'sensori_aperti_ids') or [] }}"
+      aperti_nomi: >
+        {% set ids = state_attr('sensor.allarme_core_sensori_aperti_filtrati', 'sensori_aperti_ids') | default([]) %}
+        {{ ids | map('state_attr', 'friendly_name') | list }}
+      ts: "{{ now().isoformat() }}"
+    action:
+      - service: var.set
+        data:
+          entity_id:
+            - var.allarme_core_sensori_attivazione_allarme_var
+          value: >
+            {{ aperti | join(', ') }}

@@ -1,0 +1,32 @@
+allarme_core_sensori_esclusi_var:
+  friendly_name: 'allarme core sensori esclusi var'
+  icon: mdi:bug
+allarme_core_sensori_attivazione_allarme_var:
+  friendly_name: 'allarme core sensori attivazione allarme var'
+  icon: mdi:bug
+allarme_core_timeline_md:
+  icon: mdi:chart-gantt
+  friendly_name: "Allarme Core Timeline (MD)"
+  attributes:
+    long_state: ""
+allarme_core_timeline_critici_md:
+  friendly_name: Allarme Core - Timeline Critici (MD)
+  attributes:
+    long_state: ""
+allarme_core_timeline_operazioni_md:
+  friendly_name: Allarme Core - Timeline Operazioni (MD)
+  attributes:
+    long_state: ""
+allarme_core_timeline_note_md:
+  friendly_name: Allarme Core - Timeline Note (MD)
+  attributes:
+    long_state: ""
+allarme_core_last_snapshot_urls:
+  friendly_name: Allarme Core - snapshot urls
+  attributes:
+    long_state: ""
+allarme_core_last_clip_urls:
+  friendly_name: Allarme Core - clip urls
+  attributes:
+    long_state: ""
+

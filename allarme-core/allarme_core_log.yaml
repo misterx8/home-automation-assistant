@@ -1,0 +1,438 @@
+# ============================================================================
+# ALLARME CORE - LOGBOOK "CORE ONLY" (UNICO FILE)
+# Mostra SOLO gli eventi scritti dalle automazioni usando una entity fittizia:
+#   input_text.allarme_core_logbook_event
+#
+# Nota: quando scatta l'allarme lo stato diventa "triggered" (non "allarme")
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# ENTITY FITTIZIA (serve solo per filtrare la Logbook card)
+# ----------------------------------------------------------------------------
+input_text:
+  allarme_core_logbook_event:
+    name: Allarme Core Logbook Event
+    max: 255
+  allarme_core_logbook_ultimo_evento:
+    name: Allarme Core Logbook ultimo Evento
+    max: 255
+
+# ----------------------------------------------------------------------------
+# SCRIPT UNICO: emette evento nel Logbook e aggiorna l'entity fittizia
+# ----------------------------------------------------------------------------
+script:
+  allarme_core_logbook_emit:
+    alias: "Allarme Core - Emit Logbook Event"
+    mode: queued
+    max: 50
+    fields:
+      msg:
+        description: "Messaggio evento"
+    sequence:
+      - service: logbook.log
+        data:
+          name: "Allarme Core"
+          entity_id: input_text.allarme_core_logbook_event
+          message: "{{ msg | string }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.allarme_core_logbook_ultimo_evento
+          value: "{{ msg | string }}"
+
+  allarme_core_logbook_nota:
+    alias: "Allarme Core - Nota Logbook"
+    icon: mdi:note-plus
+    mode: queued
+    max: 50
+    fields:
+      nota:
+        description: "Testo nota"
+        example: "Manutenzione / test sirena"
+    sequence:
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: "📝 Nota: {{ nota | string }}"
+
+  allarme_core_logbook_cancella_tutto:
+    alias: "Allarme Core - Cancella Tutto Logbook"
+    icon: mdi:delete
+    mode: queued
+    max: 50
+    sequence:
+      - service: var.set
+        data:
+          entity_id: 
+            - var.allarme_core_timeline_md
+            - var.allarme_core_timeline_critici_md
+            - var.allarme_core_timeline_note_md
+            - var.allarme_core_timeline_operazioni_md
+          value: ""
+          attributes:
+            long_state: ""
+
+  allarme_core_snapshot_cameras:
+      alias: "Allarme Core - Snapshot Cameras"
+      mode: queued
+      max: 50
+      fields:
+        cameras:
+          description: "Lista entity_id camera"
+        tag:
+          description: "Tag nel nome file (es. sensore/area)"
+      sequence:
+        - variables:
+            ts: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
+            cams: "{{ cameras if cameras is iterable else [] }}"
+        - repeat:
+            for_each: "{{ cams }}"
+            sequence:
+              - service: camera.snapshot
+                data:
+                  entity_id: "{{ repeat.item }}"
+                  filename: "/config/www/allarme_core_snapshots/{{ ts }}_{{ tag | regex_replace('[^a-zA-Z0-9_-]', '_') }}_{{ repeat.item.split('.')[1] }}.jpg"
+
+# ----------------------------------------------------------------------------
+# AUTOMAZIONI: scrivono SOLO tramite lo script (quindi filtrabili al 100%)
+# ----------------------------------------------------------------------------
+automation:
+
+  - alias: "Allarme Core - Logbook Sensori Esclusi (solo su change var)"
+    id: allarme_core_logbook_esclusi_onchange
+    mode: queued
+    max: 50
+    trigger:
+      - platform: state
+        entity_id: var.allarme_core_sensori_esclusi_var
+
+    # evita log se riscrive uguale
+    condition:
+      - condition: template
+        value_template: >
+          {{ trigger.from_state is none
+            or trigger.from_state.state != trigger.to_state.state }}
+
+    variables:
+      esclusi: >
+        {% set raw = trigger.to_state.state | string | trim %}
+        {% set raw = raw | replace("'", '"') %}
+        {{ (raw | from_json) if raw.startswith('[') else [] }}
+
+    action:
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: >
+            ⚠️ ESCLUSI aggiornati: {{ esclusi | length }}
+            {% if esclusi|length>0 %}— {{ esclusi|join(', ') }}{% endif %}
+            (Profilo: {{ states('input_select.allarme_core_profilo') }})
+
+  # Log cambio stato allarme (armato/disarmato/triggered/altro)
+  - alias: "Allarme Core - Logbook Cambio Stato (Core Only)"
+    id: allarme_core_logbook_cambio_stato_coreonly
+    mode: queued
+    max: 50
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+
+    condition:
+      - condition: template
+        value_template: >
+          {{ trigger.from_state is none
+            or trigger.from_state.state != trigger.to_state.state }}
+      - condition: template
+        value_template: "{{ trigger.to_state.state != 'triggered' }}"
+
+    action:
+      - choose:
+          - conditions: "{{ trigger.to_state.state == 'armed' }}"
+            sequence:
+              - service: script.allarme_core_logbook_emit
+                data:
+                  msg: "🔒 ARMATO (Profilo: {{ states('input_select.allarme_core_profilo') }})"
+
+          - conditions: "{{ trigger.to_state.state == 'disarmed' }}"
+            sequence:
+              - service: script.allarme_core_logbook_emit
+                data:
+                  msg: "🔓 DISARMATO (Profilo: {{ states('input_select.allarme_core_profilo') }})"
+
+          - conditions: "{{ trigger.to_state.state == 'arming' }}"
+            sequence:
+              - service: script.allarme_core_logbook_emit
+                data:
+                  msg: "🔐 INSERIMENTO (Profilo: {{ states('input_select.allarme_core_profilo') }})"
+
+        default:
+          - service: script.allarme_core_logbook_emit
+            data:
+              msg: >
+                🛡️ Stato: {{ trigger.from_state.state if trigger.from_state else 'startup' }}
+                → {{ trigger.to_state.state }}
+                (Profilo: {{ states('input_select.allarme_core_profilo') }})
+
+  # Log cambio profilo
+  - alias: "Allarme Core - Logbook Cambio Profilo (Core Only)"
+    id: allarme_core_logbook_cambio_profilo_coreonly
+    mode: queued
+    max: 50
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_profilo
+    action:
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: >
+            ⚙️ Profilo: {{ trigger.from_state.state if trigger.from_state is not none else 'startup' }}
+            → {{ trigger.to_state.state }}
+
+  # Log allarme scattato: stato -> triggered
+  - alias: "Allarme Core - Logbook Allarme Scattato (Core Only)"
+    id: allarme_core_logbook_allarme_scattato_coreonly
+    mode: queued
+    max: 50
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "triggered"
+    variables:
+      aperti: "{{ state_attr('sensor.allarme_core_sensori_aperti_filtrati', 'sensori_aperti_ids') or [] }}"
+      esclusi: >
+        {% set raw = states('var.allarme_core_sensori_esclusi_var') | string | trim %}
+        {% set raw = raw | replace("'", '"') %}
+        {{ (raw | from_json) if raw.startswith('[') else [] }}
+    action:
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: >
+            🚨 ALLARME SCATTATO! (triggered)
+            | Aperti: {{ aperti | length }}{% if aperti | length > 0 %} — {{ aperti | join(', ') }}{% endif %}
+            | Esclusi: {{ esclusi | length }}{% if esclusi | length > 0 %} — {{ esclusi | join(', ') }}{% endif %}
+            (Profilo: {{ states('input_select.allarme_core_profilo') }})
+
+  # Log e salvataggio snap telecamere
+  - alias: "Allarme Core - Snapshot e clips su Triggered (camere da sensori)"
+    id: allarme_core_snapshot_clip_on_triggered
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "triggered"
+
+    variables:
+      raw: "{{ states('var.allarme_core_sensori_attivazione_allarme_var') | default('', true) | string }}"
+      aperti_ids: >
+        {{ (raw | regex_findall('binary_sensor\\.[a-zA-Z0-9_]+')) | unique | list }}
+
+      cams_all: >
+        {% set ns = namespace(out=[]) %}
+        {% for s in aperti_ids %}
+          {% set cams0 = state_attr(s,'camera') | default([], true) %}
+          {% set cams = cams0 if (cams0 is iterable and cams0 is not string) else [cams0] %}
+          {% set cams_norm = cams | map('string') | map('trim') | reject('equalto','') | list %}
+          {% for c in cams_norm %}
+            {% if c.startswith('camera.') %}
+              {% set ns.out = ns.out + [c] %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+        {{ ns.out | unique | list }}
+
+      tag: >
+        {% if aperti_ids|length > 0 %}
+          {{ aperti_ids[0].split('.')[1] }}
+        {% else %}
+          triggered
+        {% endif %}
+
+      snapshot_urls_json: >
+        {% set ts = now().strftime('%Y%m%d_%H%M%S') %}
+        {% set safe_tag = (tag | string | regex_replace('[^a-zA-Z0-9_-]', '_')) %}
+        {% set ns = namespace(out=[]) %}
+        {% for c in cams_all %}
+          {% set cam = (c | string).split('.')[1] %}
+          {% set ns.out = ns.out + ['/local/allarme_core_snapshots/' ~ ts ~ '_' ~ safe_tag ~ '_' ~ cam ~ '.jpg'] %}
+        {% endfor %}
+        {{ ns.out | to_json }}
+
+      snapshot_urls_text: >
+        {% set ts = now().strftime('%Y%m%d_%H%M%S') %}
+        {% set safe_tag = (tag | string | regex_replace('[^a-zA-Z0-9_-]', '_')) %}
+        {% set ns = namespace(out=[]) %}
+        {% for c in cams_all %}
+          {% set cam = (c | string).split('.')[1] %}
+          {% set ns.out = ns.out + ['/local/allarme_core_snapshots/' ~ ts ~ '_' ~ safe_tag ~ '_' ~ cam ~ '.jpg'] %}
+        {% endfor %}
+        {{ ns.out | join('\n') }}
+
+      frigate_base: "http://192.168.2.92:5000"
+      clip_start_ts: "{{ (as_timestamp(now()) - 30) | int }}"
+      clip_end_ts: "{{ (as_timestamp(now()) + 10) | int }}"
+
+      clips_text: >
+        {% set ns = namespace(out=[]) %}
+        {% for c in cams_all %}
+          {% set cam = state_attr(c,'camera_name') | default('', true) | string | trim %}
+          {% if not cam %}
+            {% set cam = (c | string).split('.')[1] %}
+          {% endif %}
+          {% set ns.out = ns.out + [
+            frigate_base ~ '/api/' ~ cam ~ '/start/' ~ clip_start_ts ~ '/end/' ~ clip_end_ts ~ '/clip.mp4'
+          ] %}
+        {% endfor %}
+        {{ ns.out | join('\n') }}
+
+    condition:
+      - condition: template
+        value_template: "{{ cams_all | length > 0 }}"
+
+    action:
+      - service: script.allarme_core_snapshot_cameras
+        data:
+          cameras: "{{ cams_all }}"
+          tag: "{{ tag }}"
+
+      - service: var.set
+        data:
+          entity_id: var.allarme_core_last_snapshot_urls
+          value: ""
+          attributes:
+            long_state: "{{ snapshot_urls_text }}"
+
+      - service: var.set
+        data:
+          entity_id: var.allarme_core_last_clip_urls
+          value: ""
+          attributes:
+            long_state: "{{ clips_text }}"
+
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: >
+            📸 Snapshot salvati: {{ cams_all | length }}
+            {% if cams_all|length>0 %}— {{ cams_all | join(', ') }}{% endif %}
+
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: >
+            🎥 Clip generati: {{ cams_all | length }}
+            {% if cams_all|length>0 %}— {{ cams_all | join(', ') }}{% endif %}
+# ----------------------------------------------------------------------------
+# AUTOMAZIONI PER VISUALIZZARE I LOG BENE IN UI
+# ----------------------------------------------------------------------------
+
+  - alias: "Allarme Core - UI Timeline Append"
+    trigger:
+      - platform: state
+        entity_id: input_text.allarme_core_logbook_ultimo_evento
+    variables:
+      now: "{{ now().strftime('%H:%M:%S') }}"
+      line: "- **{{ now }}** {{ trigger.to_state.state }}"
+    action:
+      - service: var.set
+        data:
+          entity_id: var.allarme_core_timeline_md
+          attributes:
+            long_state: >
+              {{ line }}
+              {{ '\n' }}
+              {{ state_attr('var.allarme_core_timeline_md','long_state') }}
+
+  - alias: "Allarme Core - UI Timeline Sezioni (Livello 4)"
+    id: allarme_core_ui_timeline_sezioni_l4
+    mode: queued
+    max: 50
+    trigger:
+      - platform: state
+        entity_id: input_text.allarme_core_logbook_ultimo_evento
+
+    # evita append su startup o valori vuoti
+    condition:
+      - condition: template
+        value_template: >
+          {{ trigger.to_state is not none
+            and (trigger.to_state.state | string | trim) != ''
+            and (trigger.from_state is none or trigger.from_state.state != trigger.to_state.state) }}
+
+    variables:
+      ts: "{{ now().strftime('%H:%M:%S') }}"
+      msg: "{{ trigger.to_state.state | string }}"
+      line: "- **{{ ts }}** {{ msg }}"
+      keep: 25
+
+      # classificazione (basata sulle emoji che tu già usi)
+      target: >
+        {% if '🚨' in msg %}
+          critici
+        {% elif '📝' in msg %}
+          note
+        {% else %}
+          operazioni
+        {% endif %}
+
+      ent: >
+        {% if target == 'critici' %}
+          var.allarme_core_timeline_critici_md
+        {% elif target == 'note' %}
+          var.allarme_core_timeline_note_md
+        {% else %}
+          var.allarme_core_timeline_operazioni_md
+        {% endif %}
+
+      old: "{{ state_attr(ent,'long_state') | string }}"
+      old_lines: >
+        {% set lines = old.split('\n') if old|length > 0 else [] %}
+        {{ lines }}
+
+      new_value: >
+        {% set out = [line] + old_lines %}
+        {% set out = out[:keep] %}
+        {{ out | join('\n') }}
+
+    action:
+      - service: var.set
+        data:
+          entity_id: "{{ ent }}"
+          attributes:
+            long_state: "{{ new_value }}"
+
+template:
+  - sensor:
+    - name: "Allarme Core – Timeline Render"
+      state: ""
+      attributes:
+        long_state: >
+          {% set src = state_attr('var.allarme_core_timeline_md','long_state') | default('', true) | string %}
+          {% set lines = src.split('\n')
+            | map('trim')
+            | reject('equalto','')
+            | list %}
+          {% set out = namespace(v=[]) %}
+          {% for l in lines[:20] %}
+            {% if '🚨' in l %}
+              {% set out.v = out.v + ['🔴 ' ~ l] %}
+            {% elif '🔒' in l %}
+              {% set out.v = out.v + ['🟢 ' ~ l] %}
+            {% elif '🔓' in l %}
+              {% set out.v = out.v + ['⚪ ' ~ l] %}
+            {% elif '🔐' in l %}
+              {% set out.v = out.v + ['🟡 ' ~ l] %}
+            {% elif '📝' in l %}
+              {% set out.v = out.v + ['⚫ ' ~ l] %}
+            {% else %}
+              {% set out.v = out.v + ['🔵 ' ~ l] %}
+            {% endif %}
+          {% endfor %}
+          {{ out.v | join('\n') }}
+
+    - name: "Allarme Core – Count Critici"
+      state: >
+        {% set s = state_attr('var.allarme_core_timeline_critici_md','long_state') | default('', true) | string %}
+        {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
+    - name: "Allarme Core – Count Operazioni"
+      state: >
+        {% set s = state_attr('var.allarme_core_timeline_operazioni_md','long_state') | default('', true) | string %}
+        {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
+    - name: "Allarme Core – Count Note"
+      state: >
+        {% set s = state_attr('var.allarme_core_timeline_note_md','long_state') | default('', true) | string %}
+        {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}

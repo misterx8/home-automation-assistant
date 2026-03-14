@@ -1,0 +1,1986 @@
+input_boolean:
+# input booleani che indicano se un sensore di allarme è attivo
+  #region taverna
+  allarme_core_porta_ingresso_taverna_abilitato:
+    name: "Allarme Porta Ingresso Taverna Abilitato"
+    icon: mdi:shield-check
+  allarme_core_movimento_taverna_abilitato:
+    name: "Allarme movimento Taverna Abilitato"
+    icon: mdi:shield-check
+  allarme_core_movimento_corridoio_taverna_abilitato:
+    name: "Allarme movimento Corridoio Taverna Abilitato"
+    icon: mdi:shield-check
+  allarme_core_barriera_tapparella_taverna_abilitato:
+    name: "Allarme barriera tapparella Taverna Abilitato"
+    icon: mdi:shield-check
+  allarme_core_finestre_taverna_abilitato:
+    name: "Allarme Finestra Taverna Abilitato"
+    icon: mdi:shield-check
+  allarme_core_vibrazione_ingresso_taverna_abilitato:
+    name: "Allarme Vibrazione Ingresso Taverna Abilitato"
+    icon: mdi:shield-check
+  #endregion
+  
+  #region cucina
+  allarme_core_movimento_cucina_abilitato:
+    name: "Allarme movimento cucina Abilitato"
+    icon: mdi:shield-check
+  allarme_core_finestra_cucina_abilitato:
+    name: "Allarme finestra cucina Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region bagno
+  allarme_core_movimento_bagno_abilitato:
+    name: "Allarme movimento bagno Abilitato"
+    icon: mdi:shield-check
+  allarme_core_finestra_bagno_abilitato:
+    name: "Allarme finestra bagno Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region lavanderia
+  allarme_core_movimento_lavanderia_abilitato:
+    name: "Allarme movimento lavanderia Abilitato"
+    icon: mdi:shield-check
+  allarme_core_finestra_lavanderia_abilitato:
+    name: "Allarme finestra lavanderia Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region ufficio
+  allarme_core_movimento_ufficio_abilitato:
+    name: "Allarme movimento ufficio Abilitato"
+    icon: mdi:shield-check
+  allarme_core_finestra_ufficio_abilitato:
+    name: "Allarme finestra ufficio Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region camera
+  allarme_core_movimento_camera_abilitato:
+    name: "Allarme movimento camera Abilitato"
+    icon: mdi:shield-check
+  allarme_core_finestra_camera_abilitato:
+    name: "Allarme finestra camera Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region doccia
+  allarme_core_movimento_doccia_abilitato:
+    name: "Allarme movimento doccia Abilitato"
+    icon: mdi:shield-check
+  allarme_core_movimento_anticamera_doccia_abilitato:
+    name: "Allarme movimento anticamera doccia Abilitato"
+    icon: mdi:shield-check
+  allarme_core_finestra_doccia_abilitato:
+    name: "Allarme finestra doccia Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region studio
+  allarme_core_movimento_studio_abilitato:
+    name: "Allarme movimento studio Abilitato"
+    icon: mdi:shield-check
+  allarme_core_finestra_studio_abilitato:
+    name: "Allarme finestra studio Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region sala
+  allarme_core_porta_ingresso_sala_abilitato:
+    name: "Allarme Porta Ingresso sala Abilitato"
+    icon: mdi:shield-check
+  allarme_core_movimento_sala_abilitato:
+    name: "Allarme movimento sala Abilitato"
+    icon: mdi:shield-check
+  allarme_core_finestra_sala_abilitato:
+    name: "Allarme finestra sala Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region tecnologico p1
+  allarme_core_porta_ingresso_tecp1_abilitato:
+    name: "Allarme Porta Ingresso tecp1 Abilitato"
+    icon: mdi:shield-check
+  allarme_core_movimento_tecp1_abilitato:
+    name: "Allarme movimento tecp1 Abilitato"
+    icon: mdi:shield-check
+  allarme_core_finestra_tecp1_abilitato:
+    name: "Allarme finestra tecp1 Abilitato"
+    icon: mdi:shield-check
+  allarme_core_armadio_tecp1_abilitato:
+    name: "Allarme Armadio tecp1 Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region tecnologico pt
+  allarme_core_porta_ingresso_tecpt_abilitato:
+    name: "Allarme Porta Ingresso tecpt Abilitato"
+    icon: mdi:shield-check
+  allarme_core_movimento_tecpt_abilitato:
+    name: "Allarme movimento tecpt Abilitato"
+    icon: mdi:shield-check
+  allarme_core_finestra_tecpt_abilitato:
+    name: "Allarme finestra tecpt Abilitato"
+    icon: mdi:shield-check
+  allarme_core_armadio_tecpt_abilitato:
+    name: "Allarme Armadio tecpt Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region solaio
+  allarme_core_movimento_solaio_abilitato:
+    name: "Allarme movimento solaio Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region esterno
+  allarme_core_movimento_esterno_box_abilitato:
+    name: "Allarme movimento esterno box Abilitato"
+    icon: mdi:shield-check
+  allarme_core_movimento_esterno_giardino_abilitato:
+    name: "Allarme movimento esterno giardino Abilitato"
+    icon: mdi:shield-check
+  allarme_core_movimento_esterno_dietro_abilitato:
+    name: "Allarme movimento esterno dietro Abilitato"
+    icon: mdi:shield-check
+  allarme_core_movimento_esterno_davanti_abilitato:
+    name: "Allarme movimento esterno davanti Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region locale attrezzi
+  allarme_core_porta_ingresso_locale_attrezzi_abilitato:
+    name: "Allarme Porta Ingresso locale attrezzi Abilitato"
+    icon: mdi:shield-check
+  allarme_core_movimento_locale_attrezzi_abilitato:
+    name: "Allarme movimento locale attrezzi Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+  #region locali tecnici esterni
+  allarme_core_porta_caldaia_esterna_abilitato:
+    name: "Allarme Porta Caldaia Esterna Abilitato"
+    icon: mdi:shield-check
+  allarme_core_porta_sottoscala_abilitato:
+    name: "Allarme Porta Sottoscala Abilitato"
+    icon: mdi:shield-check
+  allarme_core_porta_gas_abilitato:
+    name: "Allarme Porta Gas Abilitato"
+    icon: mdi:shield-check
+  #endregion
+
+input_text:
+# configurazione text per zone sensori allarme
+  #region taverna
+  allarme_core_porta_ingresso_taverna_zone:
+    name: "Zone Porta Ingresso Taverna"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_taverna_zone:
+    name: "Zone Movimento Taverna"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_corridoio_taverna_zone:
+    name: "Zone Movimento Corridoio Taverna"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_barriera_tapparella_taverna_zone:
+    name: "Zone barriera tapparella Taverna"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestre_taverna_zone:
+    name: "Zone Finestra Taverna"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_vibrazione_ingresso_taverna_zone:
+    name: "Zone vibrazione ingresso Taverna"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region cucina
+  allarme_core_movimento_cucina_zone:
+    name: "Zone Movimento cucina"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_cucina_zone:
+    name: "Zone finestra cucina"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region bagno
+  allarme_core_movimento_bagno_zone:
+    name: "Zone Movimento bagno"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_bagno_zone:
+    name: "Zone finestra bagno"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region lavanderia
+  allarme_core_movimento_lavanderia_zone:
+    name: "Zone Movimento lavanderia"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_lavanderia_zone:
+    name: "Zone finestra lavanderia"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region ufficio
+  allarme_core_movimento_ufficio_zone:
+    name: "Zone Movimento ufficio"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_ufficio_zone:
+    name: "Zone finestra ufficio"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region camera
+  allarme_core_movimento_camera_zone:
+    name: "Zone Movimento camera"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_camera_zone:
+    name: "Zone finestra camera"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region doccia
+  allarme_core_movimento_doccia_zone:
+    name: "Zone Movimento doccia"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_anticamera_doccia_zone:
+    name: "Zone Movimento anticamera doccia"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_doccia_zone:
+    name: "Zone finestra doccia"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region studio
+  allarme_core_movimento_studio_zone:
+    name: "Zone Movimento studio"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_studio_zone:
+    name: "Zone finestra studio"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region sala
+  allarme_core_porta_ingresso_sala_zone:
+    name: "Zone Porta Ingresso sala"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_sala_zone:
+    name: "Zone Movimento sala"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_sala_zone:
+    name: "Zone finestra sala"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region tecnologico p1
+  allarme_core_porta_ingresso_tecp1_zone:
+    name: "Zone Porta Ingresso tecp1"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_tecp1_zone:
+    name: "Zone Movimento tecp1"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_tecp1_zone:
+    name: "Zone finestra tecp1"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_armadio_tecp1_zone:
+    name: "Zone Armadio tecp1"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region tecnologico pt
+  allarme_core_porta_ingresso_tecpt_zone:
+    name: "Zone Porta Ingresso tecpt"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_tecpt_zone:
+    name: "Zone Movimento tecpt"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_tecpt_zone:
+    name: "Zone finestra tecpt"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_armadio_tecpt_zone:
+    name: "Zone Armadio tecpt"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region solaio
+  allarme_core_movimento_solaio_zone:
+    name: "Zone Movimento solaio"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region esterno
+  allarme_core_movimento_esterno_box_zone:
+      name: "Zone Movimento esterno box"
+      pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_esterno_giardino_zone:
+      name: "Zone Movimento esterno giardino"
+      pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_esterno_dietro_zone:
+      name: "Zone Movimento esterno dietro"
+      pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_esterno_davanti_zone:
+      name: "Zone Movimento esterno davanti"
+      pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region locale attrezzi
+  allarme_core_porta_ingresso_locale_attrezzi_zone:
+    name: "Zone Porta Ingresso locale attrezzi"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_locale_attrezzi_zone:
+    name: "Zone Movimento locale attrezzi"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region locali tecnici esterni
+  allarme_core_porta_caldaia_esterna_zone:
+    name: "Zone Porta Caldaia Esterna"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_porta_sottoscala_zone:
+    name: "Zone Porta Sottoscala"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_porta_gas_zone:
+    name: "Zone Porta Gas"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+# configurazione text per sensori allarme camera
+  #region taverna
+  allarme_core_porta_ingresso_taverna_camera:
+    name: "Camera Porta Ingresso Taverna Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_taverna_camera:
+    name: "Camera Movimento Taverna Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_corridoio_taverna_camera:
+    name: "Camera Movimento Corridoio Taverna Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_barriera_tapparella_taverna_camera:
+    name: "Camera barriera tapparella Taverna Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestre_taverna_camera:
+    name: "Camera Finestra Taverna Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_vibrazione_ingresso_taverna_camera:
+    name: "Camera vibrazione ingresso Taverna Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region cucina
+  allarme_core_movimento_cucina_camera:
+    name: "Camera Movimento cucina Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_cucina_camera:
+    name: "Camera finestra cucina Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region bagno
+  allarme_core_movimento_bagno_camera:
+    name: "Camera Movimento bagno Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_bagno_camera:
+    name: "Camera finestra bagno Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region lavanderia
+  allarme_core_movimento_lavanderia_camera:
+    name: "Camera Movimento lavanderia Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_lavanderia_camera:
+    name: "Camera finestra lavanderia Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region ufficio
+  allarme_core_movimento_ufficio_camera:
+    name: "Camera Movimento ufficio Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_ufficio_camera:
+    name: "Camera finestra ufficio Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region camera
+  allarme_core_movimento_camera_camera:
+    name: "Camera Movimento camera Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_camera_camera:
+    name: "Camera finestra camera Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region doccia
+  allarme_core_movimento_doccia_camera:
+    name: "Camera Movimento doccia Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_anticamera_doccia_camera:
+    name: "Camera Movimento anticamera doccia Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_doccia_camera:
+    name: "Camera finestra doccia Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region studio
+  allarme_core_movimento_studio_camera:
+    name: "Camera Movimento studio Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_studio_camera:
+    name: "Camera finestra studio Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region sala
+  allarme_core_porta_ingresso_sala_camera:
+    name: "Camera Porta Ingresso sala Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_sala_camera:
+    name: "Camera Movimento sala Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_sala_camera:
+    name: "Camera finestra sala Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region tecnologico p1
+  allarme_core_porta_ingresso_tecp1_camera:
+    name: "Camera Porta Ingresso tecp1 Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_tecp1_camera:
+    name: "Camera Movimento tecp1 Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_tecp1_camera:
+    name: "Camera finestra tecp1 Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_armadio_tecp1_camera:
+    name: "Camera Armadio tecp1 Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region tecnologico pt
+  allarme_core_porta_ingresso_tecpt_camera:
+    name: "Camera Porta Ingresso tecpt Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_tecpt_camera:
+    name: "Camera Movimento tecpt Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_finestra_tecpt_camera:
+    name: "Camera finestra tecpt Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_armadio_tecpt_camera:
+    name: "Camera Armadio tecpt Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region solaio
+  allarme_core_movimento_solaio_camera:
+    name: "Camera Movimento solaio Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region esterno
+  allarme_core_movimento_esterno_box_camera:
+    name: "Camera Movimento esterno box Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_esterno_giardino_camera:
+    name: "Camera Movimento esterno giardino Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_esterno_dietro_camera:
+    name: "Camera Movimento esterno dietro Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_esterno_davanti_camera:
+    name: "Camera Movimento esterno davanti Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region locale attrezzi
+  allarme_core_porta_ingresso_locale_attrezzi_camera:
+    name: "Camera Porta Ingresso locale attrezzi Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_movimento_locale_attrezzi_camera:
+    name: "Camera Movimento locale attrezzi Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+  #region locali tecnici esterni
+  allarme_core_porta_caldaia_esterna_camera:
+    name: "Camera Porta Caldaia Esterna Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_porta_sottoscala_camera:
+    name: "Camera Porta Sottoscala Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_porta_gas_camera:
+    name: "Camera Porta Gas Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  #endregion
+
+template:
+  - binary_sensor:
+
+#region tutti i sensori di allarme
+
+  #region taverna
+    - name: "Allarme Core Porta Ingresso Taverna"
+      unique_id: allarme_core_porta_ingresso_taverna
+      device_class: door
+      state: >
+          {% set porta = states('binary_sensor.contatto_porta_ingresso_taverna') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_porta_ingresso_taverna_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_porta_ingresso_taverna
+
+        tipo: perimetrale
+        priorita: alta
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_porta_ingresso_taverna_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_porta_ingresso_taverna_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_porta_ingresso_taverna_abilitato','on') }}"
+
+    - name: "Allarme Core Movimento Taverna"
+      unique_id: allarme_core_movimento_Taverna
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_taverna') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_taverna_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_taverna
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_taverna_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_taverna_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_taverna_abilitato','on') }}"
+    
+    - name: "Allarme Core Movimento Corridoio Taverna"
+      unique_id: allarme_core_movimento_corridoio_taverna
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_corridoio_taverna') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_corridoio_taverna_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_corridoio_taverna
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_corridoio_taverna_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_corridoio_taverna_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_corridoio_taverna_abilitato','on') }}"
+
+    - name: "Allarme Core Barriera Tapparella Taverna"
+      unique_id: allarme_core_barriera_tapparella_taverna
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_tenda_taverna') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_barriera_tapparella_taverna_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_tenda_taverna
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_barriera_tapparella_taverna_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_barriera_tapparella_taverna_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_barriera_tapparella_taverna_abilitato','on') }}"
+
+    - name: "Allarme Core Finestre Taverna"
+      unique_id: allarme_core_finestre_taverna
+      device_class: window
+
+      state: >
+        {% set sorgenti = [
+          'binary_sensor.contatto_finestra_taverna_1',
+          'binary_sensor.contatto_finestra_taverna_2'
+        ] %}
+        {% set abilitato = is_state('input_boolean.allarme_core_finestre_taverna_abilitato','on') %}
+
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if sorgenti | select('is_state','on') | list | count > 0 else 'off' }}
+        {% endif %}
+
+      attributes:
+        sensori_origine: >
+          {{ [
+            'binary_sensor.contatto_finestra_taverna_1',
+            'binary_sensor.contatto_finestra_taverna_2'
+          ] | to_json }}
+
+
+        sensori_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.contatto_finestra_taverna_1',
+            'binary_sensor.contatto_finestra_taverna_2'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | list
+          }}
+
+        nomi_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.contatto_finestra_taverna_1',
+            'binary_sensor.contatto_finestra_taverna_2'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | map('state_attr','friendly_name')
+              | list
+          }}
+
+        tipo: perimetrale
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_finestre_taverna_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestre_taverna_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestre_taverna_abilitato','on') }}"
+
+    - name: "Allarme Core vibrazione ingresso Taverna"
+      unique_id: allarme_core_vibrazione_ingresso_Taverna
+      device_class: vibration
+      state: >
+        {% set sorgenti = [
+          'binary_sensor.vibrazione_entrata_taverna',
+          'binary_sensor.vibrazione_tapparella_taverna'
+        ] %}
+        {% set abilitato = is_state('input_boolean.allarme_core_vibrazione_ingresso_taverna_abilitato','on') %}
+
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if sorgenti | select('is_state','on') | list | count > 0 else 'off' }}
+        {% endif %}
+
+      attributes:
+        sensori_origine: >
+          {{ [
+            'binary_sensor.vibrazione_entrata_taverna',
+            'binary_sensor.vibrazione_tapparella_taverna'
+          ] | to_json }}
+
+        sensori_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.vibrazione_entrata_taverna',
+            'binary_sensor.vibrazione_tapparella_taverna'
+          ] %}
+          {{ sorgenti | select('is_state','on') | list }}
+
+        nomi_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.vibrazione_entrata_taverna',
+            'binary_sensor.vibrazione_tapparella_taverna'
+          ] %}
+          {{ sorgenti | select('is_state','on') | map('state_attr','friendly_name') | list }}
+
+        tipo: vibrazione
+        priorita: media
+        ritardo: 0
+        zone: "{{ states('input_text.allarme_core_vibrazione_ingresso_taverna_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_vibrazione_ingresso_taverna_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.allarme_core_vibrazione_ingresso_taverna_abilitato','on') }}"
+  #endregion
+
+  #region cucina
+    - name: "Allarme Core Movimento Cucina"
+      unique_id: allarme_core_movimento_cucina
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_cucina') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_cucina_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_cucina
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_cucina_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_cucina_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_cucina_abilitato','on') }}"
+
+    - name: "Allarme Core Finestre Cucina"
+      unique_id: allarme_core_finestre_cucina
+      device_class: window
+
+      state: >
+        {% set sorgenti = [
+          'binary_sensor.contatto_finestra_cucina_1',
+          'binary_sensor.contatto_finestra_cucina_2'
+        ] %}
+        {% set abilitato = is_state('input_boolean.allarme_core_finestre_cucina_abilitato','on') %}
+
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if sorgenti | select('is_state','on') | list | count > 0 else 'off' }}
+        {% endif %}
+
+      attributes:
+        sensori_origine: >
+          {{ [
+            'binary_sensor.contatto_finestra_cucina_1',
+            'binary_sensor.contatto_finestra_cucina_2'
+          ] | to_json }}
+
+
+        sensori_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.contatto_finestra_cucina_1',
+            'binary_sensor.contatto_finestra_cucina_2'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | list
+          }}
+
+        nomi_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.contatto_finestra_cucina_1',
+            'binary_sensor.contatto_finestra_cucina_2'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | map('state_attr','friendly_name')
+              | list
+          }}
+
+        tipo: perimetrale
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_finestre_cucina_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestre_cucina_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestra_cucina_abilitato','on') }}"
+
+  #endregion
+
+  #region bagno
+    - name: "Allarme Core Movimento bagno"
+      unique_id: allarme_core_movimento_bagno
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_bagno') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_bagno_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_bagno
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_bagno_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_bagno_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_bagno_abilitato','on') }}"
+
+    - name: "Allarme Core Finestre bagno"
+      unique_id: allarme_core_finestre_bagno
+      device_class: window
+
+      state: >
+        {% set sorgenti = [
+          'binary_sensor.contatto_finestra_bagno_1',
+          'binary_sensor.contatto_finestra_bagno_2'
+        ] %}
+        {% set abilitato = is_state('input_boolean.allarme_core_finestre_bagno_abilitato','on') %}
+
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if sorgenti | select('is_state','on') | list | count > 0 else 'off' }}
+        {% endif %}
+
+      attributes:
+        sensori_origine: >
+          {{ [
+            'binary_sensor.contatto_finestra_bagno_1',
+            'binary_sensor.contatto_finestra_bagno_2'
+          ] | to_json }}
+
+
+        sensori_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.contatto_finestra_bagno_1',
+            'binary_sensor.contatto_finestra_bagno_2'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | list
+          }}
+
+        nomi_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.contatto_finestra_bagno_1',
+            'binary_sensor.contatto_finestra_bagno_2'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | map('state_attr','friendly_name')
+              | list
+          }}
+
+        tipo: perimetrale
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_finestre_bagno_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestre_bagno_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestre_bagno_abilitato','on') }}"
+
+  #endregion
+
+  #region lavanderia
+
+    - name: "Allarme Core Movimento lavanderia"
+      unique_id: allarme_core_movimento_lavanderia
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_lavanderia') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_lavanderia_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_lavanderia
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_lavanderia_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_lavanderia_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_lavanderia_abilitato','on') }}"
+
+    - name: "Allarme Core Finestra lavanderia"
+      unique_id: allarme_core_finestra_lavanderia
+      device_class: window
+      state: >
+          {% set porta = states('binary_sensor.contatto_finestra_lavanderia') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_finestra_lavanderia_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_finestra_lavanderia
+
+        tipo: perimetrale
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_finestra_lavanderia_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestra_lavanderia_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestra_lavanderia_abilitato','on') }}"
+
+  #endregion
+
+  #region Ufficio
+
+    - name: "Allarme Core Movimento Ufficio"
+      unique_id: allarme_core_movimento_ufficio
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_ufficio') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_ufficio_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_ufficio
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_ufficio_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_ufficio_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_ufficio_abilitato','on') }}"
+
+    - name: "Allarme Core Finestra Ufficio"
+      unique_id: allarme_core_finestra_ufficio
+      device_class: window
+      state: >
+          {% set porta = states('binary_sensor.contatto_finestra_ufficio') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_finestra_ufficio_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_finestra_ufficio
+
+        tipo: perimetrale
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_finestra_ufficio_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestra_ufficio_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestra_ufficio_abilitato','on') }}"
+
+  #endregion
+
+  #region Camera
+
+    - name: "Allarme Core Movimento Camera"
+      unique_id: allarme_core_movimento_camera
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_camera') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_camera_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_camera
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_camera_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_camera_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_camera_abilitato','on') }}"
+
+    - name: "Allarme Core Finestra Camera"
+      unique_id: allarme_core_finestra_camera
+      device_class: window
+      state: >
+          {% set porta = states('binary_sensor.contatto_finestra_camera') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_finestra_camera_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_finestra_camera
+
+        tipo: perimetrale
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_finestra_camera_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestra_camera_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestra_camera_abilitato','on') }}"
+
+  #endregion
+
+  #region doccia
+
+    - name: "Allarme Core Movimento doccia"
+      unique_id: allarme_core_movimento_doccia
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_doccia') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_doccia_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_doccia
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_doccia_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_doccia_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_doccia_abilitato','on') }}"
+
+    - name: "Allarme Core Movimento anticamera doccia"
+      unique_id: allarme_core_movimento_anticamera_doccia
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_antibagno_p1') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_anticamera_doccia_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_antibagno_p1
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_anticamera_doccia_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_anticamera_doccia_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_anticamera_doccia_abilitato','on') }}"
+
+    - name: "Allarme Core Finestra doccia"
+      unique_id: allarme_core_finestra_doccia
+      device_class: window
+      state: >
+          {% set porta = states('binary_sensor.contatto_finestra_doccia') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_finestra_doccia_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_finestra_doccia
+
+        tipo: perimetrale
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_finestra_doccia_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestra_doccia_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestra_doccia_abilitato','on') }}"
+
+  #endregion
+
+  #region studio
+
+    - name: "Allarme Core Movimento studio"
+      unique_id: allarme_core_movimento_studio
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_studio') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_studio_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_studio
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_studio_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_studio_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_studio_abilitato','on') }}"
+
+    - name: "Allarme Core Finestra studio"
+      unique_id: allarme_core_finestra_studio
+      device_class: window
+      state: >
+          {% set porta = states('binary_sensor.contatto_finestra_studio') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_finestra_studio_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_finestra_studio
+
+        tipo: perimetrale
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_finestra_studio_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestra_studio_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestra_studio_abilitato','on') }}"
+
+  #endregion
+
+  #region sala
+    
+    - name: "Allarme Core Porta Ingresso sala"
+      unique_id: allarme_core_porta_ingresso_sala
+      device_class: door
+      state: >
+          {% set porta = states('binary_sensor.contatto_porta_ingresso_sala') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_porta_ingresso_sala_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_porta_ingresso_sala
+
+        tipo: perimetrale
+        priorita: alta
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_porta_ingresso_sala_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_porta_ingresso_sala_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_porta_ingresso_sala_abilitato','on') }}"
+    
+    - name: "Allarme Core Movimento sala"
+      unique_id: allarme_core_movimento_sala
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_sala') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_sala_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_sala
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_sala_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_sala_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_sala_abilitato','on') }}"
+
+    - name: "Allarme Core Finestra sala"
+      unique_id: allarme_core_finestra_sala
+      device_class: window
+      state: >
+          {% set porta = states('binary_sensor.contatto_finestra_sala') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_finestra_sala_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_finestra_sala
+
+        tipo: perimetrale
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_finestra_sala_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestra_sala_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestra_sala_abilitato','on') }}"
+
+  #endregion
+
+  #region tecnologico p1
+    
+    - name: "Allarme Core Porta Ingresso tecp1"
+      unique_id: allarme_core_porta_ingresso_tecp1
+      device_class: door
+      state: >
+          {% set porta = states('binary_sensor.contatto_cabina_armadio') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_porta_ingresso_tecp1_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_cabina_armadio
+
+        tipo: perimetrale
+        priorita: alta
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_porta_ingresso_tecp1_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_porta_ingresso_tecp1_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_porta_ingresso_tecp1_abilitato','on') }}"
+    
+    - name: "Allarme Core Movimento tecp1"
+      unique_id: allarme_core_movimento_tecp1
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_tecnologico_p1') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_tecp1_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_tecnologico_p1
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_tecp1_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_tecp1_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_tecp1_abilitato','on') }}"
+
+    - name: "Allarme Core Finestra tecp1"
+      unique_id: allarme_core_finestra_tecp1
+      device_class: window
+      state: >
+          {% set porta = states('binary_sensor.contatto_finestra_tecnologico_p1') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_finestra_tecp1_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_finestra_tecnologico_p1
+
+        tipo: perimetrale
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_finestra_tecp1_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestra_tecp1_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestra_tecp1_abilitato','on') }}"
+
+    - name: "Allarme Core Armadio tecp1"
+      unique_id: allarme_core_armadio_tecp1
+      device_class: door
+      state: >
+          {% set porta = states('binary_sensor.contatto_armadio_tecnologico_p1') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_armadio_tecp1_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_armadio_tecnologico_p1
+        tipo: perimetrale
+        priorita: alta
+        ritardo: 0
+        zone: "{{ states('input_text.allarme_core_armadio_tecp1_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_armadio_tecp1_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.allarme_core_armadio_tecp1_abilitato','on') }}"
+
+  #endregion
+
+  #region tecnologico pt
+    
+    - name: "Allarme Core Porta Ingresso tecpt"
+      unique_id: allarme_core_porta_ingresso_tecpt
+      device_class: door
+      state: >
+          {% set porta = states('binary_sensor.contatto_porta_tecnologico_pt') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_porta_ingresso_tecpt_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_porta_tecnologico_pt
+
+        tipo: perimetrale
+        priorita: alta
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_porta_ingresso_tecpt_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_porta_ingresso_tecpt_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_porta_ingresso_tecpt_abilitato','on') }}"
+    
+    - name: "Allarme Core Movimento tecpt"
+      unique_id: allarme_core_movimento_tecpt
+      device_class: motion
+      state: >
+        {% set sorgenti = [
+          'binary_sensor.pir_tecnologico_pt',
+          'binary_sensor.pir_tecnologico_pt_filare'
+        ] %}
+        {% set abilitato = is_state('input_boolean.allarme_core_movimento_tecpt_abilitato','on') %}
+
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if sorgenti | select('is_state','on') | list | count > 0 else 'off' }}
+        {% endif %}
+
+      attributes:
+        sensori_origine: >
+          {{ [
+            'binary_sensor.pir_tecnologico_pt',
+            'binary_sensor.pir_tecnologico_pt_filare'
+          ] | to_json }}
+
+        sensori_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_tecnologico_pt',
+            'binary_sensor.pir_tecnologico_pt_filare'
+          ] %}
+          {{ sorgenti | select('is_state','on') | list }}
+
+        nomi_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_tecnologico_pt',
+            'binary_sensor.pir_tecnologico_pt_filare'
+          ] %}
+          {{ sorgenti | select('is_state','on') | map('state_attr','friendly_name') | list }}
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+        zone: "{{ states('input_text.allarme_core_movimento_tecpt_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_tecpt_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_tecpt_abilitato','on') }}"
+
+    - name: "Allarme Core Finestra tecpt"
+      unique_id: allarme_core_finestra_tecpt
+      device_class: window
+      state: >
+          {% set porta = states('binary_sensor.contatto_finestra_tecnologico_pt') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_finestra_tecpt_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_finestra_tecnologico_pt
+
+        tipo: perimetrale
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_finestra_tecpt_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestra_tecpt_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestra_tecpt_abilitato','on') }}"
+
+    - name: "Allarme Core Armadio tecpt"
+      unique_id: allarme_core_armadio_tecpt
+      device_class: door
+      state: >
+          {% set porta = states('binary_sensor.contatto_armadio_tecnologico_pt') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_armadio_tecpt_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_armadio_tecnologico_pt
+        tipo: perimetrale
+        priorita: alta
+        ritardo: 0
+        zone: "{{ states('input_text.allarme_core_armadio_tecpt_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_armadio_tecpt_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.allarme_core_armadio_tecpt_abilitato','on') }}"
+
+  #endregion
+
+  #region solaio
+
+    - name: "Allarme Core Movimento Solaio"
+      unique_id: allarme_core_movimento_solaio
+      device_class: motion
+
+      state: >
+        {% set sorgenti = [
+          'binary_sensor.pir_solaio_1',
+          'binary_sensor.pir_solaio_2'
+        ] %}
+        {% set abilitato = is_state('input_boolean.allarme_core_movimento_solaio_abilitato','on') %}
+
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if sorgenti | select('is_state','on') | list | count > 0 else 'off' }}
+        {% endif %}
+
+      attributes:
+        sensori_origine: >
+          {{ [
+            'binary_sensor.pir_solaio_1',
+            'binary_sensor.pir_solaio_2'
+          ] | to_json }}
+
+
+        sensori_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_solaio_1',
+            'binary_sensor.pir_solaio_2'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | list
+          }}
+
+        nomi_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_solaio_1',
+            'binary_sensor.pir_solaio_2'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | map('state_attr','friendly_name')
+              | list
+          }}
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_solaio_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_solaio_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_solaio_abilitato','on') }}"
+        
+  #endregion
+
+  #region esterno
+
+    - name: "Allarme Core Movimento Esterno Box"
+      unique_id: allarme_core_movimento_esterno_box
+      device_class: motion
+
+      state: >
+        {% set sorgenti = [
+          'binary_sensor.pir_barriera_box',
+          'binary_sensor.pir_giardino_box'
+        ] %}
+        {% set abilitato = is_state('input_boolean.allarme_core_movimento_esterno_box_abilitato','on') %}
+
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if sorgenti | select('is_state','on') | list | count > 0 else 'off' }}
+        {% endif %}
+
+      attributes:
+        sensori_origine: >
+          {{ [
+            'binary_sensor.pir_barriera_box',
+            'binary_sensor.pir_giardino_box'
+          ] | to_json }}
+
+
+        sensori_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_barriera_box',
+            'binary_sensor.pir_giardino_box'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | list
+          }}
+
+        nomi_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_barriera_box',
+            'binary_sensor.pir_giardino_box'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | map('state_attr','friendly_name')
+              | list
+          }}
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_esterno_box_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_esterno_box_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_esterno_box_abilitato','on') }}"
+
+    - name: "Allarme Core Movimento Esterno Giardino"
+      unique_id: allarme_core_movimento_esterno_giardino
+      device_class: motion
+
+      state: >
+        {% set sorgenti = [
+          'binary_sensor.pir_giardino_prato',
+          'binary_sensor.pir_barriera_giardino',
+          'binary_sensor.pir_giardino_tettoia'
+        ] %}
+        {% set abilitato = is_state('input_boolean.allarme_core_movimento_esterno_giardino_abilitato','on') %}
+
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if sorgenti | select('is_state','on') | list | count > 0 else 'off' }}
+        {% endif %}
+
+      attributes:
+        sensori_origine: >
+          {{ [
+            'binary_sensor.pir_giardino_prato',
+            'binary_sensor.pir_barriera_giardino',
+            'binary_sensor.pir_giardino_tettoia'
+          ] | to_json }}
+
+
+        sensori_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_giardino_prato',
+            'binary_sensor.pir_barriera_giardino',
+            'binary_sensor.pir_giardino_tettoia'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | list
+          }}
+
+        nomi_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_giardino_prato',
+            'binary_sensor.pir_barriera_giardino',
+            'binary_sensor.pir_giardino_tettoia'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | map('state_attr','friendly_name')
+              | list
+          }}
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_esterno_giardino_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_esterno_giardino_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_esterno_giardino_abilitato','on') }}"
+        
+    - name: "Allarme Core Movimento Esterno Dietro"
+      unique_id: allarme_core_movimento_esterno_dietro
+      device_class: motion
+
+      state: >
+        {% set sorgenti = [
+          'binary_sensor.pir_giardino_barriera_dietro',
+          'binary_sensor.pir_giardino_dietro',
+          'binary_sensor.pir_barriera_moto'
+        ] %}
+        {% set abilitato = is_state('input_boolean.allarme_core_movimento_esterno_dietro_abilitato','on') %}
+
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if sorgenti | select('is_state','on') | list | count > 0 else 'off' }}
+        {% endif %}
+
+      attributes:
+        sensori_origine: >
+          {{ [
+            'binary_sensor.pir_giardino_barriera_dietro',
+            'binary_sensor.pir_giardino_dietro',
+            'binary_sensor.pir_barriera_moto'
+          ] | to_json }}
+
+
+        sensori_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_giardino_barriera_dietro',
+            'binary_sensor.pir_giardino_dietro',
+            'binary_sensor.pir_barriera_moto'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | list
+          }}
+
+        nomi_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_giardino_barriera_dietro',
+            'binary_sensor.pir_giardino_dietro',
+            'binary_sensor.pir_barriera_moto'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | map('state_attr','friendly_name')
+              | list
+          }}
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_esterno_dietro_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_esterno_dietro_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_esterno_dietro_abilitato','on') }}"
+
+    - name: "Allarme Core Movimento Esterno Davanti"
+      unique_id: allarme_core_movimento_esterno_davanti
+      device_class: motion
+
+      state: >
+        {% set sorgenti = [
+          'binary_sensor.pir_giardino_barriera_davanti',
+          'binary_sensor.pir_giardino_balcone',
+          'binary_sensor.pir_giardino_tettoia',
+          'binary_sensor.pir_tenda_taverna'
+        ] %}
+        {% set abilitato = is_state('input_boolean.allarme_core_movimento_esterno_davanti_abilitato','on') %}
+
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if sorgenti | select('is_state','on') | list | count > 0 else 'off' }}
+        {% endif %}
+
+      attributes:
+        sensori_origine: >
+          {{ [
+            'binary_sensor.pir_giardino_barriera_davanti',
+            'binary_sensor.pir_giardino_balcone',
+            'binary_sensor.pir_giardino_tettoia',
+            'binary_sensor.pir_tenda_taverna'
+          ] | to_json }}
+
+
+        sensori_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_giardino_barriera_davanti',
+            'binary_sensor.pir_giardino_balcone',
+            'binary_sensor.pir_giardino_tettoia',
+            'binary_sensor.pir_tenda_taverna'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | list
+          }}
+
+        nomi_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.pir_giardino_barriera_davanti',
+            'binary_sensor.pir_giardino_balcone',
+            'binary_sensor.pir_giardino_tettoia',
+            'binary_sensor.pir_tenda_taverna'
+          ] %}
+          {{
+            sorgenti
+              | select('is_state','on')
+              | map('state_attr','friendly_name')
+              | list
+          }}
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_esterno_davanti_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_esterno_davanti_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_esterno_davanti_abilitato','on') }}"
+
+  #endregion
+
+  #region locale attrezzi
+    
+    - name: "Allarme Core Porta Ingresso locale attrezzi"
+      unique_id: allarme_core_porta_ingresso_locale_attrezzi
+      device_class: door
+      state: >
+          {% set porta = states('binary_sensor.contatto_porta_atrezzi_2') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_porta_ingresso_locale_attrezzi_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_porta_atrezzi_2
+
+        tipo: perimetrale
+        priorita: alta
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_porta_ingresso_locale_attrezzi_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_porta_ingresso_locale_attrezzi_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_porta_ingresso_locale_attrezzi_abilitato','on') }}"
+    
+    - name: "Allarme Core Movimento locale attrezzi"
+      unique_id: allarme_core_movimento_locale_attrezzi
+      device_class: motion
+      state: >
+          {% set porta = states('binary_sensor.pir_locale_attrezzi') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_movimento_locale_attrezzi_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_locale_attrezzi
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_movimento_locale_attrezzi_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_movimento_locale_attrezzi_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_movimento_locale_attrezzi_abilitato','on') }}"
+  #endregion
+
+  #region locali tecnici esterni
+    - name: "Allarme Core Porta Caldaia Esterna"
+      unique_id: allarme_core_porta_caldaia_esterna
+      device_class: door
+      state: >
+          {% set porta = states('binary_sensor.contatto_caldaia_esterna') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_porta_caldaia_esterna_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_caldaia_esterna
+        tipo: perimetrale
+        priorita: alta
+        ritardo: 0
+        zone: "{{ states('input_text.allarme_core_porta_caldaia_esterna_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_porta_caldaia_esterna_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.allarme_core_porta_caldaia_esterna_abilitato','on') }}"
+
+    - name: "Allarme Core Porta Sottoscala"
+      unique_id: allarme_core_porta_sottoscala
+      device_class: door
+      state: >
+          {% set porta = states('binary_sensor.contatto_porta_sottoscala') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_porta_sottoscala_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_porta_sottoscala
+        tipo: perimetrale
+        priorita: alta
+        ritardo: 0
+        zone: "{{ states('input_text.allarme_core_porta_sottoscala_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_porta_sottoscala_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.allarme_core_porta_sottoscala_abilitato','on') }}"
+
+    - name: "Allarme Core Porta Gas"
+      unique_id: allarme_core_porta_gas
+      device_class: door
+      state: >
+          {% set porta = states('binary_sensor.contatto_porta_gas') %}
+          {% set abilitato = is_state('input_boolean.allarme_core_porta_gas_abilitato','on') %}
+          {% if porta in ['on','off'] %}
+            {% if abilitato %}
+              {{ porta }}
+            {% else %}
+              off
+            {% endif %}
+          {% else %}
+            off
+          {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.contatto_porta_gas
+        tipo: perimetrale
+        priorita: alta
+        ritardo: 0
+        zone: "{{ states('input_text.allarme_core_porta_gas_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_porta_gas_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.allarme_core_porta_gas_abilitato','on') }}"
+  #endregion
+
+#endregion

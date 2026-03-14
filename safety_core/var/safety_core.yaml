@@ -1,0 +1,39 @@
+# ============================================================================
+# SAFETY CORE - VAR
+# Da incollare nel tuo var.yaml esistente (stesso file dove hai le var di allarme_core)
+# ============================================================================
+
+safety_core_sensori_attivazione_var:
+  friendly_name: "Safety Core Sensori Attivazione"
+  icon: mdi:bug
+
+safety_core_timeline_md:
+  friendly_name: "Safety Core Timeline (MD)"
+  icon: mdi:chart-gantt
+  attributes:
+    long_state: ""
+
+safety_core_timeline_critici_md:
+  friendly_name: "Safety Core Timeline Critici (MD)"
+  attributes:
+    long_state: ""
+
+safety_core_timeline_operazioni_md:
+  friendly_name: "Safety Core Timeline Operazioni (MD)"
+  attributes:
+    long_state: ""
+
+safety_core_timeline_note_md:
+  friendly_name: "Safety Core Timeline Note (MD)"
+  attributes:
+    long_state: ""
+
+safety_core_last_snapshot_urls:
+  friendly_name: "Safety Core Last Snapshot URLs"
+  attributes:
+    long_state: ""
+
+safety_core_last_clip_urls:
+  friendly_name: "Safety Core Last Clip URLs"
+  attributes:
+    long_state: ""

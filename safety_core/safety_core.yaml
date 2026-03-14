@@ -1,0 +1,118 @@
+# ============================================================================
+# SAFETY CORE - CORE
+# Stato principale del sistema safety: fumo, gas, carbonio, acqua.
+# Completamente indipendente da allarme_core.
+#
+# Stati possibili di safety_core_stato:
+#   - ok         → nessun allarme attivo
+#   - triggered  → almeno un sensore in allarme (reset solo manuale)
+#
+# Script disponibili:
+#   - script.safety_core_reset  → riporta a ok (solo manuale)
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# STATO GLOBALE DEL SISTEMA SAFETY
+# ----------------------------------------------------------------------------
+input_select:
+  safety_core_stato:
+    name: "Safety Core Stato"
+    icon: mdi:shield-alert
+    options:
+      - ok
+      - triggered
+
+  # Traccia quale categoria ha scatenato il triggered (utile per UI e log)
+  safety_core_ultima_categoria:
+    name: "Safety Core Ultima Categoria"
+    options:
+      - nessuna
+      - fumo
+      - gas
+      - carbonio
+      - acqua
+
+input_boolean:
+  safety_core_reset_in_corso:
+    name: "Safety Core Reset In Corso"
+    icon: mdi:shield-sync
+
+# ----------------------------------------------------------------------------
+# TESTO ULTIMO EVENTO (mirror di allarme_core per coerenza)
+# ----------------------------------------------------------------------------
+input_text:
+  safety_core_ultimo_evento:
+    name: "Safety Core Ultimo Evento"
+    max: 255
+
+
+# ----------------------------------------------------------------------------
+# SCRIPT
+# ----------------------------------------------------------------------------
+script:
+
+  # Reset manuale: riporta lo stato a ok e pulisce l'ultima categoria
+  safety_core_reset:
+    alias: "Safety Core - Reset Manuale"
+    icon: mdi:shield-check
+    mode: single
+    sequence:
+      # Imposta flag di reset per bloccare ri-trigger immediato
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.safety_core_reset_in_corso
+
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.safety_core_stato
+        data:
+          option: ok
+
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.safety_core_ultima_categoria
+        data:
+          option: nessuna
+
+      # Finestra di grazia: blocca ri-trigger per 10 secondi
+      - delay: "00:00:10"
+
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.safety_core_reset_in_corso
+
+
+# ----------------------------------------------------------------------------
+# VAR — usate da automazioni e log (stesso pattern di allarme_core)
+# Richiedono l'integrazione "var" (hacs)
+# ----------------------------------------------------------------------------
+# Incolla nel tuo var.yaml (o nella sezione var: della config):
+#
+# safety_core_sensori_attivazione_var:
+#   friendly_name: "Safety Core Sensori Attivazione"
+#   icon: mdi:bug
+# safety_core_timeline_md:
+#   friendly_name: "Safety Core Timeline (MD)"
+#   icon: mdi:chart-gantt
+#   attributes:
+#     long_state: ""
+# safety_core_timeline_critici_md:
+#   friendly_name: "Safety Core Timeline Critici (MD)"
+#   attributes:
+#     long_state: ""
+# safety_core_timeline_operazioni_md:
+#   friendly_name: "Safety Core Timeline Operazioni (MD)"
+#   attributes:
+#     long_state: ""
+# safety_core_timeline_note_md:
+#   friendly_name: "Safety Core Timeline Note (MD)"
+#   attributes:
+#     long_state: ""
+# safety_core_last_snapshot_urls:
+#   friendly_name: "Safety Core Last Snapshot URLs"
+#   attributes:
+#     long_state: ""
+# safety_core_last_clip_urls:
+#   friendly_name: "Safety Core Last Clip URLs"
+#   attributes:
+#     long_state: ""

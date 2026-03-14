@@ -1,0 +1,683 @@
+# ============================================================================
+# SAFETY CORE - SENSORI
+# Gestione sensori fumo, gas, monossido di carbonio e perdite d'acqua.
+# Filosofia identica ad allarme_core_sensori.yaml:
+#   - input_boolean per abilitare/disabilitare ogni singolo sensore
+#   - input_text per associare telecamere al sensore
+#   - binary_sensor template che wrappa il sensore fisico
+# Prefisso entità: safety_core_
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# INPUT BOOLEAN — abilitazione singolo sensore
+# Ogni sensore può essere disabilitato individualmente dalla UI
+# ----------------------------------------------------------------------------
+input_boolean:
+
+  # region fumo
+  safety_core_fumo_studio_abilitato:
+    name: "Safety Fumo Studio Abilitato"
+    icon: mdi:smoke-detector
+  safety_core_fumo_ufficio_abilitato:
+    name: "Safety Fumo Ufficio Abilitato"
+    icon: mdi:smoke-detector
+  safety_core_fumo_tecnologico_p1_abilitato:
+    name: "Safety Fumo Tecnologico P1 Abilitato"
+    icon: mdi:smoke-detector
+  safety_core_fumo_cucina_abilitato:
+    name: "Safety Fumo Cucina Abilitato"
+    icon: mdi:smoke-detector
+  safety_core_fumo_solaio_abilitato:
+    name: "Safety Fumo Solaio Abilitato"
+    icon: mdi:smoke-detector
+  safety_core_fumo_tecnologico_pt_abilitato:
+    name: "Safety Fumo Tecnologico PT Abilitato"
+    icon: mdi:smoke-detector
+  # endregion
+
+  # region gas e monossido
+  safety_core_gas_cucina_abilitato:
+    name: "Safety Gas Cucina Abilitato"
+    icon: mdi:gas-cylinder
+  safety_core_gas_caldaia_abilitato:
+    name: "Safety Gas Caldaia Abilitato"
+    icon: mdi:gas-cylinder
+  safety_core_gas_studio_abilitato:
+    name: "Safety Gas Studio Abilitato"
+    icon: mdi:gas-cylinder
+  safety_core_carbonio_taverna_abilitato:
+    name: "Safety Carbonio Taverna Abilitato"
+    icon: mdi:molecule-co
+  # endregion
+
+  #region acqua
+  safety_core_acqua_vasca_abilitato:
+    name: "Safety Acqua Vasca Abilitato"
+    icon: mdi:water-alert
+  safety_core_acqua_bagno_abilitato:
+    name: "Safety Acqua Bagno Abilitato"
+    icon: mdi:water-alert
+  safety_core_acqua_cucina_principale_abilitato:
+    name: "Safety Acqua Cucina Principale Abilitato"
+    icon: mdi:water-alert
+  safety_core_acqua_doccia_abilitato:
+    name: "Safety Acqua Doccia Abilitato"
+    icon: mdi:water-alert
+  safety_core_acqua_lavanderia_abilitato:
+    name: "Safety Acqua Lavanderia Abilitato"
+    icon: mdi:water-alert
+  safety_core_acqua_lavello_cucina_abilitato:
+    name: "Safety Acqua Lavello Cucina Abilitato"
+    icon: mdi:water-alert
+  safety_core_acqua_studio_abilitato:
+    name: "Safety Acqua Studio Abilitato"
+    icon: mdi:water-alert
+  safety_core_acqua_stufa_abilitato:
+    name: "Safety Acqua Stufa Abilitato"
+    icon: mdi:water-alert
+  safety_core_acqua_tecnologico_pt_abilitato:
+    name: "Safety Acqua Tecnologico PT Abilitato"
+    icon: mdi:water-alert
+  # endregion
+
+  # ----------------------------------------------------------------------------
+  # INPUT BOOLEAN — abilitazione per tipologia (master switch per categoria)
+  # Disabilitando una categoria si disabilitano tutti i sensori di quel tipo
+  # ----------------------------------------------------------------------------
+  safety_core_categoria_fumo_abilitato:
+    name: "Safety Categoria Fumo Abilitata"
+    icon: mdi:smoke-detector-variant
+  safety_core_categoria_gas_abilitato:
+    name: "Safety Categoria Gas Abilitata"
+    icon: mdi:gas-burner
+  safety_core_categoria_carbonio_abilitato:
+    name: "Safety Categoria Carbonio Abilitata"
+    icon: mdi:molecule-co
+  safety_core_categoria_acqua_abilitato:
+    name: "Safety Categoria Acqua Abilitata"
+    icon: mdi:water-alert
+
+
+# ----------------------------------------------------------------------------
+# INPUT TEXT — associazione telecamere per ogni sensore
+# Stessa logica di allarme_core: lista separata da virgole
+# ----------------------------------------------------------------------------
+input_text:
+
+  # region fumo
+  safety_core_fumo_studio_camera:
+    name: "Camera Fumo Studio Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_fumo_ufficio_camera:
+    name: "Camera Fumo Ufficio Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_fumo_tecnologico_p1_camera:
+    name: "Camera Fumo Tecnologico P1 Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_fumo_cucina_camera:
+    name: "Camera Fumo Cucina Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_fumo_solaio_camera:
+    name: "Camera Fumo Solaio Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_fumo_tecnologico_pt_camera:
+    name: "Camera Fumo Tecnologico PT Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  # endregion
+
+  # region gas e monossido
+  safety_core_gas_cucina_camera:
+    name: "Camera Gas Cucina Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_gas_caldaia_camera:
+    name: "Camera Gas Caldaia Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_gas_studio_camera:
+    name: "Camera Gas Studio Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_carbonio_taverna_camera:
+    name: "Camera Carbonio Taverna Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  # endregion
+
+  #region acqua
+  safety_core_acqua_vasca_camera:
+    name: "Camera Acqua Vasca Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_acqua_bagno_camera:
+    name: "Camera Acqua Bagno Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_acqua_cucina_principale_camera:
+    name: "Camera Acqua Cucina Principale Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_acqua_doccia_camera:
+    name: "Camera Acqua Doccia Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_acqua_lavanderia_camera:
+    name: "Camera Acqua Lavanderia Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_acqua_lavello_cucina_camera:
+    name: "Camera Acqua Lavello Cucina Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_acqua_studio_camera:
+    name: "Camera Acqua Studio Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_acqua_stufa_camera:
+    name: "Camera Acqua Stufa Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  safety_core_acqua_tecnologico_pt_camera:
+    name: "Camera Acqua Tecnologico PT Safety"
+    pattern: "^[^,]+(,[^,]+)*$"
+  # endregion
+
+
+# ----------------------------------------------------------------------------
+# TEMPLATE BINARY SENSOR — wrap dei sensori fisici
+# Logica: il sensore è attivo solo se:
+#   1. il master switch della categoria è ON
+#   2. il singolo input_boolean del sensore è ON
+#   3. il sensore fisico sottostante è ON
+# ----------------------------------------------------------------------------
+template:
+  - binary_sensor:
+
+    # region fumo
+
+    - name: "Safety Core Fumo Studio"
+      unique_id: safety_core_fumo_studio
+      device_class: smoke
+      state: >
+        {% set fisico = states('binary_sensor.sensore_fumo_studio') %}
+        {% set abilitato = is_state('input_boolean.safety_core_fumo_studio_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') %}
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_fumo_studio
+        tipo: fumo
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_fumo_studio_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_fumo_studio_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+
+    - name: "Safety Core Fumo Ufficio"
+      unique_id: safety_core_fumo_ufficio
+      device_class: smoke
+      state: >
+        {% set fisico = states('binary_sensor.sensore_fumo_ufficio') %}
+        {% set abilitato = is_state('input_boolean.safety_core_fumo_ufficio_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') %}
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_fumo_ufficio
+        tipo: fumo
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_fumo_ufficio_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_fumo_ufficio_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+
+    - name: "Safety Core Fumo Tecnologico P1"
+      unique_id: safety_core_fumo_tecnologico_p1
+      device_class: smoke
+      state: >
+        {% set fisico = states('binary_sensor.sensore_fumo_tecnologico_p1') %}
+        {% set abilitato = is_state('input_boolean.safety_core_fumo_tecnologico_p1_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') %}
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_fumo_tecnologico_p1
+        tipo: fumo
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_fumo_tecnologico_p1_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_fumo_tecnologico_p1_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+
+    - name: "Safety Core Fumo Cucina"
+      unique_id: safety_core_fumo_cucina
+      device_class: smoke
+      state: >
+        {% set fisico = states('binary_sensor.sensore_fumo_cucina') %}
+        {% set abilitato = is_state('input_boolean.safety_core_fumo_cucina_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') %}
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_fumo_cucina
+        tipo: fumo
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_fumo_cucina_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_fumo_cucina_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+
+    - name: "Safety Core Fumo Solaio"
+      unique_id: safety_core_fumo_solaio
+      device_class: smoke
+      state: >
+        {% set fisico = states('binary_sensor.sensore_fumo_solaio') %}
+        {% set abilitato = is_state('input_boolean.safety_core_fumo_solaio_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') %}
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_fumo_solaio
+        tipo: fumo
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_fumo_solaio_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_fumo_solaio_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+
+    - name: "Safety Core Fumo Tecnologico PT"
+      unique_id: safety_core_fumo_tecnologico_pt
+      device_class: smoke
+      state: >
+        {% set fisico = states('binary_sensor.sensore_fumo_tecnologico_pt') %}
+        {% set abilitato = is_state('input_boolean.safety_core_fumo_tecnologico_pt_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') %}
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_fumo_tecnologico_pt
+        tipo: fumo
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_fumo_tecnologico_pt_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_fumo_tecnologico_pt_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+
+    # endregion
+
+    # region gas
+
+    - name: "Safety Core Gas Cucina"
+      unique_id: safety_core_gas_cucina
+      device_class: gas
+      state: >
+        {% set fisico = states('binary_sensor.gas_cucina_vd4') %}
+        {% set abilitato = is_state('input_boolean.safety_core_gas_cucina_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_gas_abilitato','on') %}
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.gas_cucina_vd4
+        tipo: gas
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_gas_cucina_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_gas_cucina_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_gas_abilitato','on') }}"
+
+    - name: "Safety Core Gas Caldaia"
+      unique_id: safety_core_gas_caldaia
+      device_class: gas
+      state: >
+        {% set fisico = states('binary_sensor.gas_caldaia_vd4') %}
+        {% set abilitato = is_state('input_boolean.safety_core_gas_caldaia_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_gas_abilitato','on') %}
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.gas_caldaia_vd4
+        tipo: gas
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_gas_caldaia_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_gas_caldaia_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_gas_abilitato','on') }}"
+
+    - name: "Safety Core Gas Studio"
+      unique_id: safety_core_gas_studio
+      device_class: gas
+      state: >
+        {% set fisico = states('binary_sensor.sensore_gas_studio') %}
+        {% set abilitato = is_state('input_boolean.safety_core_gas_studio_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_gas_abilitato','on') %}
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_gas_studio
+        tipo: gas
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_gas_studio_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_gas_studio_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_gas_abilitato','on') }}"
+
+    # endregion
+
+    # region monossido di carbonio
+
+    - name: "Safety Core Carbonio Taverna"
+      unique_id: safety_core_carbonio_taverna
+      device_class: carbon_monoxide
+      state: >
+        {% set fisico = states('binary_sensor.sensore_carbonio_taverna') %}
+        {% set abilitato = is_state('input_boolean.safety_core_carbonio_taverna_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_carbonio_abilitato','on') %}
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_carbonio_taverna
+        tipo: carbonio
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_carbonio_taverna_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_carbonio_taverna_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_carbonio_abilitato','on') }}"
+
+    # endregion
+
+    # region acqua
+
+    - name: "Safety Core Acqua Vasca"
+      unique_id: safety_core_acqua_vasca
+      device_class: moisture
+      state: >
+        {% set fisico = states('binary_sensor.sensore_acqua_vasca') %}
+        {% set abilitato = is_state('input_boolean.safety_core_acqua_vasca_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_acqua_vasca
+        tipo: acqua
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_acqua_vasca_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_acqua_vasca_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+
+    - name: "Safety Core Acqua Bagno"
+      unique_id: safety_core_acqua_bagno
+      device_class: moisture
+      state: >
+        {% set fisico = states('binary_sensor.sensore_acqua_bagno') %}
+        {% set abilitato = is_state('input_boolean.safety_core_acqua_bagno_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if fisico != 'off' else 'off' }}
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_acqua_bagno
+        tipo: acqua
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_acqua_bagno_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_acqua_bagno_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+
+    - name: "Safety Core Acqua Cucina Principale"
+      unique_id: safety_core_acqua_cucina_principale
+      device_class: moisture
+      state: >
+        {% set fisico = states('binary_sensor.sensore_acqua_cucina_principale') %}
+        {% set abilitato = is_state('input_boolean.safety_core_acqua_cucina_principale_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if fisico != 'off' else 'off' }}
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_acqua_cucina_principale
+        tipo: acqua
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_acqua_cucina_principale_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_acqua_cucina_principale_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+
+    - name: "Safety Core Acqua Doccia"
+      unique_id: safety_core_acqua_doccia
+      device_class: moisture
+      state: >
+        {% set fisico = states('binary_sensor.sensore_acqua_doccia') %}
+        {% set abilitato = is_state('input_boolean.safety_core_acqua_doccia_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if fisico != 'off' else 'off' }}
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_acqua_doccia
+        tipo: acqua
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_acqua_doccia_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_acqua_doccia_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+
+    - name: "Safety Core Acqua Lavanderia"
+      unique_id: safety_core_acqua_lavanderia
+      device_class: moisture
+      state: >
+        {% set fisico = states('binary_sensor.sensore_acqua_lavanderia') %}
+        {% set abilitato = is_state('input_boolean.safety_core_acqua_lavanderia_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if fisico != 'off' else 'off' }}
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_acqua_lavanderia
+        tipo: acqua
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_acqua_lavanderia_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_acqua_lavanderia_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+
+    - name: "Safety Core Acqua Lavello Cucina"
+      unique_id: safety_core_acqua_lavello_cucina
+      device_class: moisture
+      state: >
+        {% set fisico = states('binary_sensor.sensore_acqua_lavello_cucina') %}
+        {% set abilitato = is_state('input_boolean.safety_core_acqua_lavello_cucina_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if fisico != 'off' else 'off' }}
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_acqua_lavello_cucina
+        tipo: acqua
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_acqua_lavello_cucina_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_acqua_lavello_cucina_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+
+    - name: "Safety Core Acqua Studio"
+      unique_id: safety_core_acqua_studio
+      device_class: moisture
+      state: >
+        {% set fisico = states('binary_sensor.sensore_acqua_studio') %}
+        {% set abilitato = is_state('input_boolean.safety_core_acqua_studio_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if fisico != 'off' else 'off' }}
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_acqua_studio
+        tipo: acqua
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_acqua_studio_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_acqua_studio_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+
+    - name: "Safety Core Acqua Stufa"
+      unique_id: safety_core_acqua_stufa
+      device_class: moisture
+      state: >
+        {% set fisico = states('binary_sensor.sensore_acqua_stufa') %}
+        {% set abilitato = is_state('input_boolean.safety_core_acqua_stufa_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if fisico != 'off' else 'off' }}
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_acqua_stufa
+        tipo: acqua
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_acqua_stufa_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_acqua_stufa_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+
+    - name: "Safety Core Acqua Tecnologico PT"
+      unique_id: safety_core_acqua_tecnologico_pt
+      device_class: moisture
+      state: >
+        {% set fisico = states('binary_sensor.sensore_acqua_tecnologico_pt') %}
+        {% set abilitato = is_state('input_boolean.safety_core_acqua_tecnologico_pt_abilitato','on')
+                        and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if fisico != 'off' else 'off' }}
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.sensore_acqua_tecnologico_pt
+        tipo: acqua
+        priorita: alta
+        camera: "{{ states('input_text.safety_core_acqua_tecnologico_pt_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.safety_core_acqua_tecnologico_pt_abilitato','on') }}"
+        categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+
+    # endregion
+
+
+    # ----------------------------------------------------------------------------
+    # SENSORI AGGREGATI PER CATEGORIA
+    # Utili per dashboard e automazioni: un singolo binary_sensor per categoria
+    # ----------------------------------------------------------------------------
+
+    - name: "Safety Core Fumo Attivo"
+      unique_id: safety_core_fumo_attivo
+      device_class: smoke
+      state: >
+        {{
+          states.binary_sensor
+            | selectattr('entity_id','search','binary_sensor.safety_core_fumo_')
+            | rejectattr('entity_id','search','_attivo')
+            | selectattr('state','eq','on')
+            | list | count > 0
+        }}
+      attributes:
+        sensori_attivi: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.safety_core_fumo_')
+              | rejectattr('entity_id','search','_attivo')
+              | selectattr('state','eq','on')
+              | map(attribute='entity_id')
+              | list
+          }}
+
+    - name: "Safety Core Gas Attivo"
+      unique_id: safety_core_gas_attivo
+      device_class: gas
+      state: >
+        {{
+          states.binary_sensor
+            | selectattr('entity_id','search','binary_sensor.safety_core_gas_')
+            | rejectattr('entity_id','search','_attivo')
+            | selectattr('state','eq','on')
+            | list | count > 0
+        }}
+      attributes:
+        sensori_attivi: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.safety_core_gas_')
+              | rejectattr('entity_id','search','_attivo')
+              | selectattr('state','eq','on')
+              | map(attribute='entity_id')
+              | list
+          }}
+
+    - name: "Safety Core Carbonio Attivo"
+      unique_id: safety_core_carbonio_attivo
+      device_class: carbon_monoxide
+      state: >
+        {{
+          states.binary_sensor
+            | selectattr('entity_id','search','binary_sensor.safety_core_carbonio_')
+            | rejectattr('entity_id','search','_attivo')
+            | selectattr('state','eq','on')
+            | list | count > 0
+        }}
+      attributes:
+        sensori_attivi: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.safety_core_carbonio_')
+              | rejectattr('entity_id','search','_attivo')
+              | selectattr('state','eq','on')
+              | map(attribute='entity_id')
+              | list
+          }}
+
+    - name: "Safety Core Acqua Attivo"
+      unique_id: safety_core_acqua_attivo
+      device_class: moisture
+      state: >
+        {{
+          states.binary_sensor
+            | selectattr('entity_id','search','binary_sensor.safety_core_acqua_')
+            | rejectattr('entity_id','search','_attivo')
+            | selectattr('state','eq','on')
+            | list | count > 0
+        }}
+      attributes:
+        sensori_attivi: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.safety_core_acqua_')
+              | rejectattr('entity_id','search','_attivo')
+              | selectattr('state','eq','on')
+              | map(attribute='entity_id')
+              | list
+          }}
+
+    - name: "Safety Core Qualsiasi Attivo"
+      unique_id: safety_core_qualsiasi_attivo
+      # true se almeno un sensore safety è in allarme
+      state: >
+        {{
+          is_state('binary_sensor.safety_core_fumo_attivo','on')
+          or is_state('binary_sensor.safety_core_gas_attivo','on')
+          or is_state('binary_sensor.safety_core_carbonio_attivo','on')
+          or is_state('binary_sensor.safety_core_acqua_attivo','on')
+        }}

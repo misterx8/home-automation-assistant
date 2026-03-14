@@ -1,0 +1,314 @@
+# ============================================================================
+# SAFETY CORE - AUTOMAZIONI
+# Gestisce il passaggio di stato a triggered e il log
+# quando uno dei sensori safety si attiva.
+#
+# Pattern identico ad allarme_core_automazioni.yaml:
+#   - trigger su binary_sensor.safety_core_qualsiasi_attivo → on
+#   - salva sensori che hanno causato il triggered
+#   - snapshot telecamere associate
+# ============================================================================
+
+automation:
+
+  # --------------------------------------------------------------------------
+  # TRIGGER: almeno un sensore safety passa a ON → stato triggered
+  # --------------------------------------------------------------------------
+  - alias: "Safety Core - Triggered su sensore attivo"
+    id: safety_core_aut_triggered
+    mode: single  # evita trigger multipli ravvicinati
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.safety_core_qualsiasi_attivo
+        to: "on"
+        for: "00:00:03"
+
+    # Scatta solo se non siamo già in triggered (evita loop di log)
+    condition:
+      - condition: template
+        value_template: "{{ not is_state('input_select.safety_core_stato','triggered') }}"
+      # Fix Bug 1: ignora il trigger se è causato SOLO da sensori unknown/unavailable
+      # che erano già in quello stato prima (evita falsi allarmi post-riavvio)
+      - condition: template
+        value_template: >
+          {% set ns = namespace(found=false) %}
+          {% for s in states.binary_sensor
+            | selectattr('entity_id','search','binary_sensor.safety_core_')
+            | selectattr('state','eq','on')
+            | rejectattr('entity_id','search','_attivo') %}
+            {% set fisico = state_attr(s.entity_id,'sensore_origine') %}
+            {% if fisico and states(fisico) == 'on' %}
+              {% set ns.found = true %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.found }}
+      # Fix Bug 2: blocca ri-trigger durante finestra di grazia post-reset
+      - condition: state
+        entity_id: input_boolean.safety_core_reset_in_corso
+        state: "off"
+
+    variables:
+      # Determina la categoria prevalente per il log
+      categoria: >
+        {% if is_state('binary_sensor.safety_core_fumo_attivo','on') %}
+          fumo
+        {% elif is_state('binary_sensor.safety_core_gas_attivo','on') %}
+          gas
+        {% elif is_state('binary_sensor.safety_core_carbonio_attivo','on') %}
+          carbonio
+        {% elif is_state('binary_sensor.safety_core_acqua_attivo','on') %}
+          acqua
+        {% else %}
+          sconosciuta
+        {% endif %}
+
+    action:
+      # 1. Imposta stato triggered
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.safety_core_stato
+        data:
+          option: triggered
+
+      # 2. Salva categoria che ha scatenato l'allarme
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.safety_core_ultima_categoria
+        data:
+          option: "{{ categoria }}"
+
+      # 3. Salva elenco sensori attivi nella var (per log e snapshot)
+      - service: var.set
+        data:
+          entity_id: var.safety_core_sensori_attivazione_var
+          value: >
+            {% set ns = namespace(ids=[]) %}
+            {% for s in states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.safety_core_')
+              | selectattr('state','eq','on')
+              | rejectattr('entity_id','search','_attivo') %}
+              {% set ns.ids = ns.ids + [s.entity_id] %}
+            {% endfor %}
+            {{ ns.ids | join(', ') }}
+
+
+  # --------------------------------------------------------------------------
+  # RESET: quando tutti i sensori tornano OFF E stato è ancora triggered
+  # NON resetta automaticamente — richiede script.safety_core_reset
+  # Questa automazione logga solo il ritorno a normalità dei sensori fisici
+  # --------------------------------------------------------------------------
+  - alias: "Safety Core - Log sensori tornati normali"
+    id: safety_core_aut_log_sensori_ok
+    mode: queued
+    max: 10
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.safety_core_qualsiasi_attivo
+        to: "off"
+
+    condition:
+      - condition: state
+        entity_id: input_select.safety_core_stato
+        state: triggered
+
+    action:
+      - service: script.safety_core_logbook_emit
+        data:
+          msg: "✅ Sensori fisici tornati normali — stato rimane TRIGGERED fino a reset manuale"
+
+
+  # --------------------------------------------------------------------------
+  # LOG CAMBIO STATO (ok ↔ triggered)
+  # --------------------------------------------------------------------------
+  - alias: "Safety Core - Logbook Cambio Stato"
+    id: safety_core_logbook_cambio_stato
+    mode: queued
+    max: 50
+    trigger:
+      - platform: state
+        entity_id: input_select.safety_core_stato
+
+    condition:
+      - condition: template
+        value_template: >
+          {{ trigger.from_state is none
+            or trigger.from_state.state != trigger.to_state.state }}
+
+    action:
+      - choose:
+          - conditions: "{{ trigger.to_state.state == 'triggered' }}"
+            sequence:
+              - service: script.safety_core_logbook_emit
+                data:
+                  msg: >
+                    🚨 SAFETY TRIGGERED! Categoria: {{ states('input_select.safety_core_ultima_categoria') }}
+                    | Sensori: {{ states('var.safety_core_sensori_attivazione_var') }}
+
+          - conditions: "{{ trigger.to_state.state == 'ok' }}"
+            sequence:
+              - service: script.safety_core_logbook_emit
+                data:
+                  msg: "✅ SAFETY RESET — sistema tornato OK"
+
+
+  # --------------------------------------------------------------------------
+  # SNAPSHOT TELECAMERE su triggered (stesso pattern di allarme_core)
+  # --------------------------------------------------------------------------
+  - alias: "Safety Core - Snapshot Cameras su Triggered"
+    id: safety_core_snapshot_on_triggered
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id: input_select.safety_core_stato
+        to: "triggered"
+
+    variables:
+      # Raccoglie tutti i sensori attivi al momento del trigger
+      sensori_attivi: >
+        {% set ns = namespace(ids=[]) %}
+        {% for s in states.binary_sensor
+          | selectattr('entity_id','search','binary_sensor.safety_core_')
+          | selectattr('state','eq','on')
+          | rejectattr('entity_id','search','_attivo') %}
+          {% set ns.ids = ns.ids + [s.entity_id] %}
+        {% endfor %}
+        {{ ns.ids }}
+
+      # Raccoglie le telecamere associate ai sensori attivi
+      cams_all: >
+        {% set ns = namespace(out=[]) %}
+        {% for s in sensori_attivi %}
+          {% set cams0 = state_attr(s,'camera') | default([], true) %}
+          {% set cams = cams0 if (cams0 is iterable and cams0 is not string) else [cams0] %}
+          {% set cams_norm = cams | map('string') | map('trim') | reject('equalto','') | list %}
+          {% for c in cams_norm %}
+            {% if c.startswith('camera.') %}
+              {% set ns.out = ns.out + [c] %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+        {{ ns.out | unique | list }}
+
+      tag: >
+        {% if sensori_attivi | length > 0 %}
+          {{ sensori_attivi[0].split('.')[1] }}
+        {% else %}
+          safety_triggered
+        {% endif %}
+
+      snapshot_urls_text: >
+        {% set ts = now().strftime('%Y%m%d_%H%M%S') %}
+        {% set safe_tag = (tag | string | regex_replace('[^a-zA-Z0-9_-]', '_')) %}
+        {% set ns = namespace(out=[]) %}
+        {% for c in cams_all %}
+          {% set cam = (c | string).split('.')[1] %}
+          {% set ns.out = ns.out + ['/local/safety_core_snapshots/' ~ ts ~ '_' ~ safe_tag ~ '_' ~ cam ~ '.jpg'] %}
+        {% endfor %}
+        {{ ns.out | join('\n') }}
+
+      frigate_base: "http://192.168.2.92:5000"
+      clip_start_ts: "{{ (as_timestamp(now()) - 30) | int }}"
+      clip_end_ts: "{{ (as_timestamp(now()) + 10) | int }}"
+
+      clips_text: >
+        {% set ns = namespace(out=[]) %}
+        {% for c in cams_all %}
+          {% set cam = state_attr(c,'camera_name') | default('', true) | string | trim %}
+          {% if not cam %}
+            {% set cam = (c | string).split('.')[1] %}
+          {% endif %}
+          {% set ns.out = ns.out + [
+            frigate_base ~ '/api/' ~ cam ~ '/start/' ~ clip_start_ts ~ '/end/' ~ clip_end_ts ~ '/clip.mp4'
+          ] %}
+        {% endfor %}
+        {{ ns.out | join('\n') }}
+
+    condition:
+      - condition: template
+        value_template: "{{ cams_all | length > 0 }}"
+
+    action:
+      - service: script.safety_core_snapshot_cameras
+        data:
+          cameras: "{{ cams_all }}"
+          tag: "{{ tag }}"
+
+      - service: var.set
+        data:
+          entity_id: var.safety_core_last_snapshot_urls
+          value: ""
+          attributes:
+            long_state: "{{ snapshot_urls_text }}"
+
+      - service: var.set
+        data:
+          entity_id: var.safety_core_last_clip_urls
+          value: ""
+          attributes:
+            long_state: "{{ clips_text }}"
+
+      - service: script.safety_core_logbook_emit
+        data:
+          msg: >
+            📸 Snapshot salvati: {{ cams_all | length }}
+            {% if cams_all|length>0 %}— {{ cams_all | join(', ') }}{% endif %}
+
+      - service: script.safety_core_logbook_emit
+        data:
+          msg: >
+            🎥 Clip generati: {{ cams_all | length }}
+            {% if cams_all|length>0 %}— {{ cams_all | join(', ') }}{% endif %}
+
+
+  # --------------------------------------------------------------------------
+  # UI TIMELINE APPEND — identico ad allarme_core
+  # --------------------------------------------------------------------------
+  - alias: "Safety Core - UI Timeline Append"
+    id: safety_core_ui_timeline_append
+    mode: queued
+    max: 50
+    trigger:
+      - platform: state
+        entity_id: input_text.safety_core_logbook_ultimo_evento
+
+    condition:
+      - condition: template
+        value_template: >
+          {{ trigger.to_state is not none
+            and (trigger.to_state.state | string | trim) != ''
+            and (trigger.from_state is none or trigger.from_state.state != trigger.to_state.state) }}
+
+    action:
+      - variables:
+          ts: "{{ now().strftime('%H:%M:%S') }}"
+          msg: "{{ trigger.to_state.state | string }}"
+          line: "- **{{ ts }}** {{ msg }}"
+          keep: 25
+          target: >
+            {% if '🚨' in msg %}
+              critici
+            {% elif '📝' in msg %}
+              note
+            {% else %}
+              operazioni
+            {% endif %}
+          ent: >
+            {% if '🚨' in msg %}
+              var.safety_core_timeline_critici_md
+            {% elif '📝' in msg %}
+              var.safety_core_timeline_note_md
+            {% else %}
+              var.safety_core_timeline_operazioni_md
+            {% endif %}
+
+      # Fix Bug 3: usa action variables invece di automation variables
+      # per garantire che ent sia valorizzato prima del var.set
+      - service: var.set
+        data:
+          entity_id: "{{ ent }}"
+          attributes:
+            long_state: >
+              {% set old = state_attr(ent,'long_state') | default('', true) | string %}
+              {% set old_lines = old.split('\n') if old|length > 0 else [] %}
+              {% set out = [line] + old_lines %}
+              {{ out[:keep] | join('\n') }}

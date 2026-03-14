@@ -1,0 +1,434 @@
+script:
+  arm_allarme_core:
+    mode: restart
+    sequence:
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.allarme_core_stato
+        data:
+          option: arming
+
+      - delay: "00:00:20"   # imposta qui il tempo di inserimento
+
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.allarme_core_stato
+        data:
+          option: armed
+  disarm_allarme_core:
+    sequence:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.allarme_core_stato
+          option: disarmed
+
+
+alarm_control_panel:
+  - platform: template
+    panels:
+      allarme_core:
+        name: "Allarme Core Casa"
+        value_template: >
+          {% if states('input_select.allarme_core_stato') == 'armed' %}
+            armed_away
+          {% else %}
+            {{ states('input_select.allarme_core_stato') }}
+          {% endif %}
+        code_arm_required: false
+        arm_away:
+          action: script.arm_allarme_core
+        disarm:
+          action: script.disarm_allarme_core
+
+
+
+input_select:
+  allarme_core_stato:
+    name: Stato Allarme
+    options:
+      - disarmed
+      - armed
+      - triggered
+      - arming
+  allarme_core_profilo:
+    name: Profilo Allarme
+    options:
+      - nessuno
+      - sera
+      - giorno
+      - tutti
+      - notte
+  allarme_core_zone_disponibili:
+    name: Allarme Core Zone Disponibili
+    options:
+      - perimetrali
+      - volumetrici
+      - giorno
+      - sera
+      - notte
+
+input_text:
+  allarme_core_ultimo_evento:
+    name: Ultimo Evento Allarme
+    max: 255
+  allarme_core_sensori_esclusi:
+    name: Sensori esclusi all'attivazione
+    max: 255
+
+template:
+  - sensor:
+
+# sensore che mappa il profilo allarme sulle zone
+      - name: "Allarme Core Zone Attive"
+        unique_id: allarme_core_zone_attive
+        state: "{{ states('input_select.allarme_core_profilo') }}"
+        attributes:
+          zones: >
+            {% set mappa = {
+              'tutti': ['perimetrali','volumetrici'],
+              'sera': ['sera'],
+              'giorno': ['giorno'],
+              'notte': ['notte'],
+              'nessuno': []
+            } %}
+            {{ mappa.get(states('input_select.allarme_core_profilo'), []) }}
+
+#sensore per zone attive che indica quanti sensori sono accesi su quella determinata zona
+      - name: "Allarme Core Count Zona Sera"
+        unique_id: allarme_core_count_zona_sera
+        state: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined')
+              | selectattr('attributes.zone','contains','sera')
+              | list | count
+          }}
+
+      - name: "Allarme Core Count Zona Giorno"
+        unique_id: allarme_core_count_zona_giorno
+        state: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined')
+              | selectattr('attributes.zone','contains','giorno')
+              | list | count
+          }}
+
+      - name: "Allarme Core Count Zona Perimetrali"
+        unique_id: allarme_core_count_zona_perimetrali
+        state: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined')
+              | selectattr('attributes.zone','contains','perimetrali')
+              | list | count
+          }}
+
+      - name: "Allarme Core Count Zona Volumetrici"
+        unique_id: allarme_core_count_zona_volumetrici
+        state: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined')
+              | selectattr('attributes.zone','contains','volumetrici')
+              | list | count
+          }}
+
+      - name: "Allarme Core Count Zona Notte"
+        unique_id: allarme_core_count_zona_notte
+        state: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined')
+              | selectattr('attributes.zone','contains','notte')
+              | list | count
+          }}
+#-------------------------------------------------------------------------------------------------------------
+# sensori utilità per allarme
+      - name: "Allarme Core Sensori Esclusi (Memoria)"
+        unique_id: allarme_core_sensori_esclusi_memoria
+        state: >
+          {% set v = states('input_text.allarme_core_sensori_esclusi') %}
+          {{ 'true' if v not in ['', '[]', 'unknown'] else 'false' }}
+        attributes:
+          sensori: >
+            {% set v = states('input_text.allarme_core_sensori_esclusi') %}
+            {% if v not in ['', 'unknown'] %}
+              {{ v | from_json }}
+            {% else %}
+              []
+            {% endif %}      
+      - name: "Allarme Core Sensori Attivi"
+        unique_id: allarme_core_sensori_attivi
+        icon: mdi:alert
+        state: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id', 'search', 'binary_sensor.allarme_core_')
+              | selectattr('state', 'eq', 'on')
+              | selectattr('attributes.abilitato', 'defined')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | map(attribute='attributes.friendly_name')
+              | join(', ')
+              if (
+                states.binary_sensor
+                  | selectattr('entity_id', 'search', 'binary_sensor.allarme_core_')
+                  | selectattr('state', 'eq', 'on')
+                  | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+                  | list
+                  | count > 0
+              )
+              else 'Nessun sensore attivo'
+          }}
+        attributes:
+          elenco: >
+            {{
+              states.binary_sensor
+                | selectattr('entity_id','search','binary_sensor.allarme_core_')
+                | selectattr('state','eq','on')
+                | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+                | map(attribute='attributes.friendly_name')
+                | list
+            }}
+
+# sensore utilità su node-red per conoscere sensori attivi in base a zone allarme inserito e anche con l'esclusione di eventuali sensori aperti all'atto dell'attivazione
+      - name: "Allarme Core Sensori Aperti Filtrati"
+        unique_id: allarme_core_sensori_aperti_filtrati
+        
+        # Attendi che stato sia armed da almeno 2 secondi
+        availability: >
+          {% set stato = states('input_select.allarme_core_stato') %}
+          {% set arming_ts = as_timestamp(states('input_datetime.allarme_core_arming_started')) %}
+          {% set var_ts = as_timestamp(states.var.allarme_core_sensori_esclusi_var.last_changed) %}
+
+          {% if stato == 'armed' %}
+            true
+          {% elif stato == 'arming' %}
+            {{ arming_ts is not none and var_ts >= arming_ts }}
+          {% else %}
+            true
+          {% endif %}
+
+        state: >
+          {% set profilo = states('input_select.allarme_core_profilo') %}
+          {% set stato = states('input_select.allarme_core_stato') %}
+          {% set zone_attive = state_attr('sensor.allarme_core_zone_attive','zones') or [] %}
+          {% set esclusi = states('var.allarme_core_sensori_esclusi_var') or [] %}
+
+          {% if profilo == 'nessuno' or stato != 'armed' %}
+            false
+          {% else %}
+            {% set ns = namespace(found=false) %}
+            {% for sensor in states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined') %}
+              {% if sensor.entity_id not in esclusi %}
+                {% set zone_sensor = sensor.attributes.zone %}
+                {% if zone_sensor | select('in', zone_attive) | list | length > 0 %}
+                  {% set ns.found = true %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.found }}
+          {% endif %}
+
+        attributes:
+          profilo: "{{ states('input_select.allarme_core_profilo') }}"
+          stato_allarme: "{{ states('input_select.allarme_core_stato') }}"
+          
+          sensori_aperti_ids: >
+            {% set profilo = states('input_select.allarme_core_profilo') %}
+            {% set stato = states('input_select.allarme_core_stato') %}
+            {% set zone_attive = state_attr('sensor.allarme_core_zone_attive','zones') or [] %}
+            {% set esclusi = states('var.allarme_core_sensori_esclusi_var') or [] %}
+
+            {% if profilo == 'nessuno' or stato != 'armed' %}
+              []
+            {% else %}
+              {% set ns = namespace(ids=[]) %}
+              {% for sensor in states.binary_sensor
+                | selectattr('entity_id','search','binary_sensor.allarme_core_')
+                | selectattr('state','eq','on')
+                | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+                | selectattr('attributes.zone','defined') %}
+                {% if sensor.entity_id not in esclusi %}
+                  {% set zone_sensor = sensor.attributes.zone %}
+                  {% if zone_sensor | select('in', zone_attive) | list | length > 0 %}
+                    {% set ns.ids = ns.ids + [sensor.entity_id] %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.ids }}
+            {% endif %}
+          
+          conteggio: >
+            {{ this.attributes.sensori_aperti_ids | length if this.attributes.sensori_aperti_ids is defined else 0 }}
+
+
+
+  - binary_sensor:
+# sensore utilita su node-red per conoscere sensori attivi su determinata zona in base ad allarme e profilo inserito cosi possiamo capire se si puo armare o meno allarme con sensori aperti su quella/e zone
+      - name: "Allarme Core Sensori Aperti su Profilo Attivo"
+        unique_id: allarme_core_sensori_aperti_profilo
+
+        state: >
+          {% set profilo = states('input_select.allarme_core_profilo') %}
+          {% set stato = states('input_select.allarme_core_stato') %}
+          {% set zone_attive = state_attr('sensor.allarme_core_zone_attive','zones') or [] %}
+
+          {% if profilo == 'nessuno' or stato not in ['armed', 'arming'] %}
+            false
+          {% else %}
+            {% set ns = namespace(found=false) %}
+            {% for sensor in states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined') %}
+              {% set zone_sensor = sensor.attributes.zone %}
+              {% if zone_sensor | select('in', zone_attive) | list | length > 0 %}
+                {% set ns.found = true %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.found }}
+          {% endif %}
+
+        attributes:
+          profilo: "{{ states('input_select.allarme_core_profilo') }}"
+          stato_allarme: "{{ states('input_select.allarme_core_stato') }}"
+          zone_attive: "{{ state_attr('sensor.allarme_core_zone_attive','zones') or [] }}"
+
+          sensori_aperti: >
+            {% set profilo = states('input_select.allarme_core_profilo') %}
+            {% set stato = states('input_select.allarme_core_stato') %}
+            {% set zone_attive = state_attr('sensor.allarme_core_zone_attive','zones') or [] %}
+
+            {% if profilo == 'nessuno' or stato not in ['armed', 'arming'] %}
+              []
+            {% else %}
+              {% set ns = namespace(sensori=[]) %}
+              {% for sensor in states.binary_sensor
+                | selectattr('entity_id','search','binary_sensor.allarme_core_')
+                | selectattr('state','eq','on')
+                | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+                | selectattr('attributes.zone','defined') %}
+                {% set zone_sensor = sensor.attributes.zone %}
+                {% if zone_sensor | select('in', zone_attive) | list | length > 0 %}
+                  {% set ns.sensori = ns.sensori + [{
+                    'entity_id': sensor.entity_id,
+                    'nome': sensor.attributes.friendly_name,
+                    'zone': zone_sensor
+                  }] %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.sensori }}
+            {% endif %}
+          
+          sensori_aperti_ids: >
+            {% set profilo = states('input_select.allarme_core_profilo') %}
+            {% set stato = states('input_select.allarme_core_stato') %}
+            {% set zone_attive = state_attr('sensor.allarme_core_zone_attive','zones') or [] %}
+
+            {% if profilo == 'nessuno' or stato not in ['armed', 'arming'] %}
+              []
+            {% else %}
+              {% set ns = namespace(ids=[]) %}
+              {% for sensor in states.binary_sensor
+                | selectattr('entity_id','search','binary_sensor.allarme_core_')
+                | selectattr('state','eq','on')
+                | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+                | selectattr('attributes.zone','defined') %}
+                {% set zone_sensor = sensor.attributes.zone %}
+                {% if zone_sensor | select('in', zone_attive) | list | length > 0 %}
+                  {% set ns.ids = ns.ids + [sensor.entity_id] %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.ids }}
+            {% endif %}
+          
+          conteggio: >
+            {{ this.attributes.sensori_aperti_ids | length if this.attributes.sensori_aperti_ids is defined else 0 }}
+
+
+#sensore binario per zone attive che indica se ci sono sensori accesi su quella determinata zona
+      - name: "Allarme Core Zona Sera"
+        unique_id: allarme_core_zona_sera
+        state: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined')
+              | selectattr('attributes.zone','contains','sera')
+              | list | count > 0
+          }}
+      - name: "Allarme Core Zona Giorno"
+        unique_id: allarme_core_zona_giorno
+        state: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined')
+              | selectattr('attributes.zone','contains','giorno')
+              | list | count > 0
+          }}
+      - name: "Allarme Core Zona Perimetrali"
+        unique_id: allarme_core_zona_perimetrali
+        state: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined')
+              | selectattr('attributes.zone','contains','perimetrali')
+              | list | count > 0
+          }}
+      - name: "Allarme Core Zona Volumetrici"
+        unique_id: allarme_core_zona_volumetrici
+        state: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined')
+              | selectattr('attributes.zone','contains','volumetrici')
+              | list | count > 0
+          }}
+      - name: "Allarme Core Zona Notte"
+        unique_id: allarme_core_zona_notte
+        state: >
+          {{
+            states.binary_sensor
+              | selectattr('entity_id','search','binary_sensor.allarme_core_')
+              | selectattr('state','eq','on')
+              | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+              | selectattr('attributes.zone','defined')
+              | selectattr('attributes.zone','contains','notte')
+              | list | count > 0
+          }}
+#-------------------------------------------------------------------------------------------------------------
+
+
+

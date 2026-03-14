@@ -1,0 +1,392 @@
+template:
+  - binary_sensor:
+
+    - name: "allarme_core_finestra_camera_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_finestra_camera_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_camera_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_camera_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_finestra_ufficio_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_finestra_ufficio_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_ufficio_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_ufficio_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_finestra_doccia_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_finestra_doccia_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_doccia_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_doccia_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_finestra_sala_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_finestra_sala_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_sala_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_sala_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_porta_ingresso_sala_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_porta_ingresso_sala_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_finestra_studio_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_finestra_studio_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_studio_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_studio_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_finestra_tecp1_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_finestra_tecp1_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_tecp1_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_tecp1_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_porta_ingresso_tecp1_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_porta_ingresso_tecp1_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_armadio_tecp1_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_armadio_tecp1_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+
+
+
+    - name: "allarme_core_finestre_taverna_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_finestre_taverna_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_taverna_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_taverna_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_corridoio_taverna_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_corridoio_taverna_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_porta_ingresso_taverna_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_porta_ingresso_taverna_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_vibrazione_ingresso_taverna_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_vibrazione_ingresso_taverna_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    
+    - name: "allarme_core_finestra_cucina_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_finestra_cucina_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_cucina_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_cucina_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_finestra_lavanderia_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_finestra_lavanderia_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_lavanderia_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_lavanderia_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_finestra_bagno_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_finestra_bagno_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_bagno_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_bagno_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_finestra_tecpt_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_finestra_tecpt_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_tecpt_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_tecpt_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_porta_ingresso_tecpt_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_porta_ingresso_tecpt_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_armadio_tecpt_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_armadio_tecpt_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+
+
+
+
+          
+    - name: "allarme_core_movimento_solaio_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_solaio_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+
+
+
+
+    - name: "allarme_core_movimento_esterno_box_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_esterno_box_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_esterno_giardino_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_esterno_giardino_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_esterno_dietro_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_esterno_dietro_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_esterno_davanti_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_esterno_davanti_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_porta_ingresso_locale_attrezzi_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_porta_ingresso_locale_attrezzi_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    - name: "allarme_core_movimento_locale_attrezzi_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_movimento_locale_attrezzi_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+
+    - name: "allarme_core_porta_caldaia_esterna_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_porta_caldaia_esterna_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_porta_sottoscala_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_porta_sottoscala_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+    
+    - name: "allarme_core_porta_gas_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_porta_gas_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}

@@ -1,0 +1,162 @@
+# ============================================================================
+# SAFETY CORE - LOG
+# Stesso pattern di allarme_core_log.yaml:
+#   - entity fittizia input_text.safety_core_logbook_event per filtrare Logbook
+#   - script safety_core_logbook_emit per scrivere log in modo uniforme
+#   - script safety_core_snapshot_cameras per snapshot telecamere
+#   - template sensor per timeline render e contatori
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# ENTITY FITTIZIE per filtrare la Logbook card in UI
+# ----------------------------------------------------------------------------
+input_text:
+  safety_core_logbook_event:
+    name: "Safety Core Logbook Event"
+    max: 255
+  safety_core_logbook_ultimo_evento:
+    name: "Safety Core Logbook Ultimo Evento"
+    max: 255
+
+
+# ----------------------------------------------------------------------------
+# SCRIPT
+# ----------------------------------------------------------------------------
+script:
+
+  # Emette un evento nel Logbook HA e aggiorna l'entity ultimo_evento
+  # Chiamata da tutte le automazioni con: msg: "testo"
+  safety_core_logbook_emit:
+    alias: "Safety Core - Emit Logbook Event"
+    mode: queued
+    max: 50
+    fields:
+      msg:
+        description: "Messaggio evento"
+    sequence:
+      - service: logbook.log
+        data:
+          name: "Safety Core"
+          entity_id: input_text.safety_core_logbook_event
+          message: "{{ msg | string }}"
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.safety_core_logbook_ultimo_evento
+          value: "{{ msg | string }}"
+
+  # Aggiunge una nota manuale al log
+  safety_core_logbook_nota:
+    alias: "Safety Core - Nota Logbook"
+    icon: mdi:note-plus
+    mode: queued
+    max: 50
+    fields:
+      nota:
+        description: "Testo nota"
+        example: "Test sensore fumo cucina"
+    sequence:
+      - service: script.safety_core_logbook_emit
+        data:
+          msg: "📝 Nota: {{ nota | string }}"
+
+  # Cancella tutte le timeline var
+  safety_core_logbook_cancella_tutto:
+    alias: "Safety Core - Cancella Tutto Logbook"
+    icon: mdi:delete
+    mode: queued
+    max: 50
+    sequence:
+      - service: var.set
+        data:
+          entity_id:
+            - var.safety_core_timeline_md
+            - var.safety_core_timeline_critici_md
+            - var.safety_core_timeline_note_md
+            - var.safety_core_timeline_operazioni_md
+          value: ""
+          attributes:
+            long_state: ""
+
+  # Snapshot telecamere — identico ad allarme_core, cartella dedicata safety
+  safety_core_snapshot_cameras:
+    alias: "Safety Core - Snapshot Cameras"
+    mode: queued
+    max: 50
+    fields:
+      cameras:
+        description: "Lista entity_id camera"
+      tag:
+        description: "Tag nel nome file (es. fumo_cucina)"
+    sequence:
+      - variables:
+          ts: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
+          cams: "{{ cameras if cameras is iterable else [] }}"
+      - repeat:
+          for_each: "{{ cams }}"
+          sequence:
+            - service: camera.snapshot
+              data:
+                entity_id: "{{ repeat.item }}"
+                filename: "/config/www/safety_core_snapshots/{{ ts }}_{{ tag | regex_replace('[^a-zA-Z0-9_-]', '_') }}_{{ repeat.item.split('.')[1] }}.jpg"
+
+
+# ----------------------------------------------------------------------------
+# TEMPLATE SENSOR — timeline render e contatori (stesso pattern allarme_core)
+# ----------------------------------------------------------------------------
+template:
+  - sensor:
+
+    - name: "Safety Core Sensori Attivazione Nomi"
+      unique_id: safety_core_sensori_attivazione_nomi
+      state: >
+        {% set raw = states('var.safety_core_sensori_attivazione_var') %}
+        {% set ids = raw.split(', ') | map('trim') | reject('equalto','') | list %}
+        {% if ids | length == 0 %}
+          nessuno
+        {% else %}
+          {% set ns = namespace(nomi=[]) %}
+          {% for id in ids %}
+            {% set nome = state_attr(id,'friendly_name') | default('') %}
+            {% set nome_pulito = nome | replace('Safety Core ','') %}
+            {% set ns.nomi = ns.nomi + [nome_pulito] %}
+          {% endfor %}
+          {{ ns.nomi | join(', ') }}
+        {% endif %}
+
+    - name: "Safety Core – Timeline Render"
+      state: ""
+      attributes:
+        long_state: >
+          {% set src = state_attr('var.safety_core_timeline_md','long_state') | default('', true) | string %}
+          {% set lines = src.split('\n')
+            | map('trim')
+            | reject('equalto','')
+            | list %}
+          {% set out = namespace(v=[]) %}
+          {% for l in lines[:20] %}
+            {% if '🚨' in l %}
+              {% set out.v = out.v + ['🔴 ' ~ l] %}
+            {% elif '✅' in l %}
+              {% set out.v = out.v + ['🟢 ' ~ l] %}
+            {% elif '📝' in l %}
+              {% set out.v = out.v + ['⚫ ' ~ l] %}
+            {% else %}
+              {% set out.v = out.v + ['🔵 ' ~ l] %}
+            {% endif %}
+          {% endfor %}
+          {{ out.v | join('\n') }}
+
+    - name: "Safety Core – Count Critici"
+      state: >
+        {% set s = state_attr('var.safety_core_timeline_critici_md','long_state') | default('', true) | string %}
+        {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
+
+    - name: "Safety Core – Count Operazioni"
+      state: >
+        {% set s = state_attr('var.safety_core_timeline_operazioni_md','long_state') | default('', true) | string %}
+        {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
+
+    - name: "Safety Core – Count Note"
+      state: >
+        {% set s = state_attr('var.safety_core_timeline_note_md','long_state') | default('', true) | string %}
+        {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
