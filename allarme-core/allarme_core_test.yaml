@@ -1,0 +1,96 @@
+# ============================================================================
+# ALLARME CORE — MODALITÀ TEST
+# Permette di testare il flusso completo (sensori → Node-RED → triggered)
+# senza far scattare conseguenze fisiche (sirene, notifiche, relay).
+#
+# Il flag input_boolean.allarme_core_modalita_test viene letto da Node-RED
+# prima di eseguire azioni con effetti reali.
+# Il timeout è configurabile tramite input_number.allarme_core_test_timeout_minuti.
+#
+# RESILIENZA AL RIAVVIO: l'automazione di timeout usa platform: template
+# (non delay) + platform: homeassistant event: start come rete di sicurezza.
+# Il delay morirebbe al riavvio HA; questo pattern no.
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# FLAG E CONFIGURAZIONE
+# ----------------------------------------------------------------------------
+input_boolean:
+  allarme_core_modalita_test:
+    name: "Allarme Core - Modalità Test"
+    icon: mdi:test-tube
+
+input_number:
+  allarme_core_test_timeout_minuti:
+    name: "Allarme Core - Timeout Test"
+    min: 5
+    max: 120
+    step: 5
+    initial: 30
+    unit_of_measurement: min
+    icon: mdi:timer
+
+input_datetime:
+  allarme_core_test_attivato_alle:
+    name: "Allarme Core - Test Attivato Alle"
+    has_date: true
+    has_time: true
+
+# ----------------------------------------------------------------------------
+# SCRIPT
+# ----------------------------------------------------------------------------
+script:
+
+  allarme_core_attiva_test_mode:
+    alias: "Allarme Core - Attiva Modalità Test"
+    icon: mdi:test-tube
+    mode: single
+    sequence:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.allarme_core_modalita_test
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.allarme_core_test_attivato_alle
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: >
+            🧪 Modalità Test ATTIVATA —
+            timeout {{ states('input_number.allarme_core_test_timeout_minuti') | int }} min
+
+  allarme_core_disattiva_test_mode:
+    alias: "Allarme Core - Disattiva Modalità Test"
+    icon: mdi:test-tube-off
+    mode: single
+    sequence:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.allarme_core_modalita_test
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: "🧪 Modalità Test DISATTIVATA"
+
+# ----------------------------------------------------------------------------
+# SENSOR — minuti rimanenti prima della disattivazione automatica
+# ----------------------------------------------------------------------------
+template:
+  - sensor:
+      - name: "Allarme Core Test Minuti Rimanenti"
+        unique_id: allarme_core_test_minuti_rimanenti
+        unit_of_measurement: "min"
+        icon: mdi:timer-outline
+        state: >
+          {% if is_state('input_boolean.allarme_core_modalita_test', 'on') %}
+            {% set attivato = states('input_datetime.allarme_core_test_attivato_alle') %}
+            {% if attivato not in ['unknown', 'unavailable', ''] %}
+              {% set timeout = states('input_number.allarme_core_test_timeout_minuti') | int(30) %}
+              {% set elapsed = (now() - (attivato | as_datetime | as_local)).total_seconds() / 60 %}
+              {{ [timeout - elapsed | int, 0] | max }}
+            {% else %}
+              0
+            {% endif %}
+          {% else %}
+            0
+          {% endif %}

@@ -133,3 +133,52 @@ automation:
             - var.allarme_core_sensori_attivazione_allarme_var
           value: >
             {{ aperti | join(', ') }}
+
+  # Disattiva automaticamente la modalità test.
+  # Due trigger per coprire tutti i casi:
+  #  - timeout_scaduto: template rivalutato da HA periodicamente e al boot.
+  #    Se il timeout è già scaduto quando HA si riavvia, scatta immediatamente.
+  #  - riavvio_ha: se HA riavvia con il flag attivo, disattiva subito.
+  #    Il delay morirebbe al riavvio — questo trigger è la rete di sicurezza.
+  - alias: "Allarme Core - Auto-disattiva modalità test al timeout"
+    id: allarme_core_aut_test_auto_disattiva
+    mode: single
+    trigger:
+      - platform: template
+        id: timeout_scaduto
+        value_template: >
+          {% if is_state('input_boolean.allarme_core_modalita_test', 'on') %}
+            {% set attivato = states('input_datetime.allarme_core_test_attivato_alle') %}
+            {% if attivato not in ['unknown', 'unavailable', ''] %}
+              {% set timeout = states('input_number.allarme_core_test_timeout_minuti') | int(30) %}
+              {% set elapsed = (now() - (attivato | as_datetime | as_local)).total_seconds() / 60 %}
+              {{ elapsed >= timeout }}
+            {% else %}
+              false
+            {% endif %}
+          {% else %}
+            false
+          {% endif %}
+      - platform: homeassistant
+        id: riavvio_ha
+        event: start
+    condition:
+      - condition: state
+        entity_id: input_boolean.allarme_core_modalita_test
+        state: "on"
+    action:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: riavvio_ha
+            sequence:
+              - service: script.allarme_core_logbook_emit
+                data:
+                  msg: "🧪 Modalità Test DISATTIVATA — riavvio HA rilevato (timer perso)"
+              - service: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.allarme_core_modalita_test
+        default:
+          - service: script.turn_on
+            target:
+              entity_id: script.allarme_core_disattiva_test_mode

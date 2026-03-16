@@ -124,6 +124,73 @@ sections:
         entity: var.allarme_core_sensori_attivazione_allarme_var
         vertical: false
         features_position: bottom
+      - type: heading
+        heading: Modalità Test
+        heading_style: title
+        icon: mdi:test-tube
+      - type: tile
+        entity: input_boolean.allarme_core_modalita_test
+        name: Test Mode
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: >
+            {% set on = is_state('input_boolean.allarme_core_modalita_test','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'orange' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.allarme_core_test_minuti_rimanenti
+        name: Scade tra
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+      - type: tile
+        entity: input_number.allarme_core_test_timeout_minuti
+        name: Timeout
+        vertical: false
+        features_position: bottom
+        features:
+          - type: numeric-input
+            mode: slider
+        grid_options:
+          columns: 4
+          rows: 1
+      - type: tile
+        entity: script.allarme_core_attiva_test_mode
+        name: Attiva Test
+        icon: mdi:test-tube
+        vertical: false
+        tap_action:
+          action: call-service
+          service: script.turn_on
+          target:
+            entity_id: script.allarme_core_attiva_test_mode
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+      - type: tile
+        entity: script.allarme_core_disattiva_test_mode
+        name: Disattiva Test
+        icon: mdi:test-tube-off
+        vertical: false
+        tap_action:
+          action: call-service
+          service: script.turn_on
+          target:
+            entity_id: script.allarme_core_disattiva_test_mode
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
   - type: grid
     cards:
       - type: heading
@@ -2676,8 +2743,18 @@ sections:
           endif %}
 header:
   card:
-    type: markdown
-    content: |
-      # Configurazione Allarme
+    type: conditional
+    conditions:
+      - condition: state
+        entity: input_boolean.allarme_core_modalita_test
+        state: "on"
+    card:
+      type: markdown
+      content: >
+        <ha-alert alert-type="warning">
+        🧪 **MODALITÀ TEST ATTIVA** —
+        {{ states('sensor.allarme_core_test_minuti_rimanenti') }} min rimanenti.
+        Sirene e notifiche sono disabilitate in Node-RED.
+        </ha-alert>
 badges: []
 cards: []

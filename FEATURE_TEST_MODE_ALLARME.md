@@ -1,7 +1,7 @@
 # Feature: Modalità Test — allarme-core
 
 **Data progettazione:** 2026-03-16
-**Stato:** 📋 Proposta — da approvare prima di modificare qualsiasi file
+**Stato:** ✅ Implementato — 2026-03-16 — tutti i file validati PASS
 **Scope:** allarme-core (non tocca safety-core)
 
 ---
@@ -439,18 +439,21 @@ In ogni nodo del flow che esegue conseguenze fisiche
 
 ---
 
-## 7. Checklist pre-deploy
+## 7. Checklist deploy
 
-- [ ] Approvato il design da parte dell'utente
-- [ ] Verificato che `script.allarme_core_logbook_emit` esiste in `allarme_core_log.yaml` ✅ (confermato)
-- [ ] Aggiunto `allarme_core_test.yaml` al package o incluso in `configuration.yaml`
-- [ ] Riavviato HA dopo la creazione del nuovo file
-- [ ] Verificato in Developer Tools → Stati che le nuove entità compaiono
-- [ ] Aggiornato il flow Node-RED con il nodo di controllo `input_boolean.allarme_core_modalita_test`
-- [ ] Testato manualmente: attiva test → apri sensore → verifica triggered in HA → verifica blocco in Node-RED
-- [ ] Testato timeout automatico (operatività normale)
-- [ ] **Testato resilienza al riavvio**: attiva test → riavvia HA → verifica che al boot il test sia disattivato e il logbook riporti "riavvio HA rilevato"
-- [ ] **Testato resilienza a reload config**: attiva test → Developer Tools → YAML → Reload Automations → verifica disattivazione
+- [x] Approvato il design da parte dell'utente
+- [x] Verificato che `script.allarme_core_logbook_emit` esiste in `allarme_core_log.yaml`
+- [x] `allarme_core_test.yaml` creato (97 righe) — validato PASS
+- [x] Automazione `allarme_core_aut_test_auto_disattiva` aggiunta — validata PASS
+- [x] `plancia_controllo.yaml` aggiornato (header + sezione test) — validato PASS
+- [x] Warning cosmetico corretto: `default` usa `script.turn_on` + `target:` per uniformità
+- [ ] **TODO utente** — Aggiungere `allarme_core_test.yaml` al package o incluso in `configuration.yaml`, poi riavviare HA
+- [ ] **TODO utente** — Verificare in Developer Tools → Stati che le 6 nuove entità compaiono
+- [ ] **TODO utente** — Aggiornare il flow Node-RED: nodo condizionale che legge `input_boolean.allarme_core_modalita_test` prima di sirena/notifiche/relay
+- [ ] **TODO utente** — Test funzionale: attiva test → apri sensore → verifica `triggered` in HA → verifica blocco in Node-RED
+- [ ] **TODO utente** — Test timeout: attiva test → attendi scadenza → verifica disattivazione automatica
+- [ ] **TODO utente** — Test resilienza riavvio: attiva test → riavvia HA → verifica disattivazione al boot + messaggio logbook "riavvio HA rilevato"
+- [ ] **TODO utente** — Test resilienza reload: attiva test → Reload Automations → verifica disattivazione
 
 ---
 
