@@ -1,4 +1,22 @@
 automation:
+  # FIX AC-BUG-05: automazione che imposta input_datetime.allarme_core_arming_started
+  # al momento esatto in cui inizia la fase di arming. Questo timestamp è usato dal sensore
+  # "Allarme Core Sensori Aperti Filtrati" nell'attributo availability per determinare
+  # se la var dei sensori esclusi è stata aggiornata dopo l'inizio dell'arming.
+  - alias: "Allarme Core - Registra timestamp inizio arming"
+    id: allarme_core_aut_registra_arming_started
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "arming"
+    action:
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.allarme_core_arming_started
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+
   - alias: "Allarme Core - Reset sensori esclusi al disarm"
     id: allarme_core_aut_reset_sensori_esclusi
     trigger:
@@ -7,9 +25,11 @@ automation:
         to: "disarmed"
 
     action:
+      # FIX AC-BUG-01 (residuo): entity_id spostato da data: a target: anche qui
       - service: input_text.set_value
-        data:
+        target:
           entity_id: input_text.allarme_core_sensori_esclusi
+        data:
           value: "[]"
 
   - alias: "Allarme Core - Memorizza sensori esclusi all'arming"
@@ -33,9 +53,11 @@ automation:
         timeout: "00:00:15"
         continue_on_timeout: true  # Continua anche se non diventa on, per sicurezza
 
+      # FIX AC-BUG-01 (residuo): entity_id spostato da data: a target: anche qui
       - service: input_text.set_value
-        data:
+        target:
           entity_id: input_text.allarme_core_sensori_esclusi
+        data:
           value: >
             {% set sensori = state_attr('binary_sensor.allarme_core_sensori_aperti_su_profilo_attivo', 'sensori_aperti_ids') %}
             {{ sensori | default([]) | to_json }}
@@ -94,9 +116,15 @@ automation:
         to: "triggered"
     variables:
       aperti: "{{ state_attr('sensor.allarme_core_sensori_aperti_filtrati', 'sensori_aperti_ids') or [] }}"
+      # FIX AC-BUG-03: map('state_attr','friendly_name') non è un filtro Jinja2 valido su lista di stringhe.
+      # Sostituito con loop esplicito che usa state_attr(eid, 'friendly_name').
       aperti_nomi: >
         {% set ids = state_attr('sensor.allarme_core_sensori_aperti_filtrati', 'sensori_aperti_ids') | default([]) %}
-        {{ ids | map('state_attr', 'friendly_name') | list }}
+        {% set ns = namespace(nomi=[]) %}
+        {% for eid in ids %}
+          {% set ns.nomi = ns.nomi + [state_attr(eid, 'friendly_name') | default(eid)] %}
+        {% endfor %}
+        {{ ns.nomi }}
       ts: "{{ now().isoformat() }}"
     action:
       - service: var.set

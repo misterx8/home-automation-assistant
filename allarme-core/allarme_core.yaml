@@ -17,9 +17,11 @@ script:
           option: armed
   disarm_allarme_core:
     sequence:
+      # FIX AC-BUG-01: entity_id spostato da data: a target: (sintassi deprecata causava failure silenzioso)
       - service: input_select.select_option
-        data:
+        target:
           entity_id: input_select.allarme_core_stato
+        data:
           option: disarmed
 
 
@@ -74,6 +76,16 @@ input_text:
   allarme_core_sensori_esclusi:
     name: Sensori esclusi all'attivazione
     max: 255
+
+# FIX AC-BUG-05: input_datetime mancante — era referenziato nell'availability del sensore
+# "Allarme Core Sensori Aperti Filtrati" ma non era definito in nessun file del progetto.
+# Senza questa entity, arming_ts era sempre none e il sensore risultava unavailable
+# durante lo stato 'arming'. L'automazione di set è in allarme_core_automazioni.yaml.
+input_datetime:
+  allarme_core_arming_started:
+    name: "Allarme Core - Timestamp Inizio Arming"
+    has_date: true
+    has_time: true
 
 template:
   - sensor:

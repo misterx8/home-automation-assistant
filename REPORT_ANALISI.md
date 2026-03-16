@@ -1,8 +1,11 @@
 # Report di Analisi — allarme-core & safety-core
 
-**Data:** 2026-03-16
+**Data analisi:** 2026-03-16
+**Ultima modifica:** 2026-03-16
 **Agenti utilizzati:** homeassistant-debugger (x2), homeassistant-automation-engineer
 **File analizzati:** 11 file YAML tra i due progetti
+
+> **Legenda stato:** ✅ Corretto · 🔴 Aperto · 🟡 Parzialmente corretto
 
 ---
 
@@ -21,20 +24,17 @@
 
 ---
 
-### AC-BUG-01 · CRITICO — `disarm_allarme_core`: `entity_id` dentro `data` invece di `target`
-**File:** `allarme_core.yaml` righe 20–23
+### ✅ AC-BUG-01 · CRITICO — `disarm_allarme_core`: `entity_id` dentro `data` invece di `target`
+**File:** `allarme_core.yaml` · `allarme_core_automazioni.yaml`
+**Stato:** CORRETTO il 2026-03-16
 
-Il disarmo dell'allarme usa una sintassi deprecata dal 2022.x che in versioni recenti di HA causa un **failure silenzioso**: lo script viene eseguito senza errori ma lo stato non cambia. Il disarmo potrebbe non funzionare.
+Il disarmo dell'allarme usava una sintassi deprecata dal 2022.x che in versioni recenti di HA causa un **failure silenzioso**: lo script viene eseguito senza errori ma lo stato non cambia.
+
+**Fix applicato** in 3 punti: script `disarm_allarme_core`, automazione reset sensori esclusi al disarm, automazione memorizza sensori esclusi. `entity_id` spostato da `data:` a `target:` in tutti e tre.
 
 ```yaml
-# ERRATO (attuale)
+# CORRETTO (applicato)
 - service: input_select.select_option
-  data:
-    entity_id: input_select.allarme_core_stato   # ← entity_id in data è deprecato
-    option: disarmed
-
-# CORRETTO
-- action: input_select.select_option
   target:
     entity_id: input_select.allarme_core_stato
   data:
@@ -52,19 +52,16 @@ Le automazioni `allarme_core_aut_memorizza_sensori_esclusi` e `allarme_core_aut_
 
 ---
 
-### AC-BUG-03 · CRITICO — `map('state_attr', 'friendly_name')` su lista di stringhe non funziona
-**File:** `allarme_core_automazioni.yaml` righe 97–99
+### ✅ AC-BUG-03 · CRITICO — `map('state_attr', 'friendly_name')` su lista di stringhe non funziona
+**File:** `allarme_core_automazioni.yaml`
+**Stato:** CORRETTO il 2026-03-16
+
+`map('state_attr', 'friendly_name')` non è un filtro Jinja2 valido su una lista di stringhe. La variabile `aperti_nomi` risultava sempre vuota.
+
+**Fix applicato:** sostituito con loop esplicito `for eid in ids` con `state_attr(eid, 'friendly_name') | default(eid)`.
 
 ```yaml
-aperti_nomi: >
-  {% set ids = state_attr('sensor.allarme_core_sensori_aperti_filtrati', 'sensori_aperti_ids') | default([]) %}
-  {{ ids | map('state_attr', 'friendly_name') | list }}
-```
-
-`map('state_attr', 'friendly_name')` non è un filtro Jinja2 valido su una lista di stringhe. La variabile `aperti_nomi` risulta sempre vuota, rendendo inutilizzabili i nomi leggibili nei log.
-
-```yaml
-# CORRETTO
+# CORRETTO (applicato)
 aperti_nomi: >
   {% set ids = state_attr('sensor.allarme_core_sensori_aperti_filtrati', 'sensori_aperti_ids') | default([]) %}
   {% set ns = namespace(nomi=[]) %}
@@ -76,37 +73,32 @@ aperti_nomi: >
 
 ---
 
-### AC-BUG-04 · CRITICO — Indentazione errata nei sensori template di `allarme_core_log.yaml`
-**File:** `allarme_core_log.yaml` righe 398–401
+### ✅ AC-BUG-04 · CRITICO — Indentazione errata nei sensori template di `allarme_core_log.yaml`
+**File:** `allarme_core_log.yaml`
+**Stato:** CORRETTO il 2026-03-16
 
-I sensori template (`Timeline Render`, `Count Critici`, `Count Operazioni`, `Count Note`) sono indentati a 4 spazi invece di 6:
+I sensori template (`Timeline Render`, `Count Critici`, `Count Operazioni`, `Count Note`) erano indentati a 4 spazi invece di 6 — HA non li caricava, la UI della timeline era completamente non funzionante.
 
-```yaml
-# ERRATO
-template:
-  - sensor:
-    - name: "Allarme Core – Timeline Render"   # ← 4 spazi: non viene caricato
-
-# CORRETTO
-template:
-  - sensor:
-      - name: "Allarme Core – Timeline Render"  # ← 6 spazi
-```
-
-**Impatto:** Tutti i sensori della timeline non vengono caricati da HA. La UI della timeline è completamente non funzionante.
+**Fix applicato:** corretta l'indentazione a 6 spazi. Aggiunti contestualmente i `unique_id` mancanti a tutti e 4 i sensori (`allarme_core_timeline_render`, `allarme_core_count_critici`, `allarme_core_count_operazioni`, `allarme_core_count_note`).
 
 ---
 
-### AC-BUG-05 · CRITICO — `input_datetime.allarme_core_arming_started` non definito in nessun file
-**File:** `allarme_core.yaml` riga 216
+### ✅ AC-BUG-05 · CRITICO — `input_datetime.allarme_core_arming_started` non definito in nessun file
+**File:** `allarme_core.yaml` · `allarme_core_automazioni.yaml`
+**Stato:** CORRETTO il 2026-03-16
 
-Il sensore `Allarme Core Sensori Aperti Filtrati` usa questa entity nell'attributo `availability`:
+Il sensore `Allarme Core Sensori Aperti Filtrati` usava questa entity nell'attributo `availability` ma non era definita da nessuna parte. Durante lo stato `arming`, il sensore risultava sempre `unavailable`.
 
+**Fix applicato in 2 parti:**
+1. Aggiunto blocco `input_datetime` in `allarme_core.yaml`:
 ```yaml
-{% set arming_ts = as_timestamp(states('input_datetime.allarme_core_arming_started')) %}
+input_datetime:
+  allarme_core_arming_started:
+    name: "Allarme Core - Timestamp Inizio Arming"
+    has_date: true
+    has_time: true
 ```
-
-Questa entity non è definita in nessuno dei file del progetto. Durante lo stato `arming`, la condizione `arming_ts is not none` sarà sempre `false`, rendendo il sensore `unavailable` proprio quando serve. Va creato l'`input_datetime` e un'automazione che lo imposti quando lo stato passa ad `arming`.
+2. Aggiunta automazione `allarme_core_aut_registra_arming_started` in `allarme_core_automazioni.yaml` che imposta il datetime al momento esatto in cui lo stato passa ad `arming`.
 
 ---
 
@@ -477,26 +469,26 @@ Automazione settimanale che:
 
 ### Fase 1 — Correzioni Bloccanti (da fare subito)
 
-| ID | Descrizione | File |
-|----|-------------|------|
-| AC-BUG-01 | Correggere `disarm_allarme_core` con `target:` | `allarme_core.yaml` |
-| AC-BUG-02 | Rimuovere trigger `to: armed` dalla memorizzazione esclusi | `allarme_core_automazioni.yaml` |
-| AC-BUG-04 | Correggere indentazione sensori timeline | `allarme_core_log.yaml` |
-| AC-BUG-05 | Creare `input_datetime.allarme_core_arming_started` + automazione | nuovo file |
-| SC-BUG-01 | Correggere logica acqua su 8 sensori (falsi allarmi) | `safety_core_sensori.yaml` |
-| SC-BUG-02 | Correggere pattern regex camera su 19 `input_text` | `safety_core_sensori.yaml` |
+| ID | Descrizione | File | Stato |
+|----|-------------|------|-------|
+| AC-BUG-01 | Correggere `disarm_allarme_core` con `target:` | `allarme_core.yaml` + `allarme_core_automazioni.yaml` | ✅ Corretto 2026-03-16 |
+| AC-BUG-02 | Rimuovere trigger `to: armed` dalla memorizzazione esclusi | `allarme_core_automazioni.yaml` | 🔴 Aperto |
+| AC-BUG-04 | Correggere indentazione sensori timeline + aggiungere `unique_id` | `allarme_core_log.yaml` | ✅ Corretto 2026-03-16 |
+| AC-BUG-05 | Creare `input_datetime.allarme_core_arming_started` + automazione | `allarme_core.yaml` + `allarme_core_automazioni.yaml` | ✅ Corretto 2026-03-16 |
+| SC-BUG-01 | Correggere logica acqua su 8 sensori (falsi allarmi) | `safety_core_sensori.yaml` | 🔴 Aperto |
+| SC-BUG-02 | Correggere pattern regex camera su 19 `input_text` | `safety_core_sensori.yaml` | 🔴 Aperto |
 
 ### Fase 2 — Correzioni Importanti (entro breve)
 
-| ID | Descrizione |
-|----|-------------|
-| AC-BUG-03 | Fix `map('state_attr')` errato |
-| AC-BUG-06 / SC-BUG-08 | Migrazione da `service:` ad `action:` (tutto il codice) |
-| AC-BUG-08 | Aggiungere `id` e `mode: queued` a `UI Timeline Append` |
-| AC-BUG-10 | Aggiungere `unique_id` ai 35+ sensori in `allarme_core_supporto.yaml` |
-| SC-BUG-03 | Esternalizzare IP Frigate (FEAT-05) |
-| SC-BUG-06 | Documentare l'include delle var |
-| SC-BUG-07 | Fix attributo `camera` con split su stringa vuota |
+| ID | Descrizione | Stato |
+|----|-------------|-------|
+| AC-BUG-03 | Fix `map('state_attr')` errato | ✅ Corretto 2026-03-16 |
+| AC-BUG-06 / SC-BUG-08 | Migrazione da `service:` ad `action:` (tutto il codice) | 🔴 Aperto |
+| AC-BUG-08 | Aggiungere `id` e `mode: queued` a `UI Timeline Append` | 🔴 Aperto |
+| AC-BUG-10 | Aggiungere `unique_id` ai 35+ sensori in `allarme_core_supporto.yaml` | 🔴 Aperto |
+| SC-BUG-03 | Esternalizzare IP Frigate (FEAT-05) | 🔴 Aperto |
+| SC-BUG-06 | Documentare l'include delle var | 🔴 Aperto |
+| SC-BUG-07 | Fix attributo `camera` con split su stringa vuota | 🔴 Aperto |
 
 ### Fase 3 — Nuove Funzionalità (pianificazione)
 
@@ -518,12 +510,12 @@ Automazione settimanale che:
 
 ## Riepilogo Numerico
 
-| Categoria | Critico | Medio | Basso | Totale |
-|-----------|---------|-------|-------|--------|
-| allarme-core | 6 | 5 | 1 | **12** |
-| safety-core | 3 | 5 | 3 | **11** |
-| **Totale bug** | **9** | **10** | **4** | **23** |
-| Nuove funzionalità raccomandate | — | — | — | **12** |
+| Categoria | Critico | Medio | Basso | Totale | Corretti |
+|-----------|---------|-------|-------|--------|----------|
+| allarme-core | 6 | 5 | 1 | **12** | ✅ 4 (AC-BUG-01, 03, 04, 05) |
+| safety-core | 3 | 5 | 3 | **11** | — |
+| **Totale bug** | **9** | **10** | **4** | **23** | **4 corretti / 19 aperti** |
+| Nuove funzionalità raccomandate | — | — | — | **12** | — |
 
 ---
 

@@ -397,42 +397,50 @@ automation:
 
 template:
   - sensor:
-    - name: "Allarme Core – Timeline Render"
-      state: ""
-      attributes:
-        long_state: >
-          {% set src = state_attr('var.allarme_core_timeline_md','long_state') | default('', true) | string %}
-          {% set lines = src.split('\n')
-            | map('trim')
-            | reject('equalto','')
-            | list %}
-          {% set out = namespace(v=[]) %}
-          {% for l in lines[:20] %}
-            {% if '🚨' in l %}
-              {% set out.v = out.v + ['🔴 ' ~ l] %}
-            {% elif '🔒' in l %}
-              {% set out.v = out.v + ['🟢 ' ~ l] %}
-            {% elif '🔓' in l %}
-              {% set out.v = out.v + ['⚪ ' ~ l] %}
-            {% elif '🔐' in l %}
-              {% set out.v = out.v + ['🟡 ' ~ l] %}
-            {% elif '📝' in l %}
-              {% set out.v = out.v + ['⚫ ' ~ l] %}
-            {% else %}
-              {% set out.v = out.v + ['🔵 ' ~ l] %}
-            {% endif %}
-          {% endfor %}
-          {{ out.v | join('\n') }}
+    # FIX AC-BUG-04: sensori indentati a 4 spazi invece di 6 → HA non li caricava.
+    # Corretta l'indentazione a 6 spazi (livello corretto sotto "- sensor:").
+      # FIX AC-BUG-04 (residuo): aggiunto unique_id a tutti e 4 i sensori template
+      # (segnalato dal debugger di validazione — senza unique_id non gestibili via UI HA)
+      - name: "Allarme Core – Timeline Render"
+        unique_id: allarme_core_timeline_render
+        state: ""
+        attributes:
+          long_state: >
+            {% set src = state_attr('var.allarme_core_timeline_md','long_state') | default('', true) | string %}
+            {% set lines = src.split('\n')
+              | map('trim')
+              | reject('equalto','')
+              | list %}
+            {% set out = namespace(v=[]) %}
+            {% for l in lines[:20] %}
+              {% if '🚨' in l %}
+                {% set out.v = out.v + ['🔴 ' ~ l] %}
+              {% elif '🔒' in l %}
+                {% set out.v = out.v + ['🟢 ' ~ l] %}
+              {% elif '🔓' in l %}
+                {% set out.v = out.v + ['⚪ ' ~ l] %}
+              {% elif '🔐' in l %}
+                {% set out.v = out.v + ['🟡 ' ~ l] %}
+              {% elif '📝' in l %}
+                {% set out.v = out.v + ['⚫ ' ~ l] %}
+              {% else %}
+                {% set out.v = out.v + ['🔵 ' ~ l] %}
+              {% endif %}
+            {% endfor %}
+            {{ out.v | join('\n') }}
 
-    - name: "Allarme Core – Count Critici"
-      state: >
-        {% set s = state_attr('var.allarme_core_timeline_critici_md','long_state') | default('', true) | string %}
-        {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
-    - name: "Allarme Core – Count Operazioni"
-      state: >
-        {% set s = state_attr('var.allarme_core_timeline_operazioni_md','long_state') | default('', true) | string %}
-        {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
-    - name: "Allarme Core – Count Note"
-      state: >
-        {% set s = state_attr('var.allarme_core_timeline_note_md','long_state') | default('', true) | string %}
-        {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
+      - name: "Allarme Core – Count Critici"
+        unique_id: allarme_core_count_critici
+        state: >
+          {% set s = state_attr('var.allarme_core_timeline_critici_md','long_state') | default('', true) | string %}
+          {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
+      - name: "Allarme Core – Count Operazioni"
+        unique_id: allarme_core_count_operazioni
+        state: >
+          {% set s = state_attr('var.allarme_core_timeline_operazioni_md','long_state') | default('', true) | string %}
+          {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
+      - name: "Allarme Core – Count Note"
+        unique_id: allarme_core_count_note
+        state: >
+          {% set s = state_attr('var.allarme_core_timeline_note_md','long_state') | default('', true) | string %}
+          {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
