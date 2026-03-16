@@ -214,9 +214,16 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_gas_cucina_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_gas_abilitato') %}
-            {% set fisico = states('binary_sensor.gas_cucina_vd4') %} {% set
-            border_color = 'green' if (enabled == 'on' and cat == 'on') else
-            'red' %} ha-card {
+            {% set fisico = states('binary_sensor.gas_cucina_vd4') %}
+            {% set sensore = states('binary_sensor.safety_core_gas_cucina') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
               padding-left: 12px;
@@ -256,9 +263,16 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_gas_caldaia_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_gas_abilitato') %}
-            {% set fisico = states('binary_sensor.gas_caldaia_vd4') %} {% set
-            border_color = 'green' if (enabled == 'on' and cat == 'on') else
-            'red' %} ha-card {
+            {% set fisico = states('binary_sensor.gas_caldaia_vd4') %}
+            {% set sensore = states('binary_sensor.safety_core_gas_caldaia') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
               padding-left: 12px;
@@ -298,9 +312,16 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_gas_studio_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_gas_abilitato') %}
-            {% set fisico = states('binary_sensor.sensore_gas_studio') %} {% set
-            border_color = 'green' if (enabled == 'on' and cat == 'on') else
-            'red' %} ha-card {
+            {% set fisico = states('binary_sensor.sensore_gas_studio') %}
+            {% set sensore = states('binary_sensor.safety_core_gas_studio') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
               padding-left: 12px;
@@ -346,8 +367,15 @@ sections:
             set cat =
             states('input_boolean.safety_core_categoria_carbonio_abilitato') %}
             {% set fisico = states('binary_sensor.sensore_carbonio_taverna') %}
-            {% set border_color = 'green' if (enabled == 'on' and cat == 'on')
-            else 'red' %} ha-card {
+            {% set sensore = states('binary_sensor.safety_core_carbonio_taverna') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
               padding-left: 12px;
@@ -391,15 +419,31 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_vasca_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_acqua_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_acqua_vasca') %} {%
-            set border_color = 'green' if (enabled == 'on' and cat == 'on') else
-            'red' %} ha-card { border-radius: 30px; box-shadow: 0 0 0 2px {{
-            border_color }}; padding-left: 12px; position: relative; } {% if
-            enabled == 'off' or cat == 'off' %} ha-card::after { content: "🔕";
-            position: absolute; top: 12px; right: 12px; font-size: 1.2em; } {%
-            elif fisico in ['unknown','unavailable'] %} ha-card::after {
-            content: "⚠️"; position: absolute; top: 12px; right: 12px;
-            font-size: 1.2em; } {% endif %}
+            %} {% set fisico = states('binary_sensor.sensore_acqua_vasca') %}
+            {% set sensore = states('binary_sensor.safety_core_acqua_vasca') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            } {% if enabled == 'off' or cat == 'off' %} ha-card::after {
+              content: "🔕";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
       - type: tile
         entity: binary_sensor.safety_core_acqua_bagno
         name: Bagno
@@ -424,15 +468,31 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_bagno_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_acqua_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_acqua_bagno') %} {%
-            set border_color = 'green' if (enabled == 'on' and cat == 'on') else
-            'red' %} ha-card { border-radius: 30px; box-shadow: 0 0 0 2px {{
-            border_color }}; padding-left: 12px; position: relative; } {% if
-            enabled == 'off' or cat == 'off' %} ha-card::after { content: "🔕";
-            position: absolute; top: 12px; right: 12px; font-size: 1.2em; } {%
-            elif fisico in ['unknown','unavailable'] %} ha-card::after {
-            content: "⚠️"; position: absolute; top: 12px; right: 12px;
-            font-size: 1.2em; } {% endif %}
+            %} {% set fisico = states('binary_sensor.sensore_acqua_bagno') %}
+            {% set sensore = states('binary_sensor.safety_core_acqua_bagno') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            } {% if enabled == 'off' or cat == 'off' %} ha-card::after {
+              content: "🔕";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
       - type: tile
         entity: binary_sensor.safety_core_acqua_cucina_principale
         name: Cucina Principale
@@ -459,14 +519,31 @@ sections:
             %} {% set cat =
             states('input_boolean.safety_core_categoria_acqua_abilitato') %} {%
             set fisico = states('binary_sensor.sensore_acqua_cucina_principale')
-            %} {% set border_color = 'green' if (enabled == 'on' and cat ==
-            'on') else 'red' %} ha-card { border-radius: 30px; box-shadow: 0 0 0
-            2px {{ border_color }}; padding-left: 12px; position: relative; } {%
-            if enabled == 'off' or cat == 'off' %} ha-card::after { content:
-            "🔕"; position: absolute; top: 12px; right: 12px; font-size: 1.2em;
+            %}
+            {% set sensore = states('binary_sensor.safety_core_acqua_cucina_principale') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            } {% if enabled == 'off' or cat == 'off' %} ha-card::after {
+              content: "🔕";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
             } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
-            content: "⚠️"; position: absolute; top: 12px; right: 12px;
-            font-size: 1.2em; } {% endif %}
+              content: "⚠️";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
       - type: tile
         entity: binary_sensor.safety_core_acqua_doccia
         name: Doccia
@@ -492,14 +569,30 @@ sections:
             states('input_boolean.safety_core_acqua_doccia_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_acqua_abilitato')
             %} {% set fisico = states('binary_sensor.sensore_acqua_doccia') %}
-            {% set border_color = 'green' if (enabled == 'on' and cat == 'on')
-            else 'red' %} ha-card { border-radius: 30px; box-shadow: 0 0 0 2px
-            {{ border_color }}; padding-left: 12px; position: relative; } {% if
-            enabled == 'off' or cat == 'off' %} ha-card::after { content: "🔕";
-            position: absolute; top: 12px; right: 12px; font-size: 1.2em; } {%
-            elif fisico in ['unknown','unavailable'] %} ha-card::after {
-            content: "⚠️"; position: absolute; top: 12px; right: 12px;
-            font-size: 1.2em; } {% endif %}
+            {% set sensore = states('binary_sensor.safety_core_acqua_doccia') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            } {% if enabled == 'off' or cat == 'off' %} ha-card::after {
+              content: "🔕";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
       - type: tile
         entity: binary_sensor.safety_core_acqua_lavanderia
         name: Lavanderia
@@ -525,15 +618,31 @@ sections:
             states('input_boolean.safety_core_acqua_lavanderia_abilitato') %} {%
             set cat =
             states('input_boolean.safety_core_categoria_acqua_abilitato') %} {%
-            set fisico = states('binary_sensor.sensore_acqua_lavanderia') %} {%
-            set border_color = 'green' if (enabled == 'on' and cat == 'on') else
-            'red' %} ha-card { border-radius: 30px; box-shadow: 0 0 0 2px {{
-            border_color }}; padding-left: 12px; position: relative; } {% if
-            enabled == 'off' or cat == 'off' %} ha-card::after { content: "🔕";
-            position: absolute; top: 12px; right: 12px; font-size: 1.2em; } {%
-            elif fisico in ['unknown','unavailable'] %} ha-card::after {
-            content: "⚠️"; position: absolute; top: 12px; right: 12px;
-            font-size: 1.2em; } {% endif %}
+            set fisico = states('binary_sensor.sensore_acqua_lavanderia') %}
+            {% set sensore = states('binary_sensor.safety_core_acqua_lavanderia') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            } {% if enabled == 'off' or cat == 'off' %} ha-card::after {
+              content: "🔕";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
       - type: tile
         entity: binary_sensor.safety_core_acqua_lavello_cucina
         name: Lavello Cucina
@@ -560,14 +669,30 @@ sections:
             %} {% set cat =
             states('input_boolean.safety_core_categoria_acqua_abilitato') %} {%
             set fisico = states('binary_sensor.sensore_acqua_lavello_cucina') %}
-            {% set border_color = 'green' if (enabled == 'on' and cat == 'on')
-            else 'red' %} ha-card { border-radius: 30px; box-shadow: 0 0 0 2px
-            {{ border_color }}; padding-left: 12px; position: relative; } {% if
-            enabled == 'off' or cat == 'off' %} ha-card::after { content: "🔕";
-            position: absolute; top: 12px; right: 12px; font-size: 1.2em; } {%
-            elif fisico in ['unknown','unavailable'] %} ha-card::after {
-            content: "⚠️"; position: absolute; top: 12px; right: 12px;
-            font-size: 1.2em; } {% endif %}
+            {% set sensore = states('binary_sensor.safety_core_acqua_lavello_cucina') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            } {% if enabled == 'off' or cat == 'off' %} ha-card::after {
+              content: "🔕";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
       - type: tile
         entity: binary_sensor.safety_core_acqua_studio
         name: Studio
@@ -593,14 +718,30 @@ sections:
             states('input_boolean.safety_core_acqua_studio_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_acqua_abilitato')
             %} {% set fisico = states('binary_sensor.sensore_acqua_studio') %}
-            {% set border_color = 'green' if (enabled == 'on' and cat == 'on')
-            else 'red' %} ha-card { border-radius: 30px; box-shadow: 0 0 0 2px
-            {{ border_color }}; padding-left: 12px; position: relative; } {% if
-            enabled == 'off' or cat == 'off' %} ha-card::after { content: "🔕";
-            position: absolute; top: 12px; right: 12px; font-size: 1.2em; } {%
-            elif fisico in ['unknown','unavailable'] %} ha-card::after {
-            content: "⚠️"; position: absolute; top: 12px; right: 12px;
-            font-size: 1.2em; } {% endif %}
+            {% set sensore = states('binary_sensor.safety_core_acqua_studio') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            } {% if enabled == 'off' or cat == 'off' %} ha-card::after {
+              content: "🔕";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
       - type: tile
         entity: binary_sensor.safety_core_acqua_stufa
         name: Stufa
@@ -625,15 +766,31 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_stufa_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_acqua_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_acqua_stufa') %} {%
-            set border_color = 'green' if (enabled == 'on' and cat == 'on') else
-            'red' %} ha-card { border-radius: 30px; box-shadow: 0 0 0 2px {{
-            border_color }}; padding-left: 12px; position: relative; } {% if
-            enabled == 'off' or cat == 'off' %} ha-card::after { content: "🔕";
-            position: absolute; top: 12px; right: 12px; font-size: 1.2em; } {%
-            elif fisico in ['unknown','unavailable'] %} ha-card::after {
-            content: "⚠️"; position: absolute; top: 12px; right: 12px;
-            font-size: 1.2em; } {% endif %}
+            %} {% set fisico = states('binary_sensor.sensore_acqua_stufa') %}
+            {% set sensore = states('binary_sensor.safety_core_acqua_stufa') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            } {% if enabled == 'off' or cat == 'off' %} ha-card::after {
+              content: "🔕";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
       - type: tile
         entity: binary_sensor.safety_core_acqua_tecnologico_pt
         name: Tecnologico PT
@@ -660,14 +817,30 @@ sections:
             %} {% set cat =
             states('input_boolean.safety_core_categoria_acqua_abilitato') %} {%
             set fisico = states('binary_sensor.sensore_acqua_tecnologico_pt') %}
-            {% set border_color = 'green' if (enabled == 'on' and cat == 'on')
-            else 'red' %} ha-card { border-radius: 30px; box-shadow: 0 0 0 2px
-            {{ border_color }}; padding-left: 12px; position: relative; } {% if
-            enabled == 'off' or cat == 'off' %} ha-card::after { content: "🔕";
-            position: absolute; top: 12px; right: 12px; font-size: 1.2em; } {%
-            elif fisico in ['unknown','unavailable'] %} ha-card::after {
-            content: "⚠️"; position: absolute; top: 12px; right: 12px;
-            font-size: 1.2em; } {% endif %}
+            {% set sensore = states('binary_sensor.safety_core_acqua_tecnologico_pt') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            } {% if enabled == 'off' or cat == 'off' %} ha-card::after {
+              content: "🔕";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px; right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
       - type: heading
         heading_style: title
         heading: Sensori Fumo
@@ -696,9 +869,16 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_fumo_studio_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_fumo_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_fumo_studio') %} {%
-            set border_color = 'green' if (enabled == 'on' and cat == 'on') else
-            'red' %} ha-card {
+            %} {% set fisico = states('binary_sensor.sensore_fumo_studio') %}
+            {% set sensore = states('binary_sensor.safety_core_fumo_studio') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
               padding-left: 12px;
@@ -739,8 +919,15 @@ sections:
             states('input_boolean.safety_core_fumo_ufficio_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_fumo_abilitato')
             %} {% set fisico = states('binary_sensor.sensore_fumo_ufficio') %}
-            {% set border_color = 'green' if (enabled == 'on' and cat == 'on')
-            else 'red' %} ha-card {
+            {% set sensore = states('binary_sensor.safety_core_fumo_ufficio') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
               padding-left: 12px;
@@ -782,8 +969,15 @@ sections:
             {% set cat =
             states('input_boolean.safety_core_categoria_fumo_abilitato') %} {%
             set fisico = states('binary_sensor.sensore_fumo_tecnologico_p1') %}
-            {% set border_color = 'green' if (enabled == 'on' and cat == 'on')
-            else 'red' %} ha-card {
+            {% set sensore = states('binary_sensor.safety_core_fumo_tecnologico_p1') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
               padding-left: 12px;
@@ -823,9 +1017,16 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_fumo_cucina_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_fumo_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_fumo_cucina') %} {%
-            set border_color = 'green' if (enabled == 'on' and cat == 'on') else
-            'red' %} ha-card {
+            %} {% set fisico = states('binary_sensor.sensore_fumo_cucina') %}
+            {% set sensore = states('binary_sensor.safety_core_fumo_cucina') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
               padding-left: 12px;
@@ -865,9 +1066,16 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_fumo_solaio_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_fumo_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_fumo_solaio') %} {%
-            set border_color = 'green' if (enabled == 'on' and cat == 'on') else
-            'red' %} ha-card {
+            %} {% set fisico = states('binary_sensor.sensore_fumo_solaio') %}
+            {% set sensore = states('binary_sensor.safety_core_fumo_solaio') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
               padding-left: 12px;
@@ -909,8 +1117,15 @@ sections:
             {% set cat =
             states('input_boolean.safety_core_categoria_fumo_abilitato') %} {%
             set fisico = states('binary_sensor.sensore_fumo_tecnologico_pt') %}
-            {% set border_color = 'green' if (enabled == 'on' and cat == 'on')
-            else 'red' %} ha-card {
+            {% set sensore = states('binary_sensor.safety_core_fumo_tecnologico_pt') %}
+            {% if enabled == 'off' or cat == 'off' %}
+              {% set border_color = 'grey' %}
+            {% elif sensore == 'on' %}
+              {% set border_color = 'red' %}
+            {% else %}
+              {% set border_color = 'green' %}
+            {% endif %}
+            ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
               padding-left: 12px;
@@ -949,8 +1164,9 @@ sections:
         grid_options:
           columns: 6
           rows: 1
-        entity: script.safety_core_logbook_nota
+        entity: script.safety_core_logbook_nota_da_ui
         name: Aggiungi Nota
+        icon: mdi:note-plus
         vertical: false
         tap_action:
           action: call-service
@@ -960,7 +1176,10 @@ sections:
             content:
               type: entities
               entities:
-                - entity: script.safety_core_logbook_nota
+                - entity: input_text.safety_core_nota_manuale
+                  name: Testo della nota
+                - entity: script.safety_core_logbook_nota_da_ui
+                  name: Salva nota
         features_position: bottom
       - type: custom:timeline-card
         title: 🛡️ Safety Core – Stato & Eventi

@@ -17,6 +17,10 @@ input_text:
   safety_core_logbook_ultimo_evento:
     name: "Safety Core Logbook Ultimo Evento"
     max: 255
+  safety_core_nota_manuale:
+    name: "Safety Core - Nota Manuale"
+    max: 255
+    icon: mdi:note-text
 
 
 # ----------------------------------------------------------------------------
@@ -58,6 +62,26 @@ script:
       - service: script.safety_core_logbook_emit
         data:
           msg: "📝 Nota: {{ nota | string }}"
+
+  # Salva la nota scritta nel campo UI input_text.safety_core_nota_manuale
+  safety_core_logbook_nota_da_ui:
+    alias: "Safety Core - Salva Nota da UI"
+    icon: mdi:content-save
+    mode: queued
+    max: 50
+    sequence:
+      - variables:
+          testo: "{{ states('input_text.safety_core_nota_manuale') | trim }}"
+      - condition: template
+        value_template: "{{ testo | length > 0 }}"
+      - service: script.safety_core_logbook_emit
+        data:
+          msg: "📝 Nota: {{ testo }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.safety_core_nota_manuale
+        data:
+          value: ""
 
   # Cancella tutte le timeline var
   safety_core_logbook_cancella_tutto:

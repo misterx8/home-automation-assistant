@@ -2544,7 +2544,7 @@ sections:
         heading: Log
       - type: tile
         grid_options:
-          columns: 12
+          columns: 6
           rows: 1
         entity: script.allarme_core_logbook_cancella_tutto
         name: Cancella tutti i log
@@ -2553,6 +2553,27 @@ sections:
           action: toggle
         icon_tap_action:
           action: toggle
+        features_position: bottom
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: script.allarme_core_logbook_nota_da_ui
+        name: Aggiungi Nota
+        icon: mdi:note-plus
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Aggiungi nota al log
+            content:
+              type: entities
+              entities:
+                - entity: input_text.allarme_core_nota_manuale
+                  name: Testo della nota
+                - entity: script.allarme_core_logbook_nota_da_ui
+                  name: Salva nota
         features_position: bottom
       - type: custom:timeline-card
         title: 🛡️ Allarme Core – Stato & Eventi
