@@ -214,15 +214,18 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_gas_cucina_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_gas_abilitato') %}
-            {% set fisico = states('binary_sensor.gas_cucina_vd4') %}
             {% set sensore = states('binary_sensor.safety_core_gas_cucina') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -233,7 +236,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -263,15 +266,18 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_gas_caldaia_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_gas_abilitato') %}
-            {% set fisico = states('binary_sensor.gas_caldaia_vd4') %}
             {% set sensore = states('binary_sensor.safety_core_gas_caldaia') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -282,7 +288,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -312,15 +318,18 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_gas_studio_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_gas_abilitato') %}
-            {% set fisico = states('binary_sensor.sensore_gas_studio') %}
             {% set sensore = states('binary_sensor.safety_core_gas_studio') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -331,7 +340,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -366,15 +375,18 @@ sections:
             states('input_boolean.safety_core_carbonio_taverna_abilitato') %} {%
             set cat =
             states('input_boolean.safety_core_categoria_carbonio_abilitato') %}
-            {% set fisico = states('binary_sensor.sensore_carbonio_taverna') %}
             {% set sensore = states('binary_sensor.safety_core_carbonio_taverna') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -385,7 +397,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -419,15 +431,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_vasca_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_acqua_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_acqua_vasca') %}
+            %}
             {% set sensore = states('binary_sensor.safety_core_acqua_vasca') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -438,7 +454,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -468,15 +484,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_bagno_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_acqua_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_acqua_bagno') %}
+            %}
             {% set sensore = states('binary_sensor.safety_core_acqua_bagno') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -487,7 +507,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -517,17 +537,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_cucina_principale_abilitato')
             %} {% set cat =
-            states('input_boolean.safety_core_categoria_acqua_abilitato') %} {%
-            set fisico = states('binary_sensor.sensore_acqua_cucina_principale')
-            %}
+            states('input_boolean.safety_core_categoria_acqua_abilitato') %}
             {% set sensore = states('binary_sensor.safety_core_acqua_cucina_principale') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -538,7 +560,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -568,15 +590,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_doccia_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_acqua_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_acqua_doccia') %}
+            %}
             {% set sensore = states('binary_sensor.safety_core_acqua_doccia') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -587,7 +613,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -617,16 +643,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_lavanderia_abilitato') %} {%
             set cat =
-            states('input_boolean.safety_core_categoria_acqua_abilitato') %} {%
-            set fisico = states('binary_sensor.sensore_acqua_lavanderia') %}
+            states('input_boolean.safety_core_categoria_acqua_abilitato') %}
             {% set sensore = states('binary_sensor.safety_core_acqua_lavanderia') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -637,7 +666,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -667,16 +696,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_lavello_cucina_abilitato')
             %} {% set cat =
-            states('input_boolean.safety_core_categoria_acqua_abilitato') %} {%
-            set fisico = states('binary_sensor.sensore_acqua_lavello_cucina') %}
+            states('input_boolean.safety_core_categoria_acqua_abilitato') %}
             {% set sensore = states('binary_sensor.safety_core_acqua_lavello_cucina') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -687,7 +719,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -717,15 +749,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_studio_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_acqua_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_acqua_studio') %}
+            %}
             {% set sensore = states('binary_sensor.safety_core_acqua_studio') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -736,7 +772,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -766,15 +802,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_stufa_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_acqua_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_acqua_stufa') %}
+            %}
             {% set sensore = states('binary_sensor.safety_core_acqua_stufa') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -785,7 +825,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -815,16 +855,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_acqua_tecnologico_pt_abilitato')
             %} {% set cat =
-            states('input_boolean.safety_core_categoria_acqua_abilitato') %} {%
-            set fisico = states('binary_sensor.sensore_acqua_tecnologico_pt') %}
+            states('input_boolean.safety_core_categoria_acqua_abilitato') %}
             {% set sensore = states('binary_sensor.safety_core_acqua_tecnologico_pt') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -835,7 +878,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -869,15 +912,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_fumo_studio_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_fumo_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_fumo_studio') %}
+            %}
             {% set sensore = states('binary_sensor.safety_core_fumo_studio') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -888,7 +935,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -918,15 +965,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_fumo_ufficio_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_fumo_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_fumo_ufficio') %}
+            %}
             {% set sensore = states('binary_sensor.safety_core_fumo_ufficio') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -937,7 +988,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -967,16 +1018,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_fumo_tecnologico_p1_abilitato') %}
             {% set cat =
-            states('input_boolean.safety_core_categoria_fumo_abilitato') %} {%
-            set fisico = states('binary_sensor.sensore_fumo_tecnologico_p1') %}
+            states('input_boolean.safety_core_categoria_fumo_abilitato') %}
             {% set sensore = states('binary_sensor.safety_core_fumo_tecnologico_p1') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -987,7 +1041,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -1017,15 +1071,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_fumo_cucina_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_fumo_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_fumo_cucina') %}
+            %}
             {% set sensore = states('binary_sensor.safety_core_fumo_cucina') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -1036,7 +1094,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -1066,15 +1124,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_fumo_solaio_abilitato') %} {% set
             cat = states('input_boolean.safety_core_categoria_fumo_abilitato')
-            %} {% set fisico = states('binary_sensor.sensore_fumo_solaio') %}
+            %}
             {% set sensore = states('binary_sensor.safety_core_fumo_solaio') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -1085,7 +1147,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
@@ -1115,16 +1177,19 @@ sections:
             {% set enabled =
             states('input_boolean.safety_core_fumo_tecnologico_pt_abilitato') %}
             {% set cat =
-            states('input_boolean.safety_core_categoria_fumo_abilitato') %} {%
-            set fisico = states('binary_sensor.sensore_fumo_tecnologico_pt') %}
+            states('input_boolean.safety_core_categoria_fumo_abilitato') %}
             {% set sensore = states('binary_sensor.safety_core_fumo_tecnologico_pt') %}
-            {% if enabled == 'off' or cat == 'off' %}
-              {% set border_color = 'grey' %}
-            {% elif sensore == 'on' %}
-              {% set border_color = 'red' %}
-            {% else %}
-              {% set border_color = 'green' %}
+            {# Anomalia fisico: legge sensore_origine dal wrapper tramite config.entity.
+               Stesso approccio dinamico della plancia allarme-core — nessun entity hardcoded. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
             {% endif %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: grigio=disabilitato | rosso=allarme | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'grey' if (enabled == 'off' or cat == 'off') else ('red' if sensore == 'on' else ('orange' if fisico_anomalo else 'green')) %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ border_color }};
@@ -1135,7 +1200,7 @@ sections:
               position: absolute;
               top: 12px; right: 12px;
               font-size: 1.2em;
-            } {% elif fisico in ['unknown','unavailable'] %} ha-card::after {
+            } {% elif fisico_anomalo %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 12px; right: 12px;
