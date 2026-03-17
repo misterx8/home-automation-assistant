@@ -912,7 +912,7 @@ template:
       unique_id: allarme_core_movimento_lavanderia
       device_class: motion
       state: >
-          {% set porta = states('binary_sensor.pir_lavanderia') %}
+          {% set porta = states('binary_sensor.pir_lavanderia_filare') %}
           {% set abilitato = is_state('input_boolean.allarme_core_movimento_lavanderia_abilitato','on') %}
           {% if porta in ['on','off'] %}
             {% if abilitato %}
@@ -924,7 +924,7 @@ template:
             off
           {% endif %}
       attributes:
-        sensore_origine: binary_sensor.pir_lavanderia
+        sensore_origine: binary_sensor.pir_lavanderia_filare
 
         tipo: volumetrico
         priorita: media

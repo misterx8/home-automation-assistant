@@ -237,7 +237,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -249,6 +265,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -294,7 +316,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -306,6 +344,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -351,7 +395,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -363,6 +423,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -412,7 +478,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -424,6 +506,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -469,7 +557,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -481,6 +585,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -530,7 +640,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -542,6 +668,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -588,7 +720,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -600,6 +748,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -649,7 +803,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -661,6 +831,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -706,7 +882,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -718,6 +910,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -767,7 +965,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -779,6 +993,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -824,7 +1044,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -836,6 +1072,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -887,7 +1129,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -899,6 +1157,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -944,7 +1208,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -956,6 +1236,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1001,7 +1287,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1013,6 +1315,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1058,7 +1366,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1070,6 +1394,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1119,7 +1449,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1131,6 +1477,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1188,7 +1540,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1200,6 +1568,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1245,7 +1619,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1257,6 +1647,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1303,7 +1699,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1315,6 +1727,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1363,7 +1781,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1375,6 +1809,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1423,7 +1863,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1435,6 +1891,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1483,7 +1945,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1495,6 +1973,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1544,7 +2028,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1556,6 +2056,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1601,7 +2107,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1613,6 +2135,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1662,7 +2190,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1674,6 +2218,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1719,7 +2269,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1731,6 +2297,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1782,7 +2354,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1794,6 +2382,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1841,7 +2435,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1853,6 +2463,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1904,7 +2520,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1916,6 +2548,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -1961,7 +2599,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -1973,6 +2627,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -2018,7 +2678,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -2030,6 +2706,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -2075,7 +2757,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -2087,6 +2785,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -2144,7 +2848,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -2156,6 +2876,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -2208,7 +2934,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -2220,6 +2962,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -2272,7 +3020,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -2284,6 +3048,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -2336,7 +3106,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -2348,6 +3134,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -2401,7 +3193,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -2413,6 +3221,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -2461,7 +3275,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -2473,6 +3303,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -2524,7 +3360,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -2536,6 +3388,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;
@@ -2580,7 +3438,23 @@ sections:
             {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
             invalid_camera = camera in ['unknown','unavailable',''] %}
 
-            {% set border_color = 'green' if enabled == 'on' else 'red' %}
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
               border-radius: 30px;
@@ -2592,6 +3466,12 @@ sections:
             /* badge icona warning / errore */ {% if errore == 'off' %}
             ha-card::after {
               content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
               position: absolute;
               top: 12px;
               right: 12px;

@@ -1,0 +1,100 @@
+# ============================================================================
+# ALLARME CORE — AUTOMAZIONI LOGGING ANOMALIE SENSORI FISICI
+# File: allarme_core_anomalie_automazioni.yaml
+#
+# Scopo:
+#   Rileva e logga quando i sensori fisici sottostanti ai wrapper template
+#   di allarme-core entrano in stato 'unknown' o 'unavailable', e quando
+#   tornano a funzionare normalmente.
+#
+# Dipendenze:
+#   - binary_sensor.allarme_core_anomalia_rilevata  (allarme_core_anomalie_sensori.yaml)
+#   - script.allarme_core_logbook_emit              (allarme_core_log.yaml)
+#
+# Pattern:
+#   Trigger su binary_sensor aggregato → variables per comporre il messaggio
+#   → chiamata allo script di log esistente.
+#   Il for: 15s filtra i transitori brevissimi che si verificano al riavvio
+#   di Home Assistant o su glitch di rete momentanei.
+# ============================================================================
+
+automation:
+
+  # --------------------------------------------------------------------------
+  # 1. ANOMALIA RILEVATA
+  # Scatta quando uno o più sensori fisici di allarme-core diventano
+  # unknown/unavailable e lo rimangono per almeno 15 secondi.
+  # Elenca i sensori coinvolti con il relativo stato nel messaggio di log.
+  # --------------------------------------------------------------------------
+  - id: allarme_core_log_anomalia_sensori_fisici
+    alias: "Allarme Core - Log Anomalia Sensori Fisici"
+    description: >
+      Logga l'anomalia quando binary_sensor.allarme_core_anomalia_rilevata
+      passa a on (per almeno 15 secondi). Elenca i sensori fisici coinvolti
+      con il relativo stato (unknown/unavailable).
+    mode: single
+
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.allarme_core_anomalia_rilevata
+        to: "on"
+        for:
+          seconds: 15
+
+    condition:
+      # Verifica ridondante: il sensore deve essere ancora on dopo il for.
+      # Protegge da race condition in cui il sensore torna off prima dell'esecuzione.
+      - condition: state
+        entity_id: binary_sensor.allarme_core_anomalia_rilevata
+        state: "on"
+
+    variables:
+      # Recupera la lista di dizionari {fisico, wrapper, stato} dall'attributo.
+      # | default([]) protegge il caso in cui state_attr restituisce None
+      # (es. primo avvio HA, sensore non ancora valutato).
+      lista_anomali: >
+        {{ state_attr('binary_sensor.allarme_core_anomalia_rilevata', 'sensori_anomali') | default([]) }}
+      contatore: "{{ lista_anomali | count }}"
+      ts: "{{ now().strftime('%d/%m %H:%M') }}"
+      # Compone la stringa "fisico1 (stato1), fisico2 (stato2)" dai dizionari.
+      # Usa namespace loop: zip+regex_replace via map non è supportato in HA Jinja2.
+      lista_str: >
+        {% set ns = namespace(parts=[]) %}
+        {% for item in lista_anomali %}
+          {% set ns.parts = ns.parts + [item.fisico ~ ' (' ~ item.stato ~ ')'] %}
+        {% endfor %}
+        {{ ns.parts | join(', ') }}
+
+    action:
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: >
+            🔌 [{{ ts }}] ANOMALIA SENSORI FISICI — {{ contatore }} sensore/i:
+            {{ lista_str if lista_str else 'nessun dettaglio disponibile' }}
+
+
+  # --------------------------------------------------------------------------
+  # 2. RIPRISTINO SENSORI FISICI
+  # Scatta quando tutti i sensori fisici di allarme-core tornano disponibili
+  # (il sensore aggregato torna da on a off).
+  # --------------------------------------------------------------------------
+  - id: allarme_core_log_ripristino_sensori_fisici
+    alias: "Allarme Core - Log Ripristino Sensori Fisici"
+    description: >
+      Logga il ripristino quando binary_sensor.allarme_core_anomalia_rilevata
+      torna a off. Indica che tutti i sensori fisici sono di nuovo normali.
+    mode: single
+
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.allarme_core_anomalia_rilevata
+        from: "on"
+        to: "off"
+
+    variables:
+      ts: "{{ now().strftime('%d/%m %H:%M') }}"
+
+    action:
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: "✅ [{{ ts }}] Sensori fisici allarme ripristinati — tutti normali"

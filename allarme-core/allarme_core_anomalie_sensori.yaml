@@ -1,0 +1,182 @@
+# ============================================================================
+# ALLARME CORE — RILEVAMENTO ANOMALIE SENSORI FISICI
+# File: allarme_core_anomalie_sensori.yaml
+#
+# Scopo:
+#   Monitora lo stato dei sensori fisici sottostanti ai wrapper template di
+#   allarme-core. Un sensore è considerato "anomalo" quando il suo stato non
+#   è né 'on' né 'off' (es. 'unknown' o 'unavailable'), il che indica un
+#   malfunzionamento hardware o una perdita di comunicazione col dispositivo.
+#
+# Sensori prodotti:
+#   - binary_sensor.allarme_core_anomalia_rilevata
+#       Aggrega le anomalie di tutti i wrapper allarme-core iterando
+#       dinamicamente su binary_sensor.allarme_core_* ed estraendo
+#       i sensori fisici dagli attributi sensore_origine / sensori_origine.
+#
+# Dipendenze:
+#   - allarme_core_sensori.yaml  (wrapper binary_sensor.allarme_core_*)
+#
+# Indentazione: 2 spazi
+# ============================================================================
+
+template:
+  - binary_sensor:
+
+    # --------------------------------------------------------------------------
+    # SENSORE: binary_sensor.allarme_core_anomalia_rilevata
+    #
+    # Logica:
+    #   1. Seleziona tutti i binary_sensor il cui entity_id contiene
+    #      "binary_sensor.allarme_core_".
+    #   2. Esclude i wrapper aggregati/supporto che NON contengono un
+    #      riferimento a sensori fisici reali:
+    #        - _attivo       (sensori aggregati di stato)
+    #        - _filtrati     (sensori aperti filtrati per zona/profilo)
+    #        - _zone_valida  (validatori configurazione zona)
+    #        - _aperto       (wrapper stato apertura)
+    #        - _anomalia     (questo stesso sensore, evita ricorsione)
+    #   3. Per ogni wrapper rimanente legge due attributi alternativi:
+    #        a) sensore_origine  → stringa singola (es. "binary_sensor.pir_taverna")
+    #                              usato dai wrapper a sensore fisico unico
+    #        b) sensori_origine  → JSON string con lista di entity_id
+    #                              usato dai wrapper multi-fisico (finestre con
+    #                              2 contatti, vibrazioni con 2 sensori)
+    #   4. Per ogni sensore fisico trovato verifica se lo stato è anomalo
+    #      (non in ['on','off']) e lo aggiunge alla lista accumulata.
+    #   5. Il sensore è 'on' se la lista risultante ha almeno un elemento.
+    #
+    # Attributi:
+    #   sensori_anomali → lista di dizionari {fisico, wrapper, stato}
+    #   contatore       → numero intero di sensori fisici anomali
+    # --------------------------------------------------------------------------
+
+    - name: "Allarme Core Anomalia Rilevata"
+      unique_id: allarme_core_anomalia_rilevata
+      icon: mdi:alert-circle-outline
+
+      state: >
+        {# Namespace Jinja2: necessario per modificare variabili dentro i loop #}
+        {% set ns = namespace(anomali=[]) %}
+
+        {#
+          Itero su tutti i wrapper allarme-core escludendo quelli aggregati.
+          Il pattern 'search' usa regex: il pipe | è OR nel regex,
+          il punto escapato \. evita di matchare altri sensori accidentalmente.
+        #}
+        {% for s in states.binary_sensor
+            | selectattr('entity_id', 'search', 'binary_sensor\.allarme_core_')
+            | rejectattr('entity_id', 'search', '_attivo|_filtrati|_zone_valida|_aperto|_anomalia') %}
+
+          {# --- CASO 1: sensore singolo tramite attributo 'sensore_origine' --- #}
+          {% set fisico_s = state_attr(s.entity_id, 'sensore_origine') %}
+          {% if fisico_s is not none and states(fisico_s) not in ['on', 'off'] %}
+            {# Stato anomalo: aggiunge il dizionario alla lista accumulata #}
+            {% set ns.anomali = ns.anomali + [
+              {
+                'fisico':   fisico_s,
+                'wrapper':  s.entity_id,
+                'stato':    states(fisico_s)
+              }
+            ] %}
+          {% endif %}
+
+          {#
+            --- CASO 2: multi-sensore tramite attributo 'sensori_origine' ---
+            L'attributo contiene una JSON string (salvata con | to_json nel wrapper).
+            Usiamo from_json per parsare la lista di entity_id.
+            Il doppio guard (is string + is iterable) protegge da JSON malformato:
+            se from_json fallisce HA restituisce none, bloccato dal guard successivo.
+          #}
+          {% set fisici_json = state_attr(s.entity_id, 'sensori_origine') %}
+          {% if fisici_json is not none and fisici_json is string %}
+            {# Parsare il JSON string in lista Python #}
+            {% set fisici_lista = fisici_json | from_json %}
+            {# Iteriamo sulla lista solo se il parse ha restituito qualcosa di iterabile #}
+            {% if fisici_lista is iterable and fisici_lista is not string %}
+              {% for fisico_m in fisici_lista %}
+                {% if states(fisico_m) not in ['on', 'off'] %}
+                  {% set ns.anomali = ns.anomali + [
+                    {
+                      'fisico':   fisico_m,
+                      'wrapper':  s.entity_id,
+                      'stato':    states(fisico_m)
+                    }
+                  ] %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          {% endif %}
+
+        {% endfor %}
+
+        {# Il sensore è 'on' se esiste almeno un sensore fisico anomalo #}
+        {{ ns.anomali | count > 0 }}
+
+      attributes:
+
+        # Lista dettagliata dei sensori anomali con riferimento al wrapper
+        # Struttura: [{fisico: entity_id, wrapper: entity_id, stato: string}, ...]
+        sensori_anomali: >
+          {% set ns = namespace(anomali=[]) %}
+          {% for s in states.binary_sensor
+              | selectattr('entity_id', 'search', 'binary_sensor\.allarme_core_')
+              | rejectattr('entity_id', 'search', '_attivo|_filtrati|_zone_valida|_aperto|_anomalia') %}
+
+            {# Caso 1: sensore singolo #}
+            {% set fisico_s = state_attr(s.entity_id, 'sensore_origine') %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on', 'off'] %}
+              {% set ns.anomali = ns.anomali + [
+                {
+                  'fisico':   fisico_s,
+                  'wrapper':  s.entity_id,
+                  'stato':    states(fisico_s)
+                }
+              ] %}
+            {% endif %}
+
+            {# Caso 2: multi-sensore (JSON string) #}
+            {% set fisici_json = state_attr(s.entity_id, 'sensori_origine') %}
+            {% if fisici_json is not none and fisici_json is string %}
+              {% set fisici_lista = fisici_json | from_json %}
+              {% if fisici_lista is iterable and fisici_lista is not string %}
+                {% for fisico_m in fisici_lista %}
+                  {% if states(fisico_m) not in ['on', 'off'] %}
+                    {% set ns.anomali = ns.anomali + [
+                      {
+                        'fisico':   fisico_m,
+                        'wrapper':  s.entity_id,
+                        'stato':    states(fisico_m)
+                      }
+                    ] %}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            {% endif %}
+
+          {% endfor %}
+          {{ ns.anomali }}
+
+        # Numero totale di sensori fisici anomali in allarme-core
+        contatore: >
+          {% set ns = namespace(anomali=[]) %}
+          {% for s in states.binary_sensor
+              | selectattr('entity_id', 'search', 'binary_sensor\.allarme_core_')
+              | rejectattr('entity_id', 'search', '_attivo|_filtrati|_zone_valida|_aperto|_anomalia') %}
+            {% set fisico_s = state_attr(s.entity_id, 'sensore_origine') %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on', 'off'] %}
+              {% set ns.anomali = ns.anomali + [fisico_s] %}
+            {% endif %}
+            {% set fisici_json = state_attr(s.entity_id, 'sensori_origine') %}
+            {% if fisici_json is not none and fisici_json is string %}
+              {% set fisici_lista = fisici_json | from_json %}
+              {% if fisici_lista is iterable and fisici_lista is not string %}
+                {% for fisico_m in fisici_lista %}
+                  {% if states(fisico_m) not in ['on', 'off'] %}
+                    {% set ns.anomali = ns.anomali + [fisico_m] %}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.anomali | count }}
