@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Read(//c/Users/mm_an/.claude/**)"
+      "Read(//c/Users/mm_an/.claude/**)",
+      "Bash(find:*)"
     ]
   }
 }

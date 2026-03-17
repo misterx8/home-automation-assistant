@@ -103,17 +103,19 @@ script:
         description: "Lista entity_id camera"
       tag:
         description: "Tag nel nome file (es. sensore/area)"
+      ts:
+        description: "Timestamp (YYYYMMDD_HHMMSS) - se non fornito usa now()"
     sequence:
       - variables:
-          ts: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
-          cams: "{{ cameras if cameras is iterable else [] }}"
+          ts_use: "{{ ts if (ts is defined and ts | string | length > 0) else now().strftime('%Y%m%d_%H%M%S') }}"
+          cams: "{{ cameras if (cameras is iterable and cameras is not string) else ([cameras] if cameras else []) }}"
       - repeat:
           for_each: "{{ cams }}"
           sequence:
             - service: camera.snapshot
               data:
                 entity_id: "{{ repeat.item }}"
-                filename: "/config/www/allarme_core_snapshots/{{ ts }}_{{ tag | regex_replace('[^a-zA-Z0-9_-]', '_') }}_{{ repeat.item.split('.')[1] }}.jpg"
+                filename: "/config/www/allarme_core_snapshots/{{ ts_use }}_{{ tag | regex_replace('[^a-zA-Z0-9_-]', '_') }}_{{ repeat.item.split('.')[1] }}.jpg"
 
 # ----------------------------------------------------------------------------
 # AUTOMAZIONI: scrivono SOLO tramite lo script (quindi filtrabili al 100%)
@@ -237,83 +239,79 @@ automation:
   - alias: "Allarme Core - Snapshot e clips su Triggered (camere da sensori)"
     id: allarme_core_snapshot_clip_on_triggered
     mode: queued
+    max: 50
     trigger:
       - platform: state
         entity_id: input_select.allarme_core_stato
         to: "triggered"
 
-    variables:
-      raw: "{{ states('var.allarme_core_sensori_attivazione_allarme_var') | default('', true) | string }}"
-      aperti_ids: >
-        {{ (raw | regex_findall('binary_sensor\\.[a-zA-Z0-9_]+')) | unique | list }}
+    action:
+      # Attendi che allarme_core_aut_memorizza_sensori_causa_allarme scriva la var aggiornata
+      - wait_for_trigger:
+          - platform: state
+            entity_id: var.allarme_core_sensori_attivazione_allarme_var
+        timeout: "00:00:05"
+        continue_on_timeout: true
 
-      cams_all: >
-        {% set ns = namespace(out=[]) %}
-        {% for s in aperti_ids %}
-          {% set cams0 = state_attr(s,'camera') | default([], true) %}
-          {% set cams = cams0 if (cams0 is iterable and cams0 is not string) else [cams0] %}
-          {% set cams_norm = cams | map('string') | map('trim') | reject('equalto','') | list %}
-          {% for c in cams_norm %}
-            {% if c.startswith('camera.') %}
-              {% set ns.out = ns.out + [c] %}
-            {% endif %}
-          {% endfor %}
-        {% endfor %}
-        {{ ns.out | unique | list }}
+      # Calcola tutte le variabili DOPO l'aggiornamento della var (non al trigger time)
+      - variables:
+          raw: "{{ states('var.allarme_core_sensori_attivazione_allarme_var') | default('', true) | string }}"
+          aperti_ids: >
+            {{ (raw | regex_findall('binary_sensor\\.[a-zA-Z0-9_-]+')) | unique | list }}
 
-      tag: >
-        {% if aperti_ids|length > 0 %}
-          {{ aperti_ids[0].split('.')[1] }}
-        {% else %}
-          triggered
-        {% endif %}
+          cams_all: >
+            {% set ns = namespace(out=[]) %}
+            {% for s in aperti_ids %}
+              {% set cams0 = state_attr(s,'camera') | default([], true) %}
+              {% set cams = cams0 if (cams0 is iterable and cams0 is not string) else [cams0] %}
+              {% set cams_norm = cams | map('string') | map('trim') | reject('equalto','') | list %}
+              {% for c in cams_norm %}
+                {% if c.startswith('camera.') %}
+                  {% set ns.out = ns.out + [c] %}
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+            {{ ns.out | unique | list }}
 
-      snapshot_urls_json: >
-        {% set ts = now().strftime('%Y%m%d_%H%M%S') %}
-        {% set safe_tag = (tag | string | regex_replace('[^a-zA-Z0-9_-]', '_')) %}
-        {% set ns = namespace(out=[]) %}
-        {% for c in cams_all %}
-          {% set cam = (c | string).split('.')[1] %}
-          {% set ns.out = ns.out + ['/local/allarme_core_snapshots/' ~ ts ~ '_' ~ safe_tag ~ '_' ~ cam ~ '.jpg'] %}
-        {% endfor %}
-        {{ ns.out | to_json }}
+          tag: "{{ aperti_ids[0].split('.')[1] if aperti_ids|length > 0 else 'triggered' }}"
 
-      snapshot_urls_text: >
-        {% set ts = now().strftime('%Y%m%d_%H%M%S') %}
-        {% set safe_tag = (tag | string | regex_replace('[^a-zA-Z0-9_-]', '_')) %}
-        {% set ns = namespace(out=[]) %}
-        {% for c in cams_all %}
-          {% set cam = (c | string).split('.')[1] %}
-          {% set ns.out = ns.out + ['/local/allarme_core_snapshots/' ~ ts ~ '_' ~ safe_tag ~ '_' ~ cam ~ '.jpg'] %}
-        {% endfor %}
-        {{ ns.out | join('\n') }}
+          # Un unico ts condiviso da URL e script → nessun mismatch
+          ts: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
 
-      frigate_base: "http://192.168.2.92:5000"
-      clip_start_ts: "{{ (as_timestamp(now()) - 30) | int }}"
-      clip_end_ts: "{{ (as_timestamp(now()) + 10) | int }}"
+          snapshot_urls_text: >
+            {% set safe_tag = (tag | string | regex_replace('[^a-zA-Z0-9_-]', '_')) %}
+            {% set ns = namespace(out=[]) %}
+            {% for c in cams_all %}
+              {% set cam = (c | string).split('.')[1] %}
+              {% set ns.out = ns.out + ['/local/allarme_core_snapshots/' ~ ts ~ '_' ~ safe_tag ~ '_' ~ cam ~ '.jpg'] %}
+            {% endfor %}
+            {{ ns.out | join('\n') }}
 
-      clips_text: >
-        {% set ns = namespace(out=[]) %}
-        {% for c in cams_all %}
-          {% set cam = state_attr(c,'camera_name') | default('', true) | string | trim %}
-          {% if not cam %}
-            {% set cam = (c | string).split('.')[1] %}
-          {% endif %}
-          {% set ns.out = ns.out + [
-            frigate_base ~ '/api/' ~ cam ~ '/start/' ~ clip_start_ts ~ '/end/' ~ clip_end_ts ~ '/clip.mp4'
-          ] %}
-        {% endfor %}
-        {{ ns.out | join('\n') }}
+          frigate_base: "http://192.168.2.92:5000"
+          clip_start_ts: "{{ (as_timestamp(now()) - 30) | int }}"
+          clip_end_ts: "{{ (as_timestamp(now()) + 10) | int }}"
 
-    condition:
+          clips_text: >
+            {% set ns = namespace(out=[]) %}
+            {% for c in cams_all %}
+              {% set cam = state_attr(c,'camera_name') | default('', true) | string | trim %}
+              {% if not cam %}
+                {% set cam = (c | string).split('.')[1] %}
+              {% endif %}
+              {% set ns.out = ns.out + [
+                frigate_base ~ '/api/' ~ cam ~ '/start/' ~ clip_start_ts ~ '/end/' ~ clip_end_ts ~ '/clip.mp4'
+              ] %}
+            {% endfor %}
+            {{ ns.out | join('\n') }}
+
       - condition: template
         value_template: "{{ cams_all | length > 0 }}"
 
-    action:
       - service: script.allarme_core_snapshot_cameras
         data:
           cameras: "{{ cams_all }}"
           tag: "{{ tag }}"
+          ts: "{{ ts }}"
 
       - service: var.set
         data:
@@ -349,8 +347,8 @@ automation:
       - platform: state
         entity_id: input_text.allarme_core_logbook_ultimo_evento
     variables:
-      now: "{{ now().strftime('%H:%M:%S') }}"
-      line: "- **{{ now }}** {{ trigger.to_state.state }}"
+      ora: "{{ now().strftime('%H:%M:%S') }}"
+      line: "- **{{ ora }}** {{ trigger.to_state.state }}"
     action:
       - service: var.set
         data:
