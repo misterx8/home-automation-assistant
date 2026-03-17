@@ -111,17 +111,19 @@ script:
         description: "Lista entity_id camera"
       tag:
         description: "Tag nel nome file (es. fumo_cucina)"
+      ts:
+        description: "Timestamp (YYYYMMDD_HHMMSS) - se non fornito usa now()"
     sequence:
       - variables:
-          ts: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
-          cams: "{{ cameras if cameras is iterable else [] }}"
+          ts_use: "{{ ts if (ts is defined and ts | string | length > 0) else now().strftime('%Y%m%d_%H%M%S') }}"
+          cams: "{{ cameras if (cameras is iterable and cameras is not string) else ([cameras] if cameras else []) }}"
       - repeat:
           for_each: "{{ cams }}"
           sequence:
             - service: camera.snapshot
               data:
                 entity_id: "{{ repeat.item }}"
-                filename: "/config/www/safety_core_snapshots/{{ ts }}_{{ tag | regex_replace('[^a-zA-Z0-9_-]', '_') }}_{{ repeat.item.split('.')[1] }}.jpg"
+                filename: "/config/www/safety_core_snapshots/{{ ts_use }}_{{ tag | regex_replace('[^a-zA-Z0-9_-]', '_') }}_{{ repeat.item.split('.')[1] }}.jpg"
 
 
 # ----------------------------------------------------------------------------

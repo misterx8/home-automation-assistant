@@ -157,6 +157,7 @@ automation:
   - alias: "Safety Core - Snapshot Cameras su Triggered"
     id: safety_core_snapshot_on_triggered
     mode: queued
+    max: 50
     trigger:
       - platform: state
         entity_id: input_select.safety_core_stato
@@ -189,49 +190,47 @@ automation:
         {% endfor %}
         {{ ns.out | unique | list }}
 
-      tag: >
-        {% if sensori_attivi | length > 0 %}
-          {{ sensori_attivi[0].split('.')[1] }}
-        {% else %}
-          safety_triggered
-        {% endif %}
-
-      snapshot_urls_text: >
-        {% set ts = now().strftime('%Y%m%d_%H%M%S') %}
-        {% set safe_tag = (tag | string | regex_replace('[^a-zA-Z0-9_-]', '_')) %}
-        {% set ns = namespace(out=[]) %}
-        {% for c in cams_all %}
-          {% set cam = (c | string).split('.')[1] %}
-          {% set ns.out = ns.out + ['/local/safety_core_snapshots/' ~ ts ~ '_' ~ safe_tag ~ '_' ~ cam ~ '.jpg'] %}
-        {% endfor %}
-        {{ ns.out | join('\n') }}
-
-      frigate_base: "http://192.168.2.92:5000"
-      clip_start_ts: "{{ (as_timestamp(now()) - 30) | int }}"
-      clip_end_ts: "{{ (as_timestamp(now()) + 10) | int }}"
-
-      clips_text: >
-        {% set ns = namespace(out=[]) %}
-        {% for c in cams_all %}
-          {% set cam = state_attr(c,'camera_name') | default('', true) | string | trim %}
-          {% if not cam %}
-            {% set cam = (c | string).split('.')[1] %}
-          {% endif %}
-          {% set ns.out = ns.out + [
-            frigate_base ~ '/api/' ~ cam ~ '/start/' ~ clip_start_ts ~ '/end/' ~ clip_end_ts ~ '/clip.mp4'
-          ] %}
-        {% endfor %}
-        {{ ns.out | join('\n') }}
-
     condition:
       - condition: template
         value_template: "{{ cams_all | length > 0 }}"
 
     action:
+      # Calcola tag, ts e URL dopo il trigger — ts unico condiviso con lo script
+      - variables:
+          tag: "{{ sensori_attivi[0].split('.')[1] if sensori_attivi|length > 0 else 'safety_triggered' }}"
+          ts: "{{ now().strftime('%Y%m%d_%H%M%S') }}"
+
+          snapshot_urls_text: >
+            {% set safe_tag = (tag | string | regex_replace('[^a-zA-Z0-9_-]', '_')) %}
+            {% set ns = namespace(out=[]) %}
+            {% for c in cams_all %}
+              {% set cam = (c | string).split('.')[1] %}
+              {% set ns.out = ns.out + ['/local/safety_core_snapshots/' ~ ts ~ '_' ~ safe_tag ~ '_' ~ cam ~ '.jpg'] %}
+            {% endfor %}
+            {{ ns.out | join('\n') }}
+
+          frigate_base: "http://192.168.2.92:5000"
+          clip_start_ts: "{{ (as_timestamp(now()) - 30) | int }}"
+          clip_end_ts: "{{ (as_timestamp(now()) + 10) | int }}"
+
+          clips_text: >
+            {% set ns = namespace(out=[]) %}
+            {% for c in cams_all %}
+              {% set cam = state_attr(c,'camera_name') | default('', true) | string | trim %}
+              {% if not cam %}
+                {% set cam = (c | string).split('.')[1] %}
+              {% endif %}
+              {% set ns.out = ns.out + [
+                frigate_base ~ '/api/' ~ cam ~ '/start/' ~ clip_start_ts ~ '/end/' ~ clip_end_ts ~ '/clip.mp4'
+              ] %}
+            {% endfor %}
+            {{ ns.out | join('\n') }}
+
       - service: script.safety_core_snapshot_cameras
         data:
           cameras: "{{ cams_all }}"
           tag: "{{ tag }}"
+          ts: "{{ ts }}"
 
       - service: var.set
         data:
