@@ -422,10 +422,10 @@ template:
         {% set fisico = states('binary_sensor.sensore_acqua_bagno') %}
         {% set abilitato = is_state('input_boolean.safety_core_acqua_bagno_abilitato','on')
                         and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
-        {% if not abilitato %}
-          off
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
         {% else %}
-          {{ 'on' if fisico != 'off' else 'off' }}
+          off
         {% endif %}
       attributes:
         sensore_origine: binary_sensor.sensore_acqua_bagno
@@ -442,10 +442,10 @@ template:
         {% set fisico = states('binary_sensor.sensore_acqua_cucina_principale') %}
         {% set abilitato = is_state('input_boolean.safety_core_acqua_cucina_principale_abilitato','on')
                         and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
-        {% if not abilitato %}
-          off
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
         {% else %}
-          {{ 'on' if fisico != 'off' else 'off' }}
+          off
         {% endif %}
       attributes:
         sensore_origine: binary_sensor.sensore_acqua_cucina_principale
@@ -462,10 +462,10 @@ template:
         {% set fisico = states('binary_sensor.sensore_acqua_doccia') %}
         {% set abilitato = is_state('input_boolean.safety_core_acqua_doccia_abilitato','on')
                         and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
-        {% if not abilitato %}
-          off
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
         {% else %}
-          {{ 'on' if fisico != 'off' else 'off' }}
+          off
         {% endif %}
       attributes:
         sensore_origine: binary_sensor.sensore_acqua_doccia
@@ -482,10 +482,10 @@ template:
         {% set fisico = states('binary_sensor.sensore_acqua_lavanderia') %}
         {% set abilitato = is_state('input_boolean.safety_core_acqua_lavanderia_abilitato','on')
                         and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
-        {% if not abilitato %}
-          off
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
         {% else %}
-          {{ 'on' if fisico != 'off' else 'off' }}
+          off
         {% endif %}
       attributes:
         sensore_origine: binary_sensor.sensore_acqua_lavanderia
@@ -502,10 +502,10 @@ template:
         {% set fisico = states('binary_sensor.sensore_acqua_lavello_cucina') %}
         {% set abilitato = is_state('input_boolean.safety_core_acqua_lavello_cucina_abilitato','on')
                         and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
-        {% if not abilitato %}
-          off
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
         {% else %}
-          {{ 'on' if fisico != 'off' else 'off' }}
+          off
         {% endif %}
       attributes:
         sensore_origine: binary_sensor.sensore_acqua_lavello_cucina
@@ -522,10 +522,10 @@ template:
         {% set fisico = states('binary_sensor.sensore_acqua_studio') %}
         {% set abilitato = is_state('input_boolean.safety_core_acqua_studio_abilitato','on')
                         and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
-        {% if not abilitato %}
-          off
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
         {% else %}
-          {{ 'on' if fisico != 'off' else 'off' }}
+          off
         {% endif %}
       attributes:
         sensore_origine: binary_sensor.sensore_acqua_studio
@@ -542,10 +542,10 @@ template:
         {% set fisico = states('binary_sensor.sensore_acqua_stufa') %}
         {% set abilitato = is_state('input_boolean.safety_core_acqua_stufa_abilitato','on')
                         and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
-        {% if not abilitato %}
-          off
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
         {% else %}
-          {{ 'on' if fisico != 'off' else 'off' }}
+          off
         {% endif %}
       attributes:
         sensore_origine: binary_sensor.sensore_acqua_stufa
@@ -562,10 +562,10 @@ template:
         {% set fisico = states('binary_sensor.sensore_acqua_tecnologico_pt') %}
         {% set abilitato = is_state('input_boolean.safety_core_acqua_tecnologico_pt_abilitato','on')
                         and is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') %}
-        {% if not abilitato %}
-          off
+        {% if fisico in ['on','off'] %}
+          {{ 'on' if (abilitato and fisico == 'on') else 'off' }}
         {% else %}
-          {{ 'on' if fisico != 'off' else 'off' }}
+          off
         {% endif %}
       attributes:
         sensore_origine: binary_sensor.sensore_acqua_tecnologico_pt
