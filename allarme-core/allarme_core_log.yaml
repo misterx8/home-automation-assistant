@@ -469,3 +469,87 @@ template:
         state: >
           {% set s = state_attr('var.allarme_core_timeline_note_md','long_state') | default('', true) | string %}
           {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
+
+      - name: "Allarme Core – Ultimo Trigger"
+        unique_id: allarme_core_ultimo_trigger
+        state: >
+          {% set raw = states('var.allarme_core_sensori_attivazione_allarme_var') | string | trim %}
+          {% set ids = [] if raw in ['unknown', 'unavailable', ''] else raw.split(', ') | reject('equalto','') | list %}
+          {% if ids | length == 0 %}
+            Nessun evento
+          {% else %}
+            {{ ids | length }} sensore/i attivato/i
+          {% endif %}
+        attributes:
+          sensori_ids: >
+            {% set raw = states('var.allarme_core_sensori_attivazione_allarme_var') | string | trim %}
+            {{ [] if raw in ['unknown', 'unavailable', ''] else raw.split(', ') | reject('equalto','') | list }}
+          sensori_nomi: >
+            {% set raw = states('var.allarme_core_sensori_attivazione_allarme_var') | string | trim %}
+            {% set ids = [] if raw in ['unknown', 'unavailable', ''] else raw.split(', ') | reject('equalto','') | list %}
+            {% set ns = namespace(nomi=[]) %}
+            {% for eid in ids %}
+              {% set ns.nomi = ns.nomi + [state_attr(eid, 'friendly_name') | default(eid)] %}
+            {% endfor %}
+            {{ ns.nomi }}
+          zone: >
+            {% set raw = states('var.allarme_core_sensori_attivazione_allarme_var') | string | trim %}
+            {% set ids = [] if raw in ['unknown', 'unavailable', ''] else raw.split(', ') | reject('equalto','') | list %}
+            {% set ns = namespace(zone=[]) %}
+            {% for eid in ids %}
+              {% set z = state_attr(eid, 'zone') | default([]) %}
+              {% for zona in z %}
+                {% if zona not in ns.zone %}
+                  {% set ns.zone = ns.zone + [zona] %}
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+            {{ ns.zone }}
+          profilo: >
+            {{ state_attr('var.allarme_core_sensori_attivazione_allarme_var', 'profilo') | default('sconosciuto') }}
+          data_evento: >
+            {% if states.var.allarme_core_sensori_attivazione_allarme_var is not none %}
+              {% set lc = states.var.allarme_core_sensori_attivazione_allarme_var.last_changed %}
+              {{ lc | as_local | as_timestamp | timestamp_custom('%d/%m/%Y %H:%M:%S', true) }}
+            {% else %}
+              Nessun dato
+            {% endif %}
+          num_snapshot: >
+            {% set ls = state_attr('var.allarme_core_last_snapshot_urls', 'long_state') | default('', true) | string %}
+            {{ ls.split('\n') | map('trim') | reject('equalto','') | list | length }}
+          num_clip: >
+            {% set ls = state_attr('var.allarme_core_last_clip_urls', 'long_state') | default('', true) | string %}
+            {{ ls.split('\n') | map('trim') | reject('equalto','') | list | length }}
+          snapshot_urls: >
+            {% set base_raw = states('input_text.allarme_core_url_base_ha') | trim %}
+            {% set base = '' if base_raw in ['unknown', 'unavailable'] else base_raw %}
+            {% set ls = state_attr('var.allarme_core_last_snapshot_urls', 'long_state') | default('', true) | string %}
+            {% set righe = ls.split('\n') | map('trim') | reject('equalto','') | list %}
+            {% if base | length == 0 %}
+              {{ righe }}
+            {% else %}
+              {% set ns = namespace(out=[]) %}
+              {% for r in righe %}
+                {% set ns.out = ns.out + [base ~ r] %}
+              {% endfor %}
+              {{ ns.out }}
+            {% endif %}
+          clip_urls: >
+            {% set base_old = 'http://192.168.2.92:5000' %}
+            {% set base_new_raw = states('input_text.allarme_core_url_base_frigate') | trim %}
+            {% set base_new = '' if base_new_raw in ['unknown', 'unavailable'] else base_new_raw %}
+            {% set token = states('input_text.allarme_core_frigate_token') | trim %}
+            {% set token = '' if token in ['unknown', 'unavailable'] else token %}
+            {% set ls = state_attr('var.allarme_core_last_clip_urls', 'long_state') | default('', true) | string %}
+            {% set righe = ls.split('\n') | map('trim') | reject('equalto','') | list %}
+            {% if base_new | length == 0 %}
+              {{ righe }}
+            {% else %}
+              {% set ns = namespace(out=[]) %}
+              {% for r in righe %}
+                {% set url = r | replace(base_old, base_new) %}
+                {% set url = url ~ '?token=' ~ token if token | length > 0 else url %}
+                {% set ns.out = ns.out + [url] %}
+              {% endfor %}
+              {{ ns.out }}
+            {% endif %}

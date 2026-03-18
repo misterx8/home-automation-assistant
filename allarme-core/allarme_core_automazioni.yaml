@@ -133,6 +133,8 @@ automation:
             - var.allarme_core_sensori_attivazione_allarme_var
           value: >
             {{ aperti | join(', ') }}
+          attributes:
+            profilo: "{{ states('input_select.allarme_core_profilo') }}"
 
   # Disattiva automaticamente la modalità test.
   # Due trigger per coprire tutti i casi:

@@ -76,6 +76,18 @@ input_text:
   allarme_core_sensori_esclusi:
     name: Sensori esclusi all'attivazione
     max: 255
+  allarme_core_url_base_ha:
+    name: "Allarme Core - URL Base HA (esterno)"
+    max: 255
+    icon: mdi:web
+  allarme_core_url_base_frigate:
+    name: "Allarme Core - URL Base Frigate (esterno)"
+    max: 255
+    icon: mdi:web
+  allarme_core_frigate_token:
+    name: "Allarme Core - Frigate Token"
+    max: 255
+    icon: mdi:key
 
 # FIX AC-BUG-05: input_datetime mancante — era referenziato nell'availability del sensore
 # "Allarme Core Sensori Aperti Filtrati" ma non era definito in nessun file del progetto.

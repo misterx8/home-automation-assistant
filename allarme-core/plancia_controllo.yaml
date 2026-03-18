@@ -191,6 +191,47 @@ sections:
         grid_options:
           columns: 6
           rows: 1
+      - type: button
+        name: Impostazioni URL e Token
+        icon: mdi:cog-outline
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          data:
+            title: Impostazioni URL e Token
+            content:
+              type: entities
+              entities:
+                - entity: input_text.allarme_core_url_base_ha
+                - entity: input_text.allarme_core_url_base_frigate
+                - entity: input_text.allarme_core_frigate_token
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: |
+            {% set ha_ok = states('input_text.allarme_core_url_base_ha') not in ['','unknown','unavailable'] %}
+            {% set fr_ok = states('input_text.allarme_core_url_base_frigate') not in ['','unknown','unavailable'] %}
+            {% set tk_ok = states('input_text.allarme_core_frigate_token') not in ['','unknown','unavailable'] %}
+            {% set all_ok = ha_ok and fr_ok and tk_ok %}
+            {% set none_ok = not ha_ok and not fr_ok and not tk_ok %}
+            {% set border_color = 'green' if all_ok else ('red' if none_ok else 'orange') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ border_color }};
+              position: relative;
+            }
+            {% if not all_ok %}
+            ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 6px;
+              right: 8px;
+              font-size: 0.85em;
+              pointer-events: none;
+              z-index: 1;
+            }
+            {% endif %}
   - type: grid
     cards:
       - type: heading
