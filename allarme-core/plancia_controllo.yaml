@@ -32,49 +32,6 @@ sections:
         entity: input_select.allarme_core_stato
         vertical: false
         features_position: bottom
-      - type: heading
-        heading: Info Allarme
-        heading_style: title
-      - type: tile
-        entity: sensor.allarme_core_count_zona_sera
-        vertical: false
-        features_position: bottom
-      - type: tile
-        entity: binary_sensor.allarme_core_zona_sera
-        vertical: false
-        features_position: bottom
-      - type: tile
-        entity: sensor.allarme_core_count_zona_giorno
-        vertical: false
-        features_position: bottom
-      - type: tile
-        entity: binary_sensor.allarme_core_zona_giorno
-        vertical: false
-        features_position: bottom
-      - type: tile
-        entity: sensor.allarme_core_count_zona_perimetrali
-        vertical: false
-        features_position: bottom
-      - type: tile
-        entity: binary_sensor.allarme_core_zona_perimetrali
-        vertical: false
-        features_position: bottom
-      - type: tile
-        entity: sensor.allarme_core_count_zona_volumetrici
-        vertical: false
-        features_position: bottom
-      - type: tile
-        entity: binary_sensor.allarme_core_zona_volumetrici
-        vertical: false
-        features_position: bottom
-      - type: tile
-        entity: sensor.allarme_core_count_zona_notte
-        vertical: false
-        features_position: bottom
-      - type: tile
-        entity: binary_sensor.allarme_core_zona_notte
-        vertical: false
-        features_position: bottom
       - type: tile
         entity: sensor.allarme_core_sensori_esclusi_memoria
         vertical: false
@@ -83,14 +40,104 @@ sections:
           columns: 12
           rows: 1
       - type: tile
-        grid_options:
-          columns: 12
-          rows: 1
-        entity: sensor.allarme_core_sensori_aperti_filtrati
+        entity: input_text.allarme_core_sensori_esclusi
         vertical: false
         features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 2
+      - type: heading
+        heading: Info Allarme
+        heading_style: title
+        icon: mdi:shield-alert-outline
+      - type: heading
+        heading: Stato Zone
+        heading_style: subtitle
       - type: tile
-        entity: binary_sensor.allarme_core_sensori_aperti_su_profilo_attivo
+        entity: sensor.allarme_core_count_zona_sera
+        name: Sera
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            {% set on = is_state('binary_sensor.allarme_core_zona_sera','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.allarme_core_count_zona_giorno
+        name: Giorno
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            {% set on = is_state('binary_sensor.allarme_core_zona_giorno','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.allarme_core_count_zona_perimetrali
+        name: Perimetrali
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            {% set on = is_state('binary_sensor.allarme_core_zona_perimetrali','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.allarme_core_count_zona_volumetrici
+        name: Volumetrici
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            {% set on = is_state('binary_sensor.allarme_core_zona_volumetrici','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.allarme_core_count_zona_notte
+        name: Notte
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            {% set on = is_state('binary_sensor.allarme_core_zona_notte','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: heading
+        heading: Sensori Correnti
+        heading_style: subtitle
+      - type: tile
+        entity: sensor.allarme_core_sensori_aperti_filtrati
         vertical: false
         features_position: bottom
         grid_options:
@@ -103,27 +150,92 @@ sections:
         grid_options:
           columns: 12
           rows: 2
+        card_mod:
+          style: |
+            {% set nessuno = is_state('sensor.allarme_core_sensori_attivi','Nessun sensore attivo') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'green' if nessuno else 'red' }};
+              padding-left: 12px;
+            }
+      - type: heading
+        heading: Ultimo Allarme
+        heading_style: subtitle
       - type: tile
-        entity: input_text.allarme_core_sensori_esclusi
+        entity: sensor.allarme_core_ultimo_trigger
         vertical: false
         features_position: bottom
         grid_options:
           columns: 12
           rows: 2
-      - type: tile
-        grid_options:
-          columns: 12
-          rows: 4
-        entity: var.allarme_core_sensori_esclusi_var
-        vertical: false
-        features_position: bottom
-      - type: tile
-        grid_options:
-          columns: 12
-          rows: 4
-        entity: var.allarme_core_sensori_attivazione_allarme_var
-        vertical: false
-        features_position: bottom
+        card_mod:
+          style: |
+            {% set nessuno = is_state('sensor.allarme_core_ultimo_trigger','Nessun evento') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'grey' if nessuno else 'red' }};
+              padding-left: 12px;
+            }
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          data:
+            title: "Dettagli Ultimo Allarme"
+            content:
+              type: vertical-stack
+              cards:
+                - type: entities
+                  title: Informazioni Evento
+                  entities:
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: data_evento
+                      name: Data Evento
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: profilo
+                      name: Profilo Attivo
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: sensori_nomi
+                      name: Sensori Attivati
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: zone
+                      name: Zone Coinvolte
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: num_snapshot
+                      name: Numero Snapshot
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: num_clip
+                      name: Numero Clip
+                - type: markdown
+                  title: Media Disponibili
+                  content: |
+                    {% set clips = state_attr('sensor.allarme_core_ultimo_trigger', 'clip_urls') %}
+                    {% set snaps = state_attr('sensor.allarme_core_ultimo_trigger', 'snapshot_urls') %}
+
+                    {% if clips and clips | length > 0 %}
+                    **Clip video:**
+
+                    {% for url in clips %}
+                    - [Clip {{ loop.index }}]({{ url }})
+                    {% endfor %}
+                    {% else %}
+                    *Nessuna clip disponibile.*
+                    {% endif %}
+
+                    {% if snaps and snaps | length > 0 %}
+                    **Snapshot:**
+
+                    {% for url in snaps %}
+                    - [Snapshot {{ loop.index }}]({{ url }})
+                    {% endfor %}
+                    {% else %}
+                    *Nessuno snapshot disponibile.*
+                    {% endif %}
       - type: heading
         heading: Modalità Test
         heading_style: title
@@ -232,6 +344,29 @@ sections:
               z-index: 1;
             }
             {% endif %}
+      - type: button
+        name: Debug Variabili
+        icon: mdi:bug
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px grey;
+              padding-left: 12px;
+            }
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          data:
+            title: "Debug — Variabili Allarme"
+            content:
+              type: entities
+              entities:
+                - entity: var.allarme_core_sensori_esclusi_var
+                - entity: var.allarme_core_sensori_attivazione_allarme_var
   - type: grid
     cards:
       - type: heading

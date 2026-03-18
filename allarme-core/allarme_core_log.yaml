@@ -477,8 +477,10 @@ template:
           {% set ids = [] if raw in ['unknown', 'unavailable', ''] else raw.split(', ') | reject('equalto','') | list %}
           {% if ids | length == 0 %}
             Nessun evento
+          {% elif ids | length == 1 %}
+            {{ state_attr(ids[0], 'friendly_name') | default(ids[0]) }}
           {% else %}
-            {{ ids | length }} sensore/i attivato/i
+            {{ state_attr(ids[0], 'friendly_name') | default(ids[0]) }} +{{ ids | length - 1 }}
           {% endif %}
         attributes:
           sensori_ids: >
