@@ -478,9 +478,9 @@ template:
           {% if ids | length == 0 %}
             Nessun evento
           {% elif ids | length == 1 %}
-            {{ state_attr(ids[0], 'friendly_name') | default(ids[0]) }}
+            {{ state_attr(ids[0], 'friendly_name') | default(ids[0]) | replace('Allarme Core ', '') | trim }}
           {% else %}
-            {{ state_attr(ids[0], 'friendly_name') | default(ids[0]) }} +{{ ids | length - 1 }}
+            {{ state_attr(ids[0], 'friendly_name') | default(ids[0]) | replace('Allarme Core ', '') | trim }} +{{ ids | length - 1 }}
           {% endif %}
         attributes:
           sensori_ids: >
@@ -491,7 +491,7 @@ template:
             {% set ids = [] if raw in ['unknown', 'unavailable', ''] else raw.split(', ') | reject('equalto','') | list %}
             {% set ns = namespace(nomi=[]) %}
             {% for eid in ids %}
-              {% set ns.nomi = ns.nomi + [state_attr(eid, 'friendly_name') | default(eid)] %}
+              {% set ns.nomi = ns.nomi + [state_attr(eid, 'friendly_name') | default(eid) | replace('Allarme Core ', '') | trim] %}
             {% endfor %}
             {{ ns.nomi }}
           zone: >
