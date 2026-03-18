@@ -8,7 +8,8 @@ script:
         data:
           option: arming
 
-      - delay: "00:00:20"   # imposta qui il tempo di inserimento
+      - delay:
+          seconds: "{{ states('input_number.allarme_core_arming_delay') | int(20) }}"
 
       - service: input_select.select_option
         target:
@@ -88,6 +89,17 @@ input_text:
     name: "Allarme Core - Frigate Token"
     max: 255
     icon: mdi:key
+
+input_number:
+  allarme_core_arming_delay:
+    name: "Allarme Core - Tempo Inserimento (sec)"
+    min: 5
+    max: 120
+    step: 5
+    initial: 20
+    unit_of_measurement: s
+    icon: mdi:timer-outline
+    mode: slider
 
 # FIX AC-BUG-05: input_datetime mancante — era referenziato nell'availability del sensore
 # "Allarme Core Sensori Aperti Filtrati" ma non era definito in nessun file del progetto.

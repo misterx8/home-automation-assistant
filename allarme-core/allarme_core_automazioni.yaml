@@ -50,7 +50,8 @@ automation:
           - platform: state
             entity_id: binary_sensor.allarme_core_sensori_aperti_su_profilo_attivo
             to: "on"
-        timeout: "00:00:15"
+        timeout:
+          seconds: "{{ states('input_number.allarme_core_arming_delay') | int(20) }}"
         continue_on_timeout: true  # Continua anche se non diventa on, per sicurezza
 
       # FIX AC-BUG-01 (residuo): entity_id spostato da data: a target: anche qui
@@ -80,7 +81,8 @@ automation:
           - platform: state
             entity_id: binary_sensor.allarme_core_sensori_aperti_su_profilo_attivo
             to: "on"
-        timeout: "00:00:15"
+        timeout:
+          seconds: "{{ states('input_number.allarme_core_arming_delay') | int(20) }}"
         continue_on_timeout: true
 
       - service: var.set

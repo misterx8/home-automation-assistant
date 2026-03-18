@@ -33,6 +33,17 @@ sections:
         vertical: false
         features_position: bottom
       - type: tile
+        entity: input_number.allarme_core_arming_delay
+        name: Tempo Inserimento
+        vertical: false
+        features_position: bottom
+        features:
+          - type: numeric-input
+            mode: slider
+        grid_options:
+          columns: 12
+          rows: 1
+      - type: tile
         entity: sensor.allarme_core_sensori_esclusi_memoria
         vertical: false
         features_position: bottom
