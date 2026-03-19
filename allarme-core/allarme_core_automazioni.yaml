@@ -17,6 +17,23 @@ automation:
         data:
           datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
+  # Opzione 3: registra il timestamp esatto dell'inizio dello stato 'triggered'.
+  # Usato da binary_sensor.allarme_core_dati_pronti per il calcolo del timeout
+  # e per confrontare last_updated delle var snapshot/clip Frigate.
+  - alias: "Allarme Core - Registra timestamp inizio triggered"
+    id: allarme_core_aut_registra_triggered_started
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "triggered"
+    action:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.allarme_core_triggered_started
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+
   - alias: "Allarme Core - Reset sensori esclusi al disarm"
     id: allarme_core_aut_reset_sensori_esclusi
     trigger:
@@ -117,15 +134,48 @@ automation:
         entity_id: input_select.allarme_core_stato
         to: "triggered"
     variables:
-      aperti: "{{ state_attr('sensor.allarme_core_sensori_aperti_filtrati', 'sensori_aperti_ids') or [] }}"
-      # FIX AC-BUG-03: map('state_attr','friendly_name') non è un filtro Jinja2 valido su lista di stringhe.
-      # Sostituito con loop esplicito che usa state_attr(eid, 'friendly_name').
+      # FIX-C: lettura diretta dai binary_sensor fisici — elimina race condition primaria
+      # con sensor.allarme_core_sensori_aperti_filtrati (che richiede rivalutazione del template).
+      # Replica la stessa logica di filtro del template sensor.
+      aperti: >
+        {% set esclusi_raw = states('var.allarme_core_sensori_esclusi_var') | string | trim %}
+        {% set esclusi_raw = esclusi_raw | replace("'", '"') %}
+        {% set esclusi = (esclusi_raw | from_json) if esclusi_raw.startswith('[') else [] %}
+        {% set zone_att = state_attr('sensor.allarme_core_zone_attive', 'zones') or [] %}
+        {% set ns = namespace(ids=[]) %}
+        {% if states('input_select.allarme_core_profilo') != 'nessuno' %}
+          {% for sensor in states.binary_sensor
+            | selectattr('entity_id', 'search', 'binary_sensor.allarme_core_')
+            | selectattr('state', 'eq', 'on')
+            | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+            | selectattr('attributes.zone', 'defined') %}
+            {% if sensor.entity_id not in esclusi %}
+              {% if sensor.attributes.zone | select('in', zone_att) | list | length > 0 %}
+                {% set ns.ids = ns.ids + [sensor.entity_id] %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {{ ns.ids }}
       aperti_nomi: >
-        {% set ids = state_attr('sensor.allarme_core_sensori_aperti_filtrati', 'sensori_aperti_ids') | default([]) %}
+        {% set esclusi_raw = states('var.allarme_core_sensori_esclusi_var') | string | trim %}
+        {% set esclusi_raw = esclusi_raw | replace("'", '"') %}
+        {% set esclusi = (esclusi_raw | from_json) if esclusi_raw.startswith('[') else [] %}
+        {% set zone_att = state_attr('sensor.allarme_core_zone_attive', 'zones') or [] %}
         {% set ns = namespace(nomi=[]) %}
-        {% for eid in ids %}
-          {% set ns.nomi = ns.nomi + [state_attr(eid, 'friendly_name') | default(eid)] %}
-        {% endfor %}
+        {% if states('input_select.allarme_core_profilo') != 'nessuno' %}
+          {% for sensor in states.binary_sensor
+            | selectattr('entity_id', 'search', 'binary_sensor.allarme_core_')
+            | selectattr('state', 'eq', 'on')
+            | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+            | selectattr('attributes.zone', 'defined') %}
+            {% if sensor.entity_id not in esclusi %}
+              {% if sensor.attributes.zone | select('in', zone_att) | list | length > 0 %}
+                {% set ns.nomi = ns.nomi + [sensor.attributes.friendly_name | default(sensor.entity_id)] %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
         {{ ns.nomi }}
       ts: "{{ now().isoformat() }}"
     action:

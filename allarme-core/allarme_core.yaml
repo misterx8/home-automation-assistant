@@ -100,6 +100,15 @@ input_number:
     unit_of_measurement: s
     icon: mdi:timer-outline
     mode: slider
+  allarme_core_notifica_timeout_secondi:
+    name: "Allarme Core - Timeout Notifica (sec)"
+    min: 10
+    max: 120
+    step: 5
+    initial: 45
+    unit_of_measurement: s
+    icon: mdi:timer-alert-outline
+    mode: slider
 
 # FIX AC-BUG-05: input_datetime mancante — era referenziato nell'availability del sensore
 # "Allarme Core Sensori Aperti Filtrati" ma non era definito in nessun file del progetto.
@@ -108,6 +117,10 @@ input_number:
 input_datetime:
   allarme_core_arming_started:
     name: "Allarme Core - Timestamp Inizio Arming"
+    has_date: true
+    has_time: true
+  allarme_core_triggered_started:
+    name: "Allarme Core - Timestamp Inizio Triggered"
     has_date: true
     has_time: true
 
@@ -266,7 +279,8 @@ template:
           {% set zone_attive = state_attr('sensor.allarme_core_zone_attive','zones') or [] %}
           {% set esclusi = states('var.allarme_core_sensori_esclusi_var') or [] %}
 
-          {% if profilo == 'nessuno' or stato != 'armed' %}
+          {# FIX-B: aggiunto 'triggered' alla lista stati validi #}
+          {% if profilo == 'nessuno' or stato not in ['armed', 'triggered'] %}
             false
           {% else %}
             {% set ns = namespace(found=false) %}
@@ -295,7 +309,8 @@ template:
             {% set zone_attive = state_attr('sensor.allarme_core_zone_attive','zones') or [] %}
             {% set esclusi = states('var.allarme_core_sensori_esclusi_var') or [] %}
 
-            {% if profilo == 'nessuno' or stato != 'armed' %}
+            {# FIX-B: aggiunto 'triggered' alla lista stati validi #}
+            {% if profilo == 'nessuno' or stato not in ['armed', 'triggered'] %}
               []
             {% else %}
               {% set ns = namespace(ids=[]) %}
@@ -402,6 +417,87 @@ template:
           conteggio: >
             {{ this.attributes.sensori_aperti_ids | length if this.attributes.sensori_aperti_ids is defined else 0 }}
 
+      # Opzione 3: gate sincronizzazione notifica allarme.
+      # Diventa 'on' quando tutti i dati sono pronti (sensori causa allarme +
+      # eventuali media Frigate aggiornati dopo il trigger) oppure al timeout di fallback.
+      # Node-RED si triggera sul fronte off->on di questo binary sensor per inviare notifiche.
+      - name: "Allarme Core Dati Pronti"
+        unique_id: allarme_core_dati_pronti
+
+        state: >
+          {% set stato = states('input_select.allarme_core_stato') %}
+          {% if stato != 'triggered' %}
+            false
+          {% else %}
+            {% set triggered_ts_raw = states('input_datetime.allarme_core_triggered_started') %}
+            {% set triggered_ts = as_timestamp(triggered_ts_raw) if triggered_ts_raw not in ['unknown', 'unavailable', ''] else none %}
+            {% set timeout_sec = states('input_number.allarme_core_notifica_timeout_secondi') | float(45) %}
+            {% set secondi_da_triggered = (now().timestamp() - triggered_ts) if triggered_ts is not none else 9999 %}
+            {% set timeout_scattato = secondi_da_triggered >= timeout_sec %}
+
+            {% set sensori_raw = states('var.allarme_core_sensori_attivazione_allarme_var') %}
+            {% set sensori_ok = sensori_raw not in ['', 'unknown', 'unavailable', 'none', 'None'] %}
+
+            {% set frigate_url = states('input_text.allarme_core_url_base_frigate') %}
+            {% set frigate_configurato = frigate_url not in ['', 'unknown', 'unavailable'] %}
+
+            {# FIX scoping Jinja2: set dentro if/else non è visibile fuori — usare namespace #}
+            {% set ns_media = namespace(snapshot_ok=false, clip_ok=false) %}
+            {% if not frigate_configurato %}
+              {% set ns_media.snapshot_ok = true %}
+              {% set ns_media.clip_ok = true %}
+            {% else %}
+              {% set triggered_ts_safe = triggered_ts if triggered_ts is not none else 0 %}
+              {% set snapshot_upd = as_timestamp(states.var.allarme_core_last_snapshot_urls.last_updated) if states.var.allarme_core_last_snapshot_urls is defined else none %}
+              {% set clip_upd = as_timestamp(states.var.allarme_core_last_clip_urls.last_updated) if states.var.allarme_core_last_clip_urls is defined else none %}
+              {% set ns_media.snapshot_ok = snapshot_upd is not none and snapshot_upd > triggered_ts_safe %}
+              {% set ns_media.clip_ok = clip_upd is not none and clip_upd > triggered_ts_safe %}
+            {% endif %}
+
+            {% set dati_completi = sensori_ok and ns_media.snapshot_ok and ns_media.clip_ok %}
+            {{ dati_completi or timeout_scattato }}
+          {% endif %}
+
+        attributes:
+          dati_completi: >
+            {% set stato = states('input_select.allarme_core_stato') %}
+            {% if stato != 'triggered' %}
+              false
+            {% else %}
+              {% set sensori_raw = states('var.allarme_core_sensori_attivazione_allarme_var') %}
+              {% set sensori_ok = sensori_raw not in ['', 'unknown', 'unavailable', 'none', 'None'] %}
+              {% set frigate_url = states('input_text.allarme_core_url_base_frigate') %}
+              {% set frigate_configurato = frigate_url not in ['', 'unknown', 'unavailable'] %}
+              {# FIX scoping Jinja2: usare namespace #}
+              {% set ns_media = namespace(snapshot_ok=false, clip_ok=false) %}
+              {% if not frigate_configurato %}
+                {% set ns_media.snapshot_ok = true %}
+                {% set ns_media.clip_ok = true %}
+              {% else %}
+                {% set triggered_ts_raw = states('input_datetime.allarme_core_triggered_started') %}
+                {% set triggered_ts = as_timestamp(triggered_ts_raw) if triggered_ts_raw not in ['unknown', 'unavailable', ''] else 0 %}
+                {% set snapshot_upd = as_timestamp(states.var.allarme_core_last_snapshot_urls.last_updated) if states.var.allarme_core_last_snapshot_urls is defined else none %}
+                {% set clip_upd = as_timestamp(states.var.allarme_core_last_clip_urls.last_updated) if states.var.allarme_core_last_clip_urls is defined else none %}
+                {% set ns_media.snapshot_ok = snapshot_upd is not none and snapshot_upd > triggered_ts %}
+                {% set ns_media.clip_ok = clip_upd is not none and clip_upd > triggered_ts %}
+              {% endif %}
+              {{ sensori_ok and ns_media.snapshot_ok and ns_media.clip_ok }}
+            {% endif %}
+          timeout_scattato: >
+            {% set stato = states('input_select.allarme_core_stato') %}
+            {% if stato != 'triggered' %}
+              false
+            {% else %}
+              {% set triggered_ts_raw = states('input_datetime.allarme_core_triggered_started') %}
+              {% set triggered_ts = as_timestamp(triggered_ts_raw) if triggered_ts_raw not in ['unknown', 'unavailable', ''] else none %}
+              {% set timeout_sec = states('input_number.allarme_core_notifica_timeout_secondi') | float(45) %}
+              {% set secondi = (now().timestamp() - triggered_ts) if triggered_ts is not none else 0 %}
+              {{ secondi >= timeout_sec }}
+            {% endif %}
+          secondi_da_triggered: >
+            {% set triggered_ts_raw = states('input_datetime.allarme_core_triggered_started') %}
+            {% set triggered_ts = as_timestamp(triggered_ts_raw) if triggered_ts_raw not in ['unknown', 'unavailable', ''] else none %}
+            {{ (now().timestamp() - triggered_ts) | round(1) if triggered_ts is not none else 0 }}
 
 #sensore binario per zone attive che indica se ci sono sensori accesi su quella determinata zona
       - name: "Allarme Core Zona Sera"

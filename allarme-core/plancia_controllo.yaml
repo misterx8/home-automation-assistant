@@ -33,17 +33,6 @@ sections:
         vertical: false
         features_position: bottom
       - type: tile
-        entity: input_number.allarme_core_arming_delay
-        name: Tempo Inserimento
-        vertical: false
-        features_position: bottom
-        features:
-          - type: numeric-input
-            mode: slider
-        grid_options:
-          columns: 12
-          rows: 1
-      - type: tile
         entity: sensor.allarme_core_sensori_esclusi_memoria
         vertical: false
         features_position: bottom
@@ -315,19 +304,21 @@ sections:
           columns: 6
           rows: 1
       - type: button
-        name: Impostazioni URL e Token
+        name: Impostazioni Variabili
         icon: mdi:cog-outline
         tap_action:
           action: call-service
           service: browser_mod.popup
           data:
-            title: Impostazioni URL e Token
+            title: Impostazioni Variabili
             content:
               type: entities
               entities:
                 - entity: input_text.allarme_core_url_base_ha
                 - entity: input_text.allarme_core_url_base_frigate
                 - entity: input_text.allarme_core_frigate_token
+                - entity: input_number.allarme_core_arming_delay
+                - entity: input_number.allarme_core_notifica_timeout_secondi
         grid_options:
           columns: 6
           rows: 1
@@ -378,6 +369,8 @@ sections:
               entities:
                 - entity: var.allarme_core_sensori_esclusi_var
                 - entity: var.allarme_core_sensori_attivazione_allarme_var
+                - entity: binary_sensor.allarme_core_dati_pronti
+                - entity: input_datetime.allarme_core_triggered_started
   - type: grid
     cards:
       - type: heading

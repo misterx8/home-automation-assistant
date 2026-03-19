@@ -4,6 +4,11 @@ allarme_core_sensori_esclusi_var:
 allarme_core_sensori_attivazione_allarme_var:
   friendly_name: 'allarme core sensori attivazione allarme var'
   icon: mdi:bug
+  attributes:
+    profilo: ""
+    ids: ""
+    nomi: ""
+    timestamp: ""
 allarme_core_timeline_md:
   icon: mdi:chart-gantt
   friendly_name: "Allarme Core Timeline (MD)"

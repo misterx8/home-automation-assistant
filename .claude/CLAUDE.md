@@ -28,6 +28,17 @@ Use when:
 
 ---
 
+## Clarification Agent
+Agent:
+homeassistant-clarification-agent
+
+Use when:
+* the user request is unclear or ambiguous
+* need to fully understand user requirements
+* proposing alternative implementation options
+
+---
+
 ## Automation Design
 
 Agent:
@@ -127,7 +138,7 @@ No configuration should be returned without debugger validation.
 
 Claude must follow this process:
 
-1. Understand the user request
+1. Understand the user request  *(ask clarifying questions if needed)*
 2. Select the most appropriate specialist agent
 3. Generate the configuration or solution
 4. If necessary involve additional agents
