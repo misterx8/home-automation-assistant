@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Read(//c/Users/mm_an/.claude/**)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(python _patch_plancia.py)",
+      "Bash(python3 _patch_plancia.py)",
+      "Bash(py _patch_plancia.py)"
     ]
   }
 }

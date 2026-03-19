@@ -1,0 +1,144 @@
+# ============================================================================
+# ALLARME CORE - AUTOMAZIONI BATTERIE & CONNETTIVITÀ
+# Alert logbook per batteria bassa e sensori offline
+# Debounce offline configurabile via input_number.allarme_core_debounce_offline_minuti
+# ============================================================================
+
+automation:
+
+  # --------------------------------------------------------------------------
+  # 1. BATTERIA BASSA RILEVATA
+  # Scatta quando binary_sensor.allarme_core_batteria_critica passa a on,
+  # cioè almeno un sensore ha batteria sotto la soglia configurata.
+  # Elenca tutti i sensori coinvolti con la rispettiva percentuale.
+  # --------------------------------------------------------------------------
+  - id: allarme_core_alert_batteria_bassa
+    alias: "Allarme Core - Alert Batteria Bassa"
+    description: >
+      Logga un alert quando uno o più sensori scendono sotto la soglia di
+      batteria. Elenca i sensori coinvolti con la percentuale rilevata.
+    mode: single
+
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.allarme_core_batteria_critica
+        to: "on"
+
+    variables:
+      # Recupera la lista di dizionari {nome, wrapper, batteria} dall'attributo.
+      # | default([]) protegge il caso in cui state_attr restituisce None
+      # (es. primo avvio HA, sensore non ancora valutato).
+      lista: >
+        {{ state_attr('sensor.allarme_core_stato_batterie', 'batterie_basse') | default([]) }}
+      ts: "{{ now().strftime('%d/%m %H:%M') }}"
+
+    action:
+      - action: script.allarme_core_logbook_emit
+        data:
+          msg: >
+            🔋 [{{ ts }}] BATTERIA BASSA — {{ lista | length }} sensore/i:
+            {% for item in lista %}— {{ item.nome | default(item.wrapper) }}: {{ item.batteria }}% {% endfor %}
+            (soglia: {{ states('input_number.allarme_core_soglia_batteria_bassa') | int }}%)
+
+
+  # --------------------------------------------------------------------------
+  # 2. BATTERIA RIENTRATA SOPRA SOGLIA
+  # Scatta quando binary_sensor.allarme_core_batteria_critica torna a off,
+  # cioè tutti i sensori sono nuovamente sopra la soglia configurata.
+  # --------------------------------------------------------------------------
+  - id: allarme_core_alert_batteria_risolta
+    alias: "Allarme Core - Alert Batteria Risolta"
+    description: >
+      Logga il ripristino quando tutti i sensori tornano sopra la soglia
+      di batteria (binary_sensor.allarme_core_batteria_critica → off).
+    mode: single
+
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.allarme_core_batteria_critica
+        from: "on"
+        to: "off"
+
+    variables:
+      ts: "{{ now().strftime('%d/%m %H:%M') }}"
+
+    action:
+      - action: script.allarme_core_logbook_emit
+        data:
+          msg: "✅ [{{ ts }}] Batteria: tutte le batterie rientrate sopra soglia"
+
+
+  # --------------------------------------------------------------------------
+  # 3. SENSORE OFFLINE
+  # Scatta quando binary_sensor.allarme_core_sensore_offline passa a on.
+  # Il debounce è implementato con delay + condition (il for: con template
+  # Jinja2 non è supportato nei trigger di Home Assistant).
+  # La durata del debounce è letta da input_number.allarme_core_debounce_offline_minuti.
+  # Se il sensore torna online prima che il delay scada, la condition blocca
+  # l'esecuzione e nessun log viene scritto (falso allarme filtrato).
+  # mode: single assicura che eventuali trigger successivi durante il delay
+  # vengano ignorati — una sola istanza attiva alla volta.
+  # --------------------------------------------------------------------------
+  - id: allarme_core_alert_sensore_offline
+    alias: "Allarme Core - Alert Sensore Offline"
+    description: >
+      Logga un alert quando uno o più sensori rimangono offline per una
+      durata superiore al debounce configurato in
+      input_number.allarme_core_debounce_offline_minuti.
+    mode: single
+
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.allarme_core_sensore_offline
+        to: "on"
+
+    action:
+      # Debounce dinamico: attende N minuti prima di procedere.
+      # | int(2) garantisce un fallback di 2 minuti se il valore è unavailable.
+      - delay:
+          seconds: "{{ (states('input_number.allarme_core_debounce_offline_minuti') | int(2)) * 60 }}"
+
+      # Verifica che il sensore sia ancora offline dopo il debounce.
+      # Se nel frattempo è tornato online, l'automazione si interrompe qui.
+      - condition: state
+        entity_id: binary_sensor.allarme_core_sensore_offline
+        state: "on"
+
+      - variables:
+          # Recupera la lista di dizionari {nome, wrapper} dall'attributo.
+          lista: >
+            {{ state_attr('sensor.allarme_core_stato_batterie', 'sensori_offline') | default([]) }}
+          ts: "{{ now().strftime('%d/%m %H:%M') }}"
+
+      - action: script.allarme_core_logbook_emit
+        data:
+          msg: >
+            📡 [{{ ts }}] SENSORE OFFLINE — {{ lista | length }} sensore/i:
+            {% for item in lista %}— {{ item.nome | default(item.wrapper) }} {% endfor %}
+
+
+  # --------------------------------------------------------------------------
+  # 4. SENSORE TORNATO ONLINE
+  # Scatta quando binary_sensor.allarme_core_sensore_offline torna a off,
+  # cioè tutti i sensori sono nuovamente raggiungibili.
+  # --------------------------------------------------------------------------
+  - id: allarme_core_alert_sensore_tornato_online
+    alias: "Allarme Core - Alert Sensore Tornato Online"
+    description: >
+      Logga il ripristino quando tutti i sensori tornano online
+      (binary_sensor.allarme_core_sensore_offline → off).
+    mode: single
+
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.allarme_core_sensore_offline
+        from: "on"
+        to: "off"
+
+    variables:
+      ts: "{{ now().strftime('%d/%m %H:%M') }}"
+
+    action:
+      - action: script.allarme_core_logbook_emit
+        data:
+          msg: "✅ [{{ ts }}] Connettività: tutti i sensori tornati online"

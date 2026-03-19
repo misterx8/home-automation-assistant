@@ -1,0 +1,808 @@
+# ============================================================================
+# ALLARME CORE - BATTERIE & CONNETTIVITÀ
+# Monitoraggio batteria e disponibilità sensori wireless Zigbee
+# Generato automaticamente - modificare tipo_connessione in allarme_core_sensori.yaml
+# per attivare il monitoraggio (cambiare 'filare' in 'wireless')
+#
+# Percorsi di risoluzione per ogni wrapper binary_sensor.allarme_core_*:
+#   A) sensori_config presente  → itera ogni sensore individualmente (per-cfg)
+#   B) sensori_origine presente → minimo del gruppo (legacy multi-sensore flat)
+#   C) sensore_origine presente → sensore singolo
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# HELPER: soglia batteria bassa e debounce offline
+# ---------------------------------------------------------------------------
+input_number:
+  allarme_core_soglia_batteria_bassa:
+    name: "Allarme Core Soglia Batteria Bassa"
+    min: 5
+    max: 50
+    step: 5
+    unit_of_measurement: "%"
+    initial: 20
+    icon: mdi:battery-alert
+
+  allarme_core_debounce_offline_minuti:
+    name: "Allarme Core Debounce Offline (minuti)"
+    min: 1
+    max: 30
+    step: 1
+    unit_of_measurement: "min"
+    initial: 2
+    icon: mdi:timer-outline
+
+# ---------------------------------------------------------------------------
+# TEMPLATE: sensori batteria e connettività
+# ---------------------------------------------------------------------------
+template:
+  - sensor:
+
+      # -----------------------------------------------------------------------
+      # sensor.allarme_core_batteria_minima
+      # Restituisce il valore minimo di batteria tra tutti i sensori wireless.
+      # Attributo 'dettaglio': lista completa dei wireless con batteria rilevata.
+      # Attributo 'sensori_bassi': solo quelli sotto soglia.
+      # -----------------------------------------------------------------------
+      - name: "Allarme Core Batteria Minima"
+        unique_id: allarme_core_batteria_minima
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        state: >
+          {% set ns = namespace(batt_list=[]) %}
+          {% set soglia = states('input_number.allarme_core_soglia_batteria_bassa') | float(20) %}
+
+          {% for s in states.binary_sensor
+              | selectattr('entity_id', 'search', '^binary_sensor\.allarme_core_')
+              | rejectattr('entity_id', 'search', 'batteria_critica|sensore_offline') %}
+
+            {% set tipo_conn = state_attr(s.entity_id, 'tipo_connessione') | default('filare') | string %}
+            {% set sensore_sing = state_attr(s.entity_id, 'sensore_origine') %}
+            {% set sensori_plur = state_attr(s.entity_id, 'sensori_origine') %}
+            {% set sensori_cfg_raw = state_attr(s.entity_id, 'sensori_config') %}
+
+            {% if tipo_conn == 'wireless' %}
+              {# === PERCORSO A: sensori_config presente (per-sensore individuale) === #}
+              {% if sensori_cfg_raw is not none and sensori_cfg_raw | string not in ['', 'None', 'none'] %}
+                {% if sensori_cfg_raw is string %}
+                  {% set sensori_cfg = sensori_cfg_raw | from_json %}
+                {% else %}
+                  {% set sensori_cfg = sensori_cfg_raw %}
+                {% endif %}
+                {% for cfg in sensori_cfg %}
+                  {% set tipo_s = cfg.tipo_connessione | default('filare') | string %}
+                  {% if tipo_s == 'wireless' %}
+                    {% set fisico = cfg.entity_id | string %}
+                    {% set nome_base = fisico.split('.')[1] %}
+                    {% set batt_ovr = cfg.batteria_origine | default('') | string %}
+                    {% set batteria_entity = batt_ovr if (batt_ovr != '' and batt_ovr not in ['None','none']) else ('sensor.' ~ nome_base ~ '_battery') %}
+                    {% set batt = states(batteria_entity) | string %}
+                    {% if batt in ['true','True','on'] %}
+                      {# Batteria segnalata bassa (binario) — valore sintetico 5% #}
+                      {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                    {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                      {# Valore numerico normale #}
+                      {% set batt_int = batt | int(-1) %}
+                      {% if batt_int >= 0 %}
+                        {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': batt_int, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                      {% endif %}
+                    {% elif batt in ['unknown','unavailable','none','None',''] %}
+                      {# Fallback: controlla binary_sensor.X_battery_low #}
+                      {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                        {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                      {% endif %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+
+              {# === PERCORSO B: sensori_origine plurale senza config (minimo del gruppo) === #}
+              {% elif sensori_plur is not none and sensori_plur | string not in ['','None','none'] %}
+                {% set fisici_raw = sensori_plur %}
+                {% if fisici_raw is string %}{% set fisici = fisici_raw | from_json %}
+                {% elif fisici_raw is iterable %}{% set fisici = fisici_raw %}
+                {% else %}{% set fisici = [] %}{% endif %}
+                {% set ns_grp = namespace(batt_min=999, batt_min_fisico='', has_batt=false) %}
+                {% for fisico in fisici %}
+                  {% set nome_base = fisico.split('.')[1] %}
+                  {% set batteria_entity = 'sensor.' ~ nome_base ~ '_battery' %}
+                  {% set batt = states(batteria_entity) | string %}
+                  {% if batt in ['true','True','on'] %}
+                    {% if 5 < ns_grp.batt_min %}
+                      {% set ns_grp.batt_min = 5 %}
+                      {% set ns_grp.batt_min_fisico = fisico %}
+                      {% set ns_grp.has_batt = true %}
+                    {% endif %}
+                  {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                    {% set batt_int = batt | int(999) %}
+                    {% if batt_int < ns_grp.batt_min %}
+                      {% set ns_grp.batt_min = batt_int %}
+                      {% set ns_grp.batt_min_fisico = fisico %}
+                      {% set ns_grp.has_batt = true %}
+                    {% endif %}
+                  {% elif batt in ['unknown','unavailable','none','None',''] %}
+                    {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                      {% if 5 < ns_grp.batt_min %}
+                        {% set ns_grp.batt_min = 5 %}
+                        {% set ns_grp.batt_min_fisico = fisico %}
+                        {% set ns_grp.has_batt = true %}
+                      {% endif %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                {% if ns_grp.has_batt %}
+                  {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': ns_grp.batt_min_fisico, 'batteria': ns_grp.batt_min, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                {% endif %}
+
+              {# === PERCORSO C: sensore_origine singolo === #}
+              {% elif sensore_sing is not none and sensore_sing | string not in ['','None','none'] %}
+                {% set fisico = sensore_sing | string %}
+                {% set nome_base = fisico.split('.')[1] %}
+                {% set batt_ovr = state_attr(s.entity_id,'batteria_origine') | default('') | string %}
+                {% set batteria_entity = batt_ovr if (batt_ovr != '' and batt_ovr not in ['None','none']) else ('sensor.' ~ nome_base ~ '_battery') %}
+                {% set batt = states(batteria_entity) | string %}
+                {% if batt in ['true','True','on'] %}
+                  {# Batteria segnalata bassa (binario) — valore sintetico 5% #}
+                  {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                  {# Valore numerico normale #}
+                  {% set batt_int = batt | int(-1) %}
+                  {% if batt_int >= 0 %}
+                    {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': batt_int, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% endif %}
+                {% elif batt in ['unknown','unavailable','none','None',''] %}
+                  {# Fallback: controlla binary_sensor.X_battery_low #}
+                  {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                    {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+
+          {% endfor %}
+
+          {% if ns.batt_list | count > 0 %}
+            {{ ns.batt_list | map(attribute='batteria') | min }}
+          {% else %}
+            unknown
+          {% endif %}
+        attributes:
+          dettaglio: >
+            {% set ns = namespace(batt_list=[]) %}
+
+            {% for s in states.binary_sensor
+                | selectattr('entity_id', 'search', '^binary_sensor\.allarme_core_')
+                | rejectattr('entity_id', 'search', 'batteria_critica|sensore_offline') %}
+
+              {% set tipo_conn = state_attr(s.entity_id, 'tipo_connessione') | default('filare') | string %}
+              {% set sensore_sing = state_attr(s.entity_id, 'sensore_origine') %}
+              {% set sensori_plur = state_attr(s.entity_id, 'sensori_origine') %}
+              {% set sensori_cfg_raw = state_attr(s.entity_id, 'sensori_config') %}
+
+              {% if tipo_conn == 'wireless' %}
+                {# === PERCORSO A: sensori_config presente === #}
+                {% if sensori_cfg_raw is not none and sensori_cfg_raw | string not in ['', 'None', 'none'] %}
+                  {% if sensori_cfg_raw is string %}
+                    {% set sensori_cfg = sensori_cfg_raw | from_json %}
+                  {% else %}
+                    {% set sensori_cfg = sensori_cfg_raw %}
+                  {% endif %}
+                  {% for cfg in sensori_cfg %}
+                    {% set tipo_s = cfg.tipo_connessione | default('filare') | string %}
+                    {% if tipo_s == 'wireless' %}
+                      {% set fisico = cfg.entity_id | string %}
+                      {% set nome_base = fisico.split('.')[1] %}
+                      {% set batt_ovr = cfg.batteria_origine | default('') | string %}
+                      {% set batteria_entity = batt_ovr if (batt_ovr != '' and batt_ovr not in ['None','none']) else ('sensor.' ~ nome_base ~ '_battery') %}
+                      {% set batt = states(batteria_entity) | string %}
+                      {% if batt in ['true','True','on'] %}
+                        {# Batteria segnalata bassa (binario) — valore sintetico 5% #}
+                        {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                      {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                        {# Valore numerico normale #}
+                        {% set batt_int = batt | int(-1) %}
+                        {% if batt_int >= 0 %}
+                          {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': batt_int, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                        {% endif %}
+                      {% elif batt in ['unknown','unavailable','none','None',''] %}
+                        {# Fallback: controlla binary_sensor.X_battery_low #}
+                        {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                          {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+
+                {# === PERCORSO B: sensori_origine plurale senza config === #}
+                {% elif sensori_plur is not none and sensori_plur | string not in ['','None','none'] %}
+                  {% set fisici_raw = sensori_plur %}
+                  {% if fisici_raw is string %}{% set fisici = fisici_raw | from_json %}
+                  {% elif fisici_raw is iterable %}{% set fisici = fisici_raw %}
+                  {% else %}{% set fisici = [] %}{% endif %}
+                  {% set ns_grp = namespace(batt_min=999, batt_min_fisico='', has_batt=false) %}
+                  {% for fisico in fisici %}
+                    {% set nome_base = fisico.split('.')[1] %}
+                    {% set batteria_entity = 'sensor.' ~ nome_base ~ '_battery' %}
+                    {% set batt = states(batteria_entity) | string %}
+                    {% if batt in ['true','True','on'] %}
+                      {% if 5 < ns_grp.batt_min %}
+                        {% set ns_grp.batt_min = 5 %}
+                        {% set ns_grp.batt_min_fisico = fisico %}
+                        {% set ns_grp.has_batt = true %}
+                      {% endif %}
+                    {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                      {% set batt_int = batt | int(999) %}
+                      {% if batt_int < ns_grp.batt_min %}
+                        {% set ns_grp.batt_min = batt_int %}
+                        {% set ns_grp.batt_min_fisico = fisico %}
+                        {% set ns_grp.has_batt = true %}
+                      {% endif %}
+                    {% elif batt in ['unknown','unavailable','none','None',''] %}
+                      {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                        {% if 5 < ns_grp.batt_min %}
+                          {% set ns_grp.batt_min = 5 %}
+                          {% set ns_grp.batt_min_fisico = fisico %}
+                          {% set ns_grp.has_batt = true %}
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+                  {% if ns_grp.has_batt %}
+                    {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': ns_grp.batt_min_fisico, 'batteria': ns_grp.batt_min, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% endif %}
+
+                {# === PERCORSO C: sensore_origine singolo === #}
+                {% elif sensore_sing is not none and sensore_sing | string not in ['','None','none'] %}
+                  {% set fisico = sensore_sing | string %}
+                  {% set nome_base = fisico.split('.')[1] %}
+                  {% set batt_ovr = state_attr(s.entity_id,'batteria_origine') | default('') | string %}
+                  {% set batteria_entity = batt_ovr if (batt_ovr != '' and batt_ovr not in ['None','none']) else ('sensor.' ~ nome_base ~ '_battery') %}
+                  {% set batt = states(batteria_entity) | string %}
+                  {% if batt in ['true','True','on'] %}
+                    {# Batteria segnalata bassa (binario) — valore sintetico 5% #}
+                    {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                    {# Valore numerico normale #}
+                    {% set batt_int = batt | int(-1) %}
+                    {% if batt_int >= 0 %}
+                      {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': batt_int, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                    {% endif %}
+                  {% elif batt in ['unknown','unavailable','none','None',''] %}
+                    {# Fallback: controlla binary_sensor.X_battery_low #}
+                    {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                      {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+
+            {% endfor %}
+
+            {{ ns.batt_list }}
+          sensori_bassi: >
+            {% set ns = namespace(batt_list=[]) %}
+            {% set soglia = states('input_number.allarme_core_soglia_batteria_bassa') | float(20) %}
+
+            {% for s in states.binary_sensor
+                | selectattr('entity_id', 'search', '^binary_sensor\.allarme_core_')
+                | rejectattr('entity_id', 'search', 'batteria_critica|sensore_offline') %}
+
+              {% set tipo_conn = state_attr(s.entity_id, 'tipo_connessione') | default('filare') | string %}
+              {% set sensore_sing = state_attr(s.entity_id, 'sensore_origine') %}
+              {% set sensori_plur = state_attr(s.entity_id, 'sensori_origine') %}
+              {% set sensori_cfg_raw = state_attr(s.entity_id, 'sensori_config') %}
+
+              {% if tipo_conn == 'wireless' %}
+                {# === PERCORSO A: sensori_config presente (filtro soglia per-sensore) === #}
+                {% if sensori_cfg_raw is not none and sensori_cfg_raw | string not in ['', 'None', 'none'] %}
+                  {% if sensori_cfg_raw is string %}
+                    {% set sensori_cfg = sensori_cfg_raw | from_json %}
+                  {% else %}
+                    {% set sensori_cfg = sensori_cfg_raw %}
+                  {% endif %}
+                  {% for cfg in sensori_cfg %}
+                    {% set tipo_s = cfg.tipo_connessione | default('filare') | string %}
+                    {% if tipo_s == 'wireless' %}
+                      {% set fisico = cfg.entity_id | string %}
+                      {% set nome_base = fisico.split('.')[1] %}
+                      {% set batt_ovr = cfg.batteria_origine | default('') | string %}
+                      {% set batteria_entity = batt_ovr if (batt_ovr != '' and batt_ovr not in ['None','none']) else ('sensor.' ~ nome_base ~ '_battery') %}
+                      {% set batt = states(batteria_entity) | string %}
+                      {% if batt in ['true','True','on'] %}
+                        {# Batteria segnalata bassa (binario) — valore sintetico 5% #}
+                        {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                      {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                        {% set batt_int = batt | int(-1) %}
+                        {% if batt_int >= 0 and batt_int < soglia %}
+                          {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': batt_int, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                        {% endif %}
+                      {% elif batt in ['unknown','unavailable','none','None',''] %}
+                        {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                          {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+
+                {# === PERCORSO B: sensori_origine plurale senza config === #}
+                {% elif sensori_plur is not none and sensori_plur | string not in ['','None','none'] %}
+                  {% set fisici_raw = sensori_plur %}
+                  {% if fisici_raw is string %}{% set fisici = fisici_raw | from_json %}
+                  {% elif fisici_raw is iterable %}{% set fisici = fisici_raw %}
+                  {% else %}{% set fisici = [] %}{% endif %}
+                  {% set ns_grp = namespace(batt_min=999, batt_min_fisico='', has_batt=false) %}
+                  {% for fisico in fisici %}
+                    {% set nome_base = fisico.split('.')[1] %}
+                    {% set batteria_entity = 'sensor.' ~ nome_base ~ '_battery' %}
+                    {% set batt = states(batteria_entity) | string %}
+                    {% if batt in ['true','True','on'] %}
+                      {% if 5 < ns_grp.batt_min %}
+                        {% set ns_grp.batt_min = 5 %}
+                        {% set ns_grp.batt_min_fisico = fisico %}
+                        {% set ns_grp.has_batt = true %}
+                      {% endif %}
+                    {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                      {% set batt_int = batt | int(999) %}
+                      {% if batt_int < ns_grp.batt_min %}
+                        {% set ns_grp.batt_min = batt_int %}
+                        {% set ns_grp.batt_min_fisico = fisico %}
+                        {% set ns_grp.has_batt = true %}
+                      {% endif %}
+                    {% elif batt in ['unknown','unavailable','none','None',''] %}
+                      {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                        {% if 5 < ns_grp.batt_min %}
+                          {% set ns_grp.batt_min = 5 %}
+                          {% set ns_grp.batt_min_fisico = fisico %}
+                          {% set ns_grp.has_batt = true %}
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+                  {% if ns_grp.has_batt and ns_grp.batt_min < soglia %}
+                    {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': ns_grp.batt_min_fisico, 'batteria': ns_grp.batt_min, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% endif %}
+
+                {# === PERCORSO C: sensore_origine singolo === #}
+                {% elif sensore_sing is not none and sensore_sing | string not in ['','None','none'] %}
+                  {% set fisico = sensore_sing | string %}
+                  {% set nome_base = fisico.split('.')[1] %}
+                  {% set batt_ovr = state_attr(s.entity_id,'batteria_origine') | default('') | string %}
+                  {% set batteria_entity = batt_ovr if (batt_ovr != '' and batt_ovr not in ['None','none']) else ('sensor.' ~ nome_base ~ '_battery') %}
+                  {% set batt = states(batteria_entity) | string %}
+                  {% if batt in ['true','True','on'] %}
+                    {# Batteria segnalata bassa (binario) — valore sintetico 5% #}
+                    {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                    {% set batt_int = batt | int(-1) %}
+                    {% if batt_int >= 0 and batt_int < soglia %}
+                      {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': batt_int, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                    {% endif %}
+                  {% elif batt in ['unknown','unavailable','none','None',''] %}
+                    {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                      {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+
+            {% endfor %}
+
+            {{ ns.batt_list }}
+
+      # -----------------------------------------------------------------------
+      # sensor.allarme_core_batterie_basse
+      # Conta i sensori wireless con batteria sotto soglia.
+      # Con sensori_config: ogni sensore fisico viene contato individualmente.
+      # Con sensori_origine flat: conta il wrapper se il minimo è sotto soglia.
+      # -----------------------------------------------------------------------
+      - name: "Allarme Core Batterie Basse"
+        unique_id: allarme_core_batterie_basse
+        unit_of_measurement: "sensori"
+        state_class: measurement
+        state: >
+          {% set ns = namespace(batt_list=[]) %}
+          {% set soglia = states('input_number.allarme_core_soglia_batteria_bassa') | float(20) %}
+
+          {% for s in states.binary_sensor
+              | selectattr('entity_id', 'search', '^binary_sensor\.allarme_core_')
+              | rejectattr('entity_id', 'search', 'batteria_critica|sensore_offline') %}
+
+            {% set tipo_conn = state_attr(s.entity_id, 'tipo_connessione') | default('filare') | string %}
+            {% set sensore_sing = state_attr(s.entity_id, 'sensore_origine') %}
+            {% set sensori_plur = state_attr(s.entity_id, 'sensori_origine') %}
+            {% set sensori_cfg_raw = state_attr(s.entity_id, 'sensori_config') %}
+
+            {% if tipo_conn == 'wireless' %}
+              {# === PERCORSO A: sensori_config presente (per-sensore individuale) === #}
+              {% if sensori_cfg_raw is not none and sensori_cfg_raw | string not in ['', 'None', 'none'] %}
+                {% if sensori_cfg_raw is string %}
+                  {% set sensori_cfg = sensori_cfg_raw | from_json %}
+                {% else %}
+                  {% set sensori_cfg = sensori_cfg_raw %}
+                {% endif %}
+                {% for cfg in sensori_cfg %}
+                  {% set tipo_s = cfg.tipo_connessione | default('filare') | string %}
+                  {% if tipo_s == 'wireless' %}
+                    {% set fisico = cfg.entity_id | string %}
+                    {% set nome_base = fisico.split('.')[1] %}
+                    {% set batt_ovr = cfg.batteria_origine | default('') | string %}
+                    {% set batteria_entity = batt_ovr if (batt_ovr != '' and batt_ovr not in ['None','none']) else ('sensor.' ~ nome_base ~ '_battery') %}
+                    {% set batt = states(batteria_entity) | string %}
+                    {% if batt in ['true','True','on'] %}
+                      {# Batteria segnalata bassa (binario) — valore sintetico 5% #}
+                      {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                    {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                      {% set batt_int = batt | int(-1) %}
+                      {% if batt_int >= 0 and batt_int < soglia %}
+                        {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': batt_int, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                      {% endif %}
+                    {% elif batt in ['unknown','unavailable','none','None',''] %}
+                      {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                        {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                      {% endif %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+
+              {# === PERCORSO B: sensori_origine plurale senza config === #}
+              {% elif sensori_plur is not none and sensori_plur | string not in ['','None','none'] %}
+                {% set fisici_raw = sensori_plur %}
+                {% if fisici_raw is string %}{% set fisici = fisici_raw | from_json %}
+                {% elif fisici_raw is iterable %}{% set fisici = fisici_raw %}
+                {% else %}{% set fisici = [] %}{% endif %}
+                {% set ns_grp = namespace(batt_min=999, batt_min_fisico='', has_batt=false) %}
+                {% for fisico in fisici %}
+                  {% set nome_base = fisico.split('.')[1] %}
+                  {% set batteria_entity = 'sensor.' ~ nome_base ~ '_battery' %}
+                  {% set batt = states(batteria_entity) | string %}
+                  {% if batt in ['true','True','on'] %}
+                    {% if 5 < ns_grp.batt_min %}
+                      {% set ns_grp.batt_min = 5 %}
+                      {% set ns_grp.batt_min_fisico = fisico %}
+                      {% set ns_grp.has_batt = true %}
+                    {% endif %}
+                  {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                    {% set batt_int = batt | int(999) %}
+                    {% if batt_int < ns_grp.batt_min %}
+                      {% set ns_grp.batt_min = batt_int %}
+                      {% set ns_grp.batt_min_fisico = fisico %}
+                      {% set ns_grp.has_batt = true %}
+                    {% endif %}
+                  {% elif batt in ['unknown','unavailable','none','None',''] %}
+                    {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                      {% if 5 < ns_grp.batt_min %}
+                        {% set ns_grp.batt_min = 5 %}
+                        {% set ns_grp.batt_min_fisico = fisico %}
+                        {% set ns_grp.has_batt = true %}
+                      {% endif %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                {% if ns_grp.has_batt and ns_grp.batt_min < soglia %}
+                  {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': ns_grp.batt_min_fisico, 'batteria': ns_grp.batt_min, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                {% endif %}
+
+              {# === PERCORSO C: sensore_origine singolo === #}
+              {% elif sensore_sing is not none and sensore_sing | string not in ['','None','none'] %}
+                {% set fisico = sensore_sing | string %}
+                {% set nome_base = fisico.split('.')[1] %}
+                {% set batt_ovr = state_attr(s.entity_id,'batteria_origine') | default('') | string %}
+                {% set batteria_entity = batt_ovr if (batt_ovr != '' and batt_ovr not in ['None','none']) else ('sensor.' ~ nome_base ~ '_battery') %}
+                {% set batt = states(batteria_entity) | string %}
+                {% if batt in ['true','True','on'] %}
+                  {# Batteria segnalata bassa (binario) — valore sintetico 5% #}
+                  {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                  {% set batt_int = batt | int(-1) %}
+                  {% if batt_int >= 0 and batt_int < soglia %}
+                    {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': batt_int, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% endif %}
+                {% elif batt in ['unknown','unavailable','none','None',''] %}
+                  {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                    {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+
+          {% endfor %}
+
+          {{ ns.batt_list | count }}
+        attributes:
+          lista: >
+            {% set ns = namespace(batt_list=[]) %}
+            {% set soglia = states('input_number.allarme_core_soglia_batteria_bassa') | float(20) %}
+
+            {% for s in states.binary_sensor
+                | selectattr('entity_id', 'search', '^binary_sensor\.allarme_core_')
+                | rejectattr('entity_id', 'search', 'batteria_critica|sensore_offline') %}
+
+              {% set tipo_conn = state_attr(s.entity_id, 'tipo_connessione') | default('filare') | string %}
+              {% set sensore_sing = state_attr(s.entity_id, 'sensore_origine') %}
+              {% set sensori_plur = state_attr(s.entity_id, 'sensori_origine') %}
+              {% set sensori_cfg_raw = state_attr(s.entity_id, 'sensori_config') %}
+
+              {% if tipo_conn == 'wireless' %}
+                {# === PERCORSO A: sensori_config presente === #}
+                {% if sensori_cfg_raw is not none and sensori_cfg_raw | string not in ['', 'None', 'none'] %}
+                  {% if sensori_cfg_raw is string %}
+                    {% set sensori_cfg = sensori_cfg_raw | from_json %}
+                  {% else %}
+                    {% set sensori_cfg = sensori_cfg_raw %}
+                  {% endif %}
+                  {% for cfg in sensori_cfg %}
+                    {% set tipo_s = cfg.tipo_connessione | default('filare') | string %}
+                    {% if tipo_s == 'wireless' %}
+                      {% set fisico = cfg.entity_id | string %}
+                      {% set nome_base = fisico.split('.')[1] %}
+                      {% set batt_ovr = cfg.batteria_origine | default('') | string %}
+                      {% set batteria_entity = batt_ovr if (batt_ovr != '' and batt_ovr not in ['None','none']) else ('sensor.' ~ nome_base ~ '_battery') %}
+                      {% set batt = states(batteria_entity) | string %}
+                      {% if batt in ['true','True','on'] %}
+                        {# Batteria segnalata bassa (binario) — valore sintetico 5% #}
+                        {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                      {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                        {% set batt_int = batt | int(-1) %}
+                        {% if batt_int >= 0 and batt_int < soglia %}
+                          {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': batt_int, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                        {% endif %}
+                      {% elif batt in ['unknown','unavailable','none','None',''] %}
+                        {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                          {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+
+                {# === PERCORSO B: sensori_origine plurale senza config === #}
+                {% elif sensori_plur is not none and sensori_plur | string not in ['','None','none'] %}
+                  {% set fisici_raw = sensori_plur %}
+                  {% if fisici_raw is string %}{% set fisici = fisici_raw | from_json %}
+                  {% elif fisici_raw is iterable %}{% set fisici = fisici_raw %}
+                  {% else %}{% set fisici = [] %}{% endif %}
+                  {% set ns_grp = namespace(batt_min=999, batt_min_fisico='', has_batt=false) %}
+                  {% for fisico in fisici %}
+                    {% set nome_base = fisico.split('.')[1] %}
+                    {% set batteria_entity = 'sensor.' ~ nome_base ~ '_battery' %}
+                    {% set batt = states(batteria_entity) | string %}
+                    {% if batt in ['true','True','on'] %}
+                      {% if 5 < ns_grp.batt_min %}
+                        {% set ns_grp.batt_min = 5 %}
+                        {% set ns_grp.batt_min_fisico = fisico %}
+                        {% set ns_grp.has_batt = true %}
+                      {% endif %}
+                    {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                      {% set batt_int = batt | int(999) %}
+                      {% if batt_int < ns_grp.batt_min %}
+                        {% set ns_grp.batt_min = batt_int %}
+                        {% set ns_grp.batt_min_fisico = fisico %}
+                        {% set ns_grp.has_batt = true %}
+                      {% endif %}
+                    {% elif batt in ['unknown','unavailable','none','None',''] %}
+                      {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                        {% if 5 < ns_grp.batt_min %}
+                          {% set ns_grp.batt_min = 5 %}
+                          {% set ns_grp.batt_min_fisico = fisico %}
+                          {% set ns_grp.has_batt = true %}
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+                  {% if ns_grp.has_batt and ns_grp.batt_min < soglia %}
+                    {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': ns_grp.batt_min_fisico, 'batteria': ns_grp.batt_min, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% endif %}
+
+                {# === PERCORSO C: sensore_origine singolo === #}
+                {% elif sensore_sing is not none and sensore_sing | string not in ['','None','none'] %}
+                  {% set fisico = sensore_sing | string %}
+                  {% set nome_base = fisico.split('.')[1] %}
+                  {% set batt_ovr = state_attr(s.entity_id,'batteria_origine') | default('') | string %}
+                  {% set batteria_entity = batt_ovr if (batt_ovr != '' and batt_ovr not in ['None','none']) else ('sensor.' ~ nome_base ~ '_battery') %}
+                  {% set batt = states(batteria_entity) | string %}
+                  {% if batt in ['true','True','on'] %}
+                    {# Batteria segnalata bassa (binario) — valore sintetico 5% #}
+                    {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% elif batt not in ['unknown','unavailable','none','None','','false','False','off'] %}
+                    {% set batt_int = batt | int(-1) %}
+                    {% if batt_int >= 0 and batt_int < soglia %}
+                      {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': batt_int, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                    {% endif %}
+                  {% elif batt in ['unknown','unavailable','none','None',''] %}
+                    {% if states('binary_sensor.' ~ nome_base ~ '_battery_low') == 'on' %}
+                      {% set ns.batt_list = ns.batt_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'batteria': 5, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+
+            {% endfor %}
+
+            {{ ns.batt_list }}
+
+      # -----------------------------------------------------------------------
+      # sensor.allarme_core_sensori_offline
+      # Conta i sensori wireless il cui canale di disponibilità risulta 'off'.
+      # Con sensori_config: ogni sensore fisico viene contato individualmente.
+      # -----------------------------------------------------------------------
+      - name: "Allarme Core Sensori Offline"
+        unique_id: allarme_core_sensori_offline
+        unit_of_measurement: "sensori"
+        state_class: measurement
+        state: >
+          {% set ns = namespace(offline_list=[]) %}
+
+          {% for s in states.binary_sensor
+              | selectattr('entity_id', 'search', '^binary_sensor\.allarme_core_')
+              | rejectattr('entity_id', 'search', 'batteria_critica|sensore_offline') %}
+
+            {% set tipo_conn = state_attr(s.entity_id, 'tipo_connessione') | default('filare') | string %}
+            {% set sensore_sing = state_attr(s.entity_id, 'sensore_origine') %}
+            {% set sensori_plur = state_attr(s.entity_id, 'sensori_origine') %}
+            {% set sensori_cfg_raw = state_attr(s.entity_id, 'sensori_config') %}
+
+            {% if tipo_conn == 'wireless' %}
+              {# === PERCORSO A: sensori_config presente === #}
+              {% if sensori_cfg_raw is not none and sensori_cfg_raw | string not in ['','None','none'] %}
+                {% if sensori_cfg_raw is string %}{% set sensori_cfg = sensori_cfg_raw | from_json %}
+                {% else %}{% set sensori_cfg = sensori_cfg_raw %}{% endif %}
+                {% for cfg in sensori_cfg %}
+                  {% set tipo_s = cfg.tipo_connessione | default('filare') | string %}
+                  {% if tipo_s == 'wireless' %}
+                    {% set fisico = cfg.entity_id | string %}
+                    {% set nome_base = fisico.split('.')[1] %}
+                    {% set avail_ovr = cfg.disponibilita_origine | default('') | string %}
+                    {% set avail_entity = avail_ovr if (avail_ovr != '' and avail_ovr not in ['None','none']) else ('binary_sensor.' ~ nome_base ~ '_availability') %}
+                    {% if states(avail_entity) == 'off' %}
+                      {% set ns.offline_list = ns.offline_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+
+              {# === PERCORSO B: sensori_origine plurale senza config === #}
+              {% elif sensori_plur is not none and sensori_plur | string not in ['','None','none'] %}
+                {% set fisici_raw = sensori_plur %}
+                {% if fisici_raw is string %}{% set fisici = fisici_raw | from_json %}
+                {% elif fisici_raw is iterable %}{% set fisici = fisici_raw %}
+                {% else %}{% set fisici = [] %}{% endif %}
+                {% for fisico in fisici %}
+                  {% set nome_base = fisico.split('.')[1] %}
+                  {% set avail_entity = 'binary_sensor.' ~ nome_base ~ '_availability' %}
+                  {% if states(avail_entity) == 'off' %}
+                    {% set ns.offline_list = ns.offline_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% endif %}
+                {% endfor %}
+
+              {# === PERCORSO C: sensore_origine singolo === #}
+              {% elif sensore_sing is not none and sensore_sing | string not in ['','None','none'] %}
+                {% set fisico = sensore_sing | string %}
+                {% set nome_base = fisico.split('.')[1] %}
+                {% set avail_ovr = state_attr(s.entity_id,'disponibilita_origine') | default('') | string %}
+                {% set avail_entity = avail_ovr if (avail_ovr != '' and avail_ovr not in ['None','none']) else ('binary_sensor.' ~ nome_base ~ '_availability') %}
+                {% if states(avail_entity) == 'off' %}
+                  {% set ns.offline_list = ns.offline_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+
+          {% endfor %}
+
+          {{ ns.offline_list | count }}
+        attributes:
+          lista_offline: >
+            {% set ns = namespace(offline_list=[]) %}
+
+            {% for s in states.binary_sensor
+                | selectattr('entity_id', 'search', '^binary_sensor\.allarme_core_')
+                | rejectattr('entity_id', 'search', 'batteria_critica|sensore_offline') %}
+
+              {% set tipo_conn = state_attr(s.entity_id, 'tipo_connessione') | default('filare') | string %}
+              {% set sensore_sing = state_attr(s.entity_id, 'sensore_origine') %}
+              {% set sensori_plur = state_attr(s.entity_id, 'sensori_origine') %}
+              {% set sensori_cfg_raw = state_attr(s.entity_id, 'sensori_config') %}
+
+              {% if tipo_conn == 'wireless' %}
+                {# === PERCORSO A: sensori_config presente === #}
+                {% if sensori_cfg_raw is not none and sensori_cfg_raw | string not in ['','None','none'] %}
+                  {% if sensori_cfg_raw is string %}{% set sensori_cfg = sensori_cfg_raw | from_json %}
+                  {% else %}{% set sensori_cfg = sensori_cfg_raw %}{% endif %}
+                  {% for cfg in sensori_cfg %}
+                    {% set tipo_s = cfg.tipo_connessione | default('filare') | string %}
+                    {% if tipo_s == 'wireless' %}
+                      {% set fisico = cfg.entity_id | string %}
+                      {% set nome_base = fisico.split('.')[1] %}
+                      {% set avail_ovr = cfg.disponibilita_origine | default('') | string %}
+                      {% set avail_entity = avail_ovr if (avail_ovr != '' and avail_ovr not in ['None','none']) else ('binary_sensor.' ~ nome_base ~ '_availability') %}
+                      {% if states(avail_entity) == 'off' %}
+                        {% set ns.offline_list = ns.offline_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'nome': (state_attr(s.entity_id,'friendly_name') | default(s.entity_id)) ~ ' – ' ~ nome_base}] %}
+                      {% endif %}
+                    {% endif %}
+                  {% endfor %}
+
+                {# === PERCORSO B: sensori_origine plurale senza config === #}
+                {% elif sensori_plur is not none and sensori_plur | string not in ['','None','none'] %}
+                  {% set fisici_raw = sensori_plur %}
+                  {% if fisici_raw is string %}{% set fisici = fisici_raw | from_json %}
+                  {% elif fisici_raw is iterable %}{% set fisici = fisici_raw %}
+                  {% else %}{% set fisici = [] %}{% endif %}
+                  {% for fisico in fisici %}
+                    {% set nome_base = fisico.split('.')[1] %}
+                    {% set avail_entity = 'binary_sensor.' ~ nome_base ~ '_availability' %}
+                    {% if states(avail_entity) == 'off' %}
+                      {% set ns.offline_list = ns.offline_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                    {% endif %}
+                  {% endfor %}
+
+                {# === PERCORSO C: sensore_origine singolo === #}
+                {% elif sensore_sing is not none and sensore_sing | string not in ['','None','none'] %}
+                  {% set fisico = sensore_sing | string %}
+                  {% set nome_base = fisico.split('.')[1] %}
+                  {% set avail_ovr = state_attr(s.entity_id,'disponibilita_origine') | default('') | string %}
+                  {% set avail_entity = avail_ovr if (avail_ovr != '' and avail_ovr not in ['None','none']) else ('binary_sensor.' ~ nome_base ~ '_availability') %}
+                  {% if states(avail_entity) == 'off' %}
+                    {% set ns.offline_list = ns.offline_list + [{'wrapper': s.entity_id, 'fisico': fisico, 'nome': state_attr(s.entity_id,'friendly_name') | default(s.entity_id)}] %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+
+            {% endfor %}
+
+            {{ ns.offline_list }}
+
+      # -----------------------------------------------------------------------
+      # sensor.allarme_core_stato_batterie
+      # Sensore di riepilogo per Node-RED: critical | warning | ok
+      # -----------------------------------------------------------------------
+      - name: "Allarme Core Stato Batterie"
+        unique_id: allarme_core_stato_batterie
+        state: >
+          {% set critico = states('binary_sensor.allarme_core_batteria_critica') == 'on' %}
+          {% set offline  = states('binary_sensor.allarme_core_sensore_offline') == 'on' %}
+          {% set basse    = states('sensor.allarme_core_batterie_basse') | int(0) %}
+          {% if critico or offline %}
+            critical
+          {% elif basse > 0 %}
+            warning
+          {% else %}
+            ok
+          {% endif %}
+        attributes:
+          livello: >
+            {% set critico = states('binary_sensor.allarme_core_batteria_critica') == 'on' %}
+            {% set offline  = states('binary_sensor.allarme_core_sensore_offline') == 'on' %}
+            {% set basse    = states('sensor.allarme_core_batterie_basse') | int(0) %}
+            {% if critico or offline %}
+              critical
+            {% elif basse > 0 %}
+              warning
+            {% else %}
+              ok
+            {% endif %}
+          batteria_minima: "{{ states('sensor.allarme_core_batteria_minima') | int(0) }}"
+          contatore_batterie_basse: "{{ states('sensor.allarme_core_batterie_basse') | int(0) }}"
+          contatore_offline: "{{ states('sensor.allarme_core_sensori_offline') | int(0) }}"
+          batterie_basse: "{{ state_attr('sensor.allarme_core_batterie_basse', 'lista') | default([]) }}"
+          sensori_offline: "{{ state_attr('sensor.allarme_core_sensori_offline', 'lista_offline') | default([]) }}"
+          soglia_corrente: "{{ states('input_number.allarme_core_soglia_batteria_bassa') | float(20) }}"
+          ultimo_aggiornamento: "{{ now().isoformat() }}"
+
+  - binary_sensor:
+
+      # -----------------------------------------------------------------------
+      # binary_sensor.allarme_core_batteria_critica
+      # ON se almeno un sensore wireless è sotto soglia batteria.
+      # -----------------------------------------------------------------------
+      - name: "Allarme Core Batteria Critica"
+        unique_id: allarme_core_batteria_critica
+        device_class: problem
+        state: >
+          {{ states('sensor.allarme_core_batterie_basse') | int(0) > 0 }}
+
+      # -----------------------------------------------------------------------
+      # binary_sensor.allarme_core_sensore_offline
+      # ON se almeno un sensore wireless risulta offline (availability = off).
+      # -----------------------------------------------------------------------
+      - name: "Allarme Core Sensore Offline"
+        unique_id: allarme_core_sensore_offline
+        device_class: problem
+        state: >
+          {{ states('sensor.allarme_core_sensori_offline') | int(0) > 0 }}
