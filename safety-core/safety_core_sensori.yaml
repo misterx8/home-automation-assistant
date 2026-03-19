@@ -202,6 +202,9 @@ template:
         camera: "{{ states('input_text.safety_core_fumo_studio_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_fumo_studio_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: sensor.batteria_sensore_fumo_studio
+        disponibilita_origine: binary_sensor.disponibilita_sensore_fumo_studio
 
     - name: "Safety Core Fumo Ufficio"
       unique_id: safety_core_fumo_ufficio
@@ -222,6 +225,9 @@ template:
         camera: "{{ states('input_text.safety_core_fumo_ufficio_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_fumo_ufficio_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: sensor.batteria_sensore_fumo_ufficio
+        disponibilita_origine: binary_sensor.disponibilita_sensore_fumo_ufficio
 
     - name: "Safety Core Fumo Tecnologico P1"
       unique_id: safety_core_fumo_tecnologico_p1
@@ -242,6 +248,9 @@ template:
         camera: "{{ states('input_text.safety_core_fumo_tecnologico_p1_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_fumo_tecnologico_p1_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: binary_sensor.batteria_sensore_fumo_tecnologico_p1
+        disponibilita_origine: binary_sensor.disponibilita_sensore_fumo_tec_p1
 
     - name: "Safety Core Fumo Cucina"
       unique_id: safety_core_fumo_cucina
@@ -262,6 +271,9 @@ template:
         camera: "{{ states('input_text.safety_core_fumo_cucina_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_fumo_cucina_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: binary_sensor.batteria_sensore_fumo_cucina
+        disponibilita_origine: ""
 
     - name: "Safety Core Fumo Solaio"
       unique_id: safety_core_fumo_solaio
@@ -282,6 +294,9 @@ template:
         camera: "{{ states('input_text.safety_core_fumo_solaio_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_fumo_solaio_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     - name: "Safety Core Fumo Tecnologico PT"
       unique_id: safety_core_fumo_tecnologico_pt
@@ -302,6 +317,9 @@ template:
         camera: "{{ states('input_text.safety_core_fumo_tecnologico_pt_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_fumo_tecnologico_pt_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_fumo_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     # endregion
 
@@ -326,6 +344,9 @@ template:
         camera: "{{ states('input_text.safety_core_gas_cucina_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_gas_cucina_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_gas_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     - name: "Safety Core Gas Caldaia"
       unique_id: safety_core_gas_caldaia
@@ -346,6 +367,9 @@ template:
         camera: "{{ states('input_text.safety_core_gas_caldaia_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_gas_caldaia_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_gas_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     - name: "Safety Core Gas Studio"
       unique_id: safety_core_gas_studio
@@ -366,6 +390,9 @@ template:
         camera: "{{ states('input_text.safety_core_gas_studio_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_gas_studio_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_gas_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     # endregion
 
@@ -390,6 +417,9 @@ template:
         camera: "{{ states('input_text.safety_core_carbonio_taverna_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_carbonio_taverna_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_carbonio_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     # endregion
 
@@ -414,6 +444,9 @@ template:
         camera: "{{ states('input_text.safety_core_acqua_vasca_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_acqua_vasca_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     - name: "Safety Core Acqua Bagno"
       unique_id: safety_core_acqua_bagno
@@ -434,6 +467,9 @@ template:
         camera: "{{ states('input_text.safety_core_acqua_bagno_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_acqua_bagno_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     - name: "Safety Core Acqua Cucina Principale"
       unique_id: safety_core_acqua_cucina_principale
@@ -454,6 +490,9 @@ template:
         camera: "{{ states('input_text.safety_core_acqua_cucina_principale_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_acqua_cucina_principale_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     - name: "Safety Core Acqua Doccia"
       unique_id: safety_core_acqua_doccia
@@ -474,6 +513,9 @@ template:
         camera: "{{ states('input_text.safety_core_acqua_doccia_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_acqua_doccia_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     - name: "Safety Core Acqua Lavanderia"
       unique_id: safety_core_acqua_lavanderia
@@ -494,6 +536,9 @@ template:
         camera: "{{ states('input_text.safety_core_acqua_lavanderia_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_acqua_lavanderia_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     - name: "Safety Core Acqua Lavello Cucina"
       unique_id: safety_core_acqua_lavello_cucina
@@ -514,6 +559,9 @@ template:
         camera: "{{ states('input_text.safety_core_acqua_lavello_cucina_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_acqua_lavello_cucina_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     - name: "Safety Core Acqua Studio"
       unique_id: safety_core_acqua_studio
@@ -534,6 +582,9 @@ template:
         camera: "{{ states('input_text.safety_core_acqua_studio_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_acqua_studio_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     - name: "Safety Core Acqua Stufa"
       unique_id: safety_core_acqua_stufa
@@ -554,6 +605,9 @@ template:
         camera: "{{ states('input_text.safety_core_acqua_stufa_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_acqua_stufa_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     - name: "Safety Core Acqua Tecnologico PT"
       unique_id: safety_core_acqua_tecnologico_pt
@@ -574,6 +628,9 @@ template:
         camera: "{{ states('input_text.safety_core_acqua_tecnologico_pt_camera').split(',') }}"
         abilitato: "{{ is_state('input_boolean.safety_core_acqua_tecnologico_pt_abilitato','on') }}"
         categoria_abilitata: "{{ is_state('input_boolean.safety_core_categoria_acqua_abilitato','on') }}"
+        tipo_connessione: wireless
+        batteria_origine: ""
+        disponibilita_origine: ""
 
     # endregion
 

@@ -1334,6 +1334,60 @@ sections:
           arr|length == 0 %} Nessuna clip disponibile. {% else %} {% for u in
           arr %} - [Apri clip {{ loop.index }}]({{ u }}) {% endfor %} {% endif
           %}
+  - type: grid
+    cards:
+      - type: heading
+        heading: Batterie & Connettività
+        heading_style: title
+        icon: mdi:battery-heart-variant
+      - type: gauge
+        entity: sensor.safety_core_batteria_minima
+        name: "Batteria Minima"
+        min: 0
+        max: 100
+        severity:
+          green: 30
+          yellow: 20
+          red: 0
+        needle: true
+      - type: entity
+        entity: sensor.safety_core_batterie_basse
+        name: "Batterie Basse"
+        icon: mdi:battery-alert
+      - type: entity
+        entity: sensor.safety_core_sensori_offline
+        name: "Sensori Offline"
+        icon: mdi:wifi-off
+      - type: markdown
+        title: "Sensori con batteria bassa"
+        content: |-
+          {% set lista = state_attr('sensor.safety_core_batterie_basse', 'lista') | default([]) %}
+          {% if lista | length == 0 %}
+          Nessun sensore sotto soglia.
+          {% else %}
+          | Nome | Batteria |
+          |------|----------|
+          {% for s in lista %}| {{ s.nome }} | {{ s.batteria }}% |
+          {% endfor %}{% endif %}
+      - type: markdown
+        title: "Sensori offline"
+        content: |-
+          {% set lista = state_attr('sensor.safety_core_sensori_offline', 'lista_offline') | default([]) %}
+          {% if lista | length == 0 %}
+          Tutti i sensori sono online.
+          {% else %}
+          | Nome | Fisico |
+          |------|--------|
+          {% for s in lista %}| {{ s.nome }} | {{ s.fisico }} |
+          {% endfor %}{% endif %}
+      - type: entities
+        title: "Configurazione monitoraggio"
+        entities:
+          - entity: input_number.safety_core_soglia_batteria_bassa
+            name: "Soglia batteria bassa"
+          - entity: input_number.safety_core_debounce_offline_minuti
+            name: "Debounce offline (minuti)"
+
 header:
   card:
     type: markdown
