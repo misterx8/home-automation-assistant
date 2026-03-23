@@ -5,7 +5,13 @@
       "Bash(find:*)",
       "Bash(python _patch_plancia.py)",
       "Bash(python3 _patch_plancia.py)",
-      "Bash(py _patch_plancia.py)"
+      "Bash(py _patch_plancia.py)",
+      "Bash(xxd \"C:/VSCODE/Progetti/home-assistant/allarme-core/nodered/mosaico_immagini.json\")",
+      "Bash(python3.exe --version)",
+      "Bash(py --version)",
+      "Bash(where node:*)",
+      "Bash(/c/Users/mm_an/AppData/Local/Microsoft/WindowsApps/python.exe --version)",
+      "Bash(/c/Windows/System32/wscript.exe //?)"
     ]
   }
 }
