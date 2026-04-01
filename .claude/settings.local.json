@@ -11,7 +11,8 @@
       "Bash(py --version)",
       "Bash(where node:*)",
       "Bash(/c/Users/mm_an/AppData/Local/Microsoft/WindowsApps/python.exe --version)",
-      "Bash(/c/Windows/System32/wscript.exe //?)"
+      "Bash(/c/Windows/System32/wscript.exe //?)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

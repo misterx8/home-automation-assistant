@@ -58,19 +58,10 @@ automation:
         entity_id: input_select.allarme_core_stato
         to: "armed"
 
-      - platform: state
-        entity_id: input_select.allarme_core_stato
-        to: "arming"
-
     action:
-      - wait_for_trigger:
-          - platform: state
-            entity_id: binary_sensor.allarme_core_sensori_aperti_su_profilo_attivo
-            to: "on"
-        timeout:
-          seconds: "{{ states('input_number.allarme_core_arming_delay') | int(20) }}"
-        continue_on_timeout: true  # Continua anche se non diventa on, per sicurezza
-
+      # Snapshot immediata al momento esatto di armed: solo i sensori ancora aperti
+      # in questo istante vengono esclusi. Sensori aperti/chiusi durante l'arming
+      # (es. porta di casa mentre si esce) non vengono inclusi se già richiusi.
       # FIX AC-BUG-01 (residuo): entity_id spostato da data: a target: anche qui
       - service: input_text.set_value
         target:
@@ -89,19 +80,9 @@ automation:
         entity_id: input_select.allarme_core_stato
         to: "armed"
 
-      - platform: state
-        entity_id: input_select.allarme_core_stato
-        to: "arming"
-
     action:
-      - wait_for_trigger:
-          - platform: state
-            entity_id: binary_sensor.allarme_core_sensori_aperti_su_profilo_attivo
-            to: "on"
-        timeout:
-          seconds: "{{ states('input_number.allarme_core_arming_delay') | int(20) }}"
-        continue_on_timeout: true
-
+      # Snapshot immediata al momento esatto di armed: stessa logica dell'automazione
+      # gemella che scrive input_text. Le due var devono sempre essere allineate.
       - service: var.set
         data:
           entity_id:
