@@ -390,3 +390,33 @@ template:
           {% else %}
             {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
           {% endif %}
+
+    - name: "allarme_core_vibrazione_cucina_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_vibrazione_cucina_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_vibrazione_bagno_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_vibrazione_bagno_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+
+    - name: "allarme_core_vibrazione_lavanderia_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_vibrazione_lavanderia_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}

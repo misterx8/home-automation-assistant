@@ -2332,6 +2332,83 @@ sections:
               right: 12px;
               font-size: 1.2em;
             } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_vibrazione_cucina
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_vibrazione_cucina_abilitato
+                - entity: input_text.allarme_core_vibrazione_cucina_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_vibrazione_cucina_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_vibrazione_cucina_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_vibrazione_cucina_zone')
+            %} {% set camera =
+            states('input_text.allarme_core_vibrazione_cucina_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_vibrazione_cucina_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
       - type: heading
         icon: ""
         heading: Bagno
@@ -2465,6 +2542,83 @@ sections:
             {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
 
             {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_vibrazione_bagno
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_vibrazione_bagno_abilitato
+                - entity: input_text.allarme_core_vibrazione_bagno_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_vibrazione_bagno_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_vibrazione_bagno_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_vibrazione_bagno_zone')
+            %} {% set camera =
+            states('input_text.allarme_core_vibrazione_bagno_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_vibrazione_bagno_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
             {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {
@@ -2631,6 +2785,83 @@ sections:
             {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
 
             {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_vibrazione_lavanderia
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_vibrazione_lavanderia_abilitato
+                - entity: input_text.allarme_core_vibrazione_lavanderia_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_vibrazione_lavanderia_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_vibrazione_lavanderia_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_vibrazione_lavanderia_zone')
+            %} {% set camera =
+            states('input_text.allarme_core_vibrazione_lavanderia_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_vibrazione_lavanderia_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
             {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
 
             ha-card {

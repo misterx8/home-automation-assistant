@@ -28,6 +28,9 @@ input_boolean:
   allarme_core_finestra_cucina_abilitato:
     name: "Allarme finestra cucina Abilitato"
     icon: mdi:shield-check
+  allarme_core_vibrazione_cucina_abilitato:
+    name: "Allarme Vibrazione Cucina Abilitato"
+    icon: mdi:shield-check
   #endregion
 
   #region bagno
@@ -37,6 +40,9 @@ input_boolean:
   allarme_core_finestra_bagno_abilitato:
     name: "Allarme finestra bagno Abilitato"
     icon: mdi:shield-check
+  allarme_core_vibrazione_bagno_abilitato:
+    name: "Allarme Vibrazione Bagno Abilitato"
+    icon: mdi:shield-check
   #endregion
 
   #region lavanderia
@@ -45,6 +51,9 @@ input_boolean:
     icon: mdi:shield-check
   allarme_core_finestra_lavanderia_abilitato:
     name: "Allarme finestra lavanderia Abilitato"
+    icon: mdi:shield-check
+  allarme_core_vibrazione_lavanderia_abilitato:
+    name: "Allarme Vibrazione Lavanderia Abilitato"
     icon: mdi:shield-check
   #endregion
 
@@ -201,6 +210,9 @@ input_text:
   allarme_core_finestra_cucina_zone:
     name: "Zone finestra cucina"
     pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_vibrazione_cucina_zone:
+    name: "Zone Vibrazione Cucina"
+    pattern: "^[^,]+(,[^,]+)*$"
   #endregion
 
   #region bagno
@@ -210,6 +222,9 @@ input_text:
   allarme_core_finestra_bagno_zone:
     name: "Zone finestra bagno"
     pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_vibrazione_bagno_zone:
+    name: "Zone Vibrazione Bagno"
+    pattern: "^[^,]+(,[^,]+)*$"
   #endregion
 
   #region lavanderia
@@ -218,6 +233,9 @@ input_text:
     pattern: "^[^,]+(,[^,]+)*$"
   allarme_core_finestra_lavanderia_zone:
     name: "Zone finestra lavanderia"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_vibrazione_lavanderia_zone:
+    name: "Zone Vibrazione Lavanderia"
     pattern: "^[^,]+(,[^,]+)*$"
   #endregion
 
@@ -373,6 +391,9 @@ input_text:
   allarme_core_finestra_cucina_camera:
     name: "Camera finestra cucina Allarme"
     pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_vibrazione_cucina_camera:
+    name: "Camera Vibrazione Cucina Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
   #endregion
 
   #region bagno
@@ -382,6 +403,9 @@ input_text:
   allarme_core_finestra_bagno_camera:
     name: "Camera finestra bagno Allarme"
     pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_vibrazione_bagno_camera:
+    name: "Camera Vibrazione Bagno Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
   #endregion
 
   #region lavanderia
@@ -390,6 +414,9 @@ input_text:
     pattern: "^[^,]+(,[^,]+)*$"
   allarme_core_finestra_lavanderia_camera:
     name: "Camera finestra lavanderia Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_vibrazione_lavanderia_camera:
+    name: "Camera Vibrazione Lavanderia Allarme"
     pattern: "^[^,]+(,[^,]+)*$"
   #endregion
 
@@ -711,7 +738,8 @@ template:
       state: >
         {% set sorgenti = [
           'binary_sensor.vibrazione_entrata_taverna',
-          'binary_sensor.vibrazione_tapparella_taverna'
+          'binary_sensor.vibrazione_tapparella_taverna',
+          'binary_sensor.vibrazione_taverna_divano'
         ] %}
         {% set abilitato = is_state('input_boolean.allarme_core_vibrazione_ingresso_taverna_abilitato','on') %}
 
@@ -725,26 +753,30 @@ template:
         sensori_origine: >
           {{ [
             'binary_sensor.vibrazione_entrata_taverna',
-            'binary_sensor.vibrazione_tapparella_taverna'
+            'binary_sensor.vibrazione_tapparella_taverna',
+            'binary_sensor.vibrazione_taverna_divano'
           ] | to_json }}
 
         sensori_config: >
           {{ [
             {'entity_id': 'binary_sensor.vibrazione_entrata_taverna', 'tipo_connessione': 'wireless', 'batteria_origine': 'sensor.batteria_vibrazione_entrata_taverna', 'disponibilita_origine': 'binary_sensor.disponibilita_vibrazione_entrata_taverna'},
-            {'entity_id': 'binary_sensor.vibrazione_tapparella_taverna', 'tipo_connessione': 'wireless', 'batteria_origine': 'binary_sensor.batteria_vibrazione_tapparella_taverna', 'disponibilita_origine': 'binary_sensor.disponibilita_vibrazione_tapparella_taverna'}
+            {'entity_id': 'binary_sensor.vibrazione_tapparella_taverna', 'tipo_connessione': 'wireless', 'batteria_origine': 'binary_sensor.batteria_vibrazione_tapparella_taverna', 'disponibilita_origine': 'binary_sensor.disponibilita_vibrazione_tapparella_taverna'},
+            {'entity_id': 'binary_sensor.vibrazione_taverna_divano', 'tipo_connessione': 'wireless', 'batteria_origine': 'sensor.batteria_vibrazione_taverna_divano', 'disponibilita_origine': 'binary_sensor.disponibilita_vibrazione_taverna_divano'}
           ] | to_json }}
 
         sensori_aperti: >
           {% set sorgenti = [
             'binary_sensor.vibrazione_entrata_taverna',
-            'binary_sensor.vibrazione_tapparella_taverna'
+            'binary_sensor.vibrazione_tapparella_taverna',
+            'binary_sensor.vibrazione_taverna_divano'
           ] %}
           {{ sorgenti | select('is_state','on') | list }}
 
         nomi_aperti: >
           {% set sorgenti = [
             'binary_sensor.vibrazione_entrata_taverna',
-            'binary_sensor.vibrazione_tapparella_taverna'
+            'binary_sensor.vibrazione_tapparella_taverna',
+            'binary_sensor.vibrazione_taverna_divano'
           ] %}
           {{ sorgenti | select('is_state','on') | map('state_attr','friendly_name') | list }}
 
@@ -851,6 +883,51 @@ template:
 
         abilitato: "{{ is_state('input_boolean.allarme_core_finestra_cucina_abilitato','on') }}"
 
+    - name: "Allarme Core Vibrazione Cucina"
+      unique_id: allarme_core_vibrazione_cucina
+      device_class: vibration
+      state: >
+        {% set sorgenti = [
+          'binary_sensor.vibrazione_cucina_sottoscala',
+          'binary_sensor.vibrazione_cucina_lavello'
+        ] %}
+        {% set abilitato = is_state('input_boolean.allarme_core_vibrazione_cucina_abilitato','on') %}
+        {% if not abilitato %}
+          off
+        {% else %}
+          {{ 'on' if sorgenti | select('is_state','on') | list | count > 0 else 'off' }}
+        {% endif %}
+      attributes:
+        sensori_origine: >
+          {{ [
+            'binary_sensor.vibrazione_cucina_sottoscala',
+            'binary_sensor.vibrazione_cucina_lavello'
+          ] | to_json }}
+        sensori_config: >
+          {{ [
+            {'entity_id': 'binary_sensor.vibrazione_cucina_sottoscala', 'tipo_connessione': 'wireless', 'batteria_origine': 'sensor.batteria_vibrazione_cucina_sottoscala', 'disponibilita_origine': 'binary_sensor.disponibilita_vibrazione_cucina_sottoscala'},
+            {'entity_id': 'binary_sensor.vibrazione_cucina_lavello', 'tipo_connessione': 'wireless', 'batteria_origine': 'sensor.batteria_vibrazione_cucina_lavello', 'disponibilita_origine': 'binary_sensor.disponibilita_vibrazione_cucina_lavello'}
+          ] | to_json }}
+        sensori_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.vibrazione_cucina_sottoscala',
+            'binary_sensor.vibrazione_cucina_lavello'
+          ] %}
+          {{ sorgenti | select('is_state','on') | list }}
+        nomi_aperti: >
+          {% set sorgenti = [
+            'binary_sensor.vibrazione_cucina_sottoscala',
+            'binary_sensor.vibrazione_cucina_lavello'
+          ] %}
+          {{ sorgenti | select('is_state','on') | map('state_attr','friendly_name') | list }}
+        tipo_connessione: wireless
+        tipo: vibrazione
+        priorita: media
+        ritardo: 0
+        zone: "{{ states('input_text.allarme_core_vibrazione_cucina_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_vibrazione_cucina_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.allarme_core_vibrazione_cucina_abilitato','on') }}"
+
   #endregion
 
   #region bagno
@@ -947,6 +1024,33 @@ template:
 
         abilitato: "{{ is_state('input_boolean.allarme_core_finestre_bagno_abilitato','on') }}"
 
+    - name: "Allarme Core Vibrazione Bagno"
+      unique_id: allarme_core_vibrazione_bagno
+      device_class: vibration
+      state: >
+        {% set porta = states('binary_sensor.vibrazione_bagno') %}
+        {% set abilitato = is_state('input_boolean.allarme_core_vibrazione_bagno_abilitato','on') %}
+        {% if porta in ['on','off'] %}
+          {% if abilitato %}
+            {{ porta }}
+          {% else %}
+            off
+          {% endif %}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.vibrazione_bagno
+        tipo_connessione: wireless
+        batteria_origine: sensor.batteria_vibrazione_bagno
+        disponibilita_origine: binary_sensor.disponibilita_vibrazione_bagno
+        tipo: vibrazione
+        priorita: media
+        ritardo: 0
+        zone: "{{ states('input_text.allarme_core_vibrazione_bagno_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_vibrazione_bagno_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.allarme_core_vibrazione_bagno_abilitato','on') }}"
+
   #endregion
 
   #region lavanderia
@@ -1010,6 +1114,33 @@ template:
         camera: "{{ states('input_text.allarme_core_finestra_lavanderia_camera').split(',') }}"
 
         abilitato: "{{ is_state('input_boolean.allarme_core_finestra_lavanderia_abilitato','on') }}"
+
+    - name: "Allarme Core Vibrazione Lavanderia"
+      unique_id: allarme_core_vibrazione_lavanderia
+      device_class: vibration
+      state: >
+        {% set porta = states('binary_sensor.vibrazione_lavanderia') %}
+        {% set abilitato = is_state('input_boolean.allarme_core_vibrazione_lavanderia_abilitato','on') %}
+        {% if porta in ['on','off'] %}
+          {% if abilitato %}
+            {{ porta }}
+          {% else %}
+            off
+          {% endif %}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.vibrazione_lavanderia
+        tipo_connessione: wireless
+        batteria_origine: sensor.batteria_vibrazione_lavanderia
+        disponibilita_origine: binary_sensor.disponibilita_vibrazione_lavanderia
+        tipo: vibrazione
+        priorita: media
+        ritardo: 0
+        zone: "{{ states('input_text.allarme_core_vibrazione_lavanderia_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_vibrazione_lavanderia_camera').split(',') }}"
+        abilitato: "{{ is_state('input_boolean.allarme_core_vibrazione_lavanderia_abilitato','on') }}"
 
   #endregion
 
