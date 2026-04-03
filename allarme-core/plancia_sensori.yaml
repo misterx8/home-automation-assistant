@@ -1,0 +1,3567 @@
+type: sections
+max_columns: 4
+title: Mappa Sensori
+path: allarme-mappa-sensori
+icon: mdi:motion-sensor
+sections:
+  - type: grid
+    cards:
+      - type: heading
+        heading: Sensori Esclusi
+        heading_style: title
+        icon: mdi:eye-off-outline
+      - type: markdown
+        grid_options:
+          columns: 12
+          rows: 2
+        content: |-
+          {% set lista = state_attr('sensor.allarme_core_sensori_esclusi_memoria', 'sensori') | default([]) %}
+          {% if lista | length == 0 %}
+          ✅ Nessun sensore escluso al momento.
+          {% else %}
+          {% for s in lista %}
+          🚫 **{{ s }}**
+          {% endfor %}
+          {% endif %}
+  - type: grid
+    cards:
+      - type: heading
+        icon: mdi:home-floor-1
+        heading: Sensori Primo Piano
+        heading_style: title
+      - type: heading
+        icon: ""
+        heading: Sala
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 2
+        entity: binary_sensor.allarme_core_porta_ingresso_sala
+        name: " "
+        vertical: false
+        features_position: bottom
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_porta_ingresso_sala_abilitato
+                - entity: input_text.allarme_core_porta_ingresso_sala_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_porta_ingresso_sala_camera
+                  secondary_info: last-updated
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_porta_ingresso_sala_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_porta_ingresso_sala_zone') %} {% set
+            camera =
+            states('input_text.allarme_core_porta_ingresso_sala_camera') %} {%
+            set errore =
+            states('binary_sensor.allarme_core_porta_ingresso_sala_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_finestra_sala
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_finestra_sala_abilitato
+                - entity: input_text.allarme_core_finestra_sala_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_finestra_sala_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_finestra_sala_abilitato') %} {%
+            set zone = states('input_text.allarme_core_finestra_sala_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_finestra_sala_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_finestra_sala_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_sala
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_sala_abilitato
+                - entity: input_text.allarme_core_movimento_sala_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_sala_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_sala_abilitato') %} {%
+            set zone = states('input_text.allarme_core_movimento_sala_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_movimento_sala_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_movimento_sala_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Camera
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_finestra_camera
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_finestra_camera_abilitato
+                - entity: input_text.allarme_core_finestra_camera_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_finestra_camera_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_finestra_camera_abilitato') %} {%
+            set zone = states('input_text.allarme_core_finestra_camera_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_finestra_camera_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_finestra_camera_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_camera
+        vertical: false
+        name: " "
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_camera_abilitato
+                - entity: input_text.allarme_core_movimento_camera_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_camera_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_camera_abilitato') %}
+            {% set zone =
+            states('input_text.allarme_core_movimento_camera_zone') %} {% set
+            camera = states('input_text.allarme_core_movimento_camera_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_movimento_camera_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Ufficio
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_finestra_ufficio
+        name: " "
+        vertical: false
+        features_position: bottom
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_finestra_ufficio_abilitato
+                - entity: input_text.allarme_core_finestra_ufficio_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_finestra_ufficio_camera
+                  secondary_info: last-updated
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_finestra_ufficio_abilitato') %}
+            {% set zone =
+            states('input_text.allarme_core_finestra_ufficio_zone') %} {% set
+            camera = states('input_text.allarme_core_finestra_ufficio_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_finestra_ufficio_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_ufficio
+        name: " "
+        vertical: false
+        features_position: bottom
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_ufficio_abilitato
+                - entity: input_text.allarme_core_movimento_ufficio_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_ufficio_camera
+                  secondary_info: last-updated
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_ufficio_abilitato') %}
+            {% set zone =
+            states('input_text.allarme_core_movimento_ufficio_zone') %} {% set
+            camera = states('input_text.allarme_core_movimento_ufficio_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_movimento_ufficio_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Doccia
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_finestra_doccia
+        name: " "
+        vertical: false
+        features_position: bottom
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_finestra_doccia_abilitato
+                - entity: input_text.allarme_core_finestra_doccia_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_finestra_doccia_camera
+                  secondary_info: last-updated
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_finestra_doccia_abilitato') %} {%
+            set zone = states('input_text.allarme_core_finestra_doccia_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_finestra_doccia_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_finestra_doccia_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_doccia
+        name: " "
+        vertical: false
+        features_position: bottom
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_doccia_abilitato
+                - entity: input_text.allarme_core_movimento_doccia_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_doccia_camera
+                  secondary_info: last-updated
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_doccia_abilitato') %}
+            {% set zone =
+            states('input_text.allarme_core_movimento_doccia_zone') %} {% set
+            camera = states('input_text.allarme_core_movimento_doccia_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_movimento_doccia_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Studio
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_finestra_studio
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_finestra_studio_abilitato
+                - entity: input_text.allarme_core_finestra_studio_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_finestra_studio_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_finestra_studio_abilitato') %} {%
+            set zone = states('input_text.allarme_core_finestra_studio_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_finestra_studio_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_finestra_studio_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_studio
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_studio_abilitato
+                - entity: input_text.allarme_core_movimento_studio_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_studio_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_studio_abilitato') %}
+            {% set zone =
+            states('input_text.allarme_core_movimento_studio_zone') %} {% set
+            camera = states('input_text.allarme_core_movimento_studio_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_movimento_studio_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Tecnologico
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_porta_ingresso_tecp1
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_porta_ingresso_tecp1_abilitato
+                - entity: input_text.allarme_core_porta_ingresso_tecp1_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_porta_ingresso_tecp1_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_porta_ingresso_tecp1_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_porta_ingresso_tecp1_zone') %} {%
+            set camera =
+            states('input_text.allarme_core_porta_ingresso_tecp1_camera') %} {%
+            set errore =
+            states('binary_sensor.allarme_core_porta_ingresso_tecp1_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_finestra_tecp1
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_finestra_tecp1_abilitato
+                - entity: input_text.allarme_core_finestra_tecp1_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_finestra_tecp1_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_finestra_tecp1_abilitato') %} {%
+            set zone = states('input_text.allarme_core_finestra_tecp1_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_finestra_tecp1_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_finestra_tecp1_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_armadio_tecp1
+        name: Armadio
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_armadio_tecp1_abilitato
+                - entity: input_text.allarme_core_armadio_tecp1_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_armadio_tecp1_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_armadio_tecp1_abilitato') %} {%
+            set zone = states('input_text.allarme_core_armadio_tecp1_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_armadio_tecp1_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_armadio_tecp1_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_tecp1
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_tecp1_abilitato
+                - entity: input_text.allarme_core_movimento_tecp1_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_tecp1_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_tecp1_abilitato') %} {%
+            set zone = states('input_text.allarme_core_movimento_tecp1_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_movimento_tecp1_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_movimento_tecp1_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Solaio
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 12
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_solaio
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_solaio_abilitato
+                - entity: input_text.allarme_core_movimento_solaio_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_solaio_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_solaio_abilitato') %}
+            {% set zone =
+            states('input_text.allarme_core_movimento_solaio_zone') %} {% set
+            camera = states('input_text.allarme_core_movimento_solaio_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_movimento_solaio_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+  - type: grid
+    cards:
+      - type: heading
+        heading: Sensori Piano Terra
+        heading_style: title
+        icon: mdi:home-floor-0
+      - type: heading
+        icon: ""
+        heading: Taverna
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_porta_ingresso_taverna
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_porta_ingresso_taverna_abilitato
+                - entity: input_text.allarme_core_porta_ingresso_taverna_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_porta_ingresso_taverna_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_porta_ingresso_taverna_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_porta_ingresso_taverna_zone') %} {%
+            set camera =
+            states('input_text.allarme_core_porta_ingresso_taverna_camera') %}
+            {% set errore =
+            states('binary_sensor.allarme_core_porta_ingresso_taverna_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_finestre_taverna
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_finestre_taverna_abilitato
+                - entity: input_text.allarme_core_finestre_taverna_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_finestre_taverna_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_finestre_taverna_abilitato') %}
+            {% set zone =
+            states('input_text.allarme_core_finestre_taverna_zone') %} {% set
+            camera = states('input_text.allarme_core_finestre_taverna_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_finestre_taverna_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_taverna
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_taverna_abilitato
+                - entity: input_text.allarme_core_movimento_taverna_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_taverna_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_taverna_abilitato') %}
+            {% set zone =
+            states('input_text.allarme_core_movimento_taverna_zone') %} {% set
+            camera = states('input_text.allarme_core_movimento_taverna_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_movimento_taverna_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_vibrazione_ingresso_taverna
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: >-
+                    input_boolean.allarme_core_vibrazione_ingresso_taverna_abilitato
+                - entity: input_text.allarme_core_vibrazione_ingresso_taverna_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_vibrazione_ingresso_taverna_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_vibrazione_ingresso_taverna_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_vibrazione_ingresso_taverna_zone')
+            %} {% set camera =
+            states('input_text.allarme_core_vibrazione_ingresso_taverna_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_vibrazione_ingresso_taverna_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_corridoio_taverna
+        name: Corridoio
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: >-
+                    input_boolean.allarme_core_movimento_corridoio_taverna_abilitato
+                - entity: input_text.allarme_core_movimento_corridoio_taverna_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_corridoio_taverna_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_corridoio_taverna_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_movimento_corridoio_taverna_zone')
+            %} {% set camera =
+            states('input_text.allarme_core_movimento_corridoio_taverna_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_movimento_corridoio_taverna_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_barriera_tapparella_taverna
+        name: Barriera Tap
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: >-
+                    input_boolean.allarme_core_barriera_tapparella_taverna_abilitato
+                - entity: input_text.allarme_core_barriera_tapparella_taverna_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_barriera_tapparella_taverna_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_barriera_tapparella_taverna_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_barriera_tapparella_taverna_zone')
+            %} {% set camera =
+            states('input_text.allarme_core_barriera_tapparella_taverna_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_barriera_tapparella_taverna_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Cucina
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_finestre_cucina
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_finestra_cucina_abilitato
+                - entity: input_text.allarme_core_finestra_cucina_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_finestra_cucina_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_finestra_cucina_abilitato') %} {%
+            set zone = states('input_text.allarme_core_finestra_cucina_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_finestra_cucina_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_finestra_cucina_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_cucina
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_cucina_abilitato
+                - entity: input_text.allarme_core_movimento_cucina_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_cucina_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_cucina_abilitato') %}
+            {% set zone =
+            states('input_text.allarme_core_movimento_cucina_zone') %} {% set
+            camera = states('input_text.allarme_core_movimento_cucina_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_movimento_cucina_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_vibrazione_cucina
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_vibrazione_cucina_abilitato
+                - entity: input_text.allarme_core_vibrazione_cucina_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_vibrazione_cucina_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_vibrazione_cucina_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_vibrazione_cucina_zone')
+            %} {% set camera =
+            states('input_text.allarme_core_vibrazione_cucina_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_vibrazione_cucina_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Bagno
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_finestre_bagno
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_finestra_bagno_abilitato
+                - entity: input_text.allarme_core_finestra_bagno_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_finestra_bagno_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_finestra_bagno_abilitato') %} {%
+            set zone = states('input_text.allarme_core_finestra_bagno_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_finestra_bagno_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_finestra_bagno_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_bagno
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_bagno_abilitato
+                - entity: input_text.allarme_core_movimento_bagno_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_bagno_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_bagno_abilitato') %} {%
+            set zone = states('input_text.allarme_core_movimento_bagno_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_movimento_bagno_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_movimento_bagno_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_vibrazione_bagno
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_vibrazione_bagno_abilitato
+                - entity: input_text.allarme_core_vibrazione_bagno_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_vibrazione_bagno_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_vibrazione_bagno_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_vibrazione_bagno_zone')
+            %} {% set camera =
+            states('input_text.allarme_core_vibrazione_bagno_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_vibrazione_bagno_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Lavanderia
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_finestra_lavanderia
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_finestra_lavanderia_abilitato
+                - entity: input_text.allarme_core_finestra_lavanderia_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_finestra_lavanderia_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_finestra_lavanderia_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_finestra_lavanderia_zone') %} {% set
+            camera =
+            states('input_text.allarme_core_finestra_lavanderia_camera') %} {%
+            set errore =
+            states('binary_sensor.allarme_core_finestra_lavanderia_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_lavanderia
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_lavanderia_abilitato
+                - entity: input_text.allarme_core_movimento_lavanderia_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_lavanderia_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_lavanderia_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_movimento_lavanderia_zone') %} {%
+            set camera =
+            states('input_text.allarme_core_movimento_lavanderia_camera') %} {%
+            set errore =
+            states('binary_sensor.allarme_core_movimento_lavanderia_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_vibrazione_lavanderia
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_vibrazione_lavanderia_abilitato
+                - entity: input_text.allarme_core_vibrazione_lavanderia_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_vibrazione_lavanderia_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_vibrazione_lavanderia_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_vibrazione_lavanderia_zone')
+            %} {% set camera =
+            states('input_text.allarme_core_vibrazione_lavanderia_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_vibrazione_lavanderia_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Tecnologico
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_porta_ingresso_tecpt
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_porta_ingresso_tecpt_abilitato
+                - entity: input_text.allarme_core_porta_ingresso_tecpt_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_porta_ingresso_tecpt_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_porta_ingresso_tecpt_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_porta_ingresso_tecpt_zone') %} {%
+            set camera =
+            states('input_text.allarme_core_porta_ingresso_tecpt_camera') %} {%
+            set errore =
+            states('binary_sensor.allarme_core_porta_ingresso_tecpt_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_tecpt
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_tecpt_abilitato
+                - entity: input_text.allarme_core_movimento_tecpt_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_tecpt_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_tecpt_abilitato') %} {%
+            set zone = states('input_text.allarme_core_movimento_tecpt_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_movimento_tecpt_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_movimento_tecpt_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_armadio_tecpt
+        name: Armadio
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_armadio_tecpt_abilitato
+                - entity: input_text.allarme_core_armadio_tecpt_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_armadio_tecpt_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_armadio_tecpt_abilitato') %} {%
+            set zone = states('input_text.allarme_core_armadio_tecpt_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_armadio_tecpt_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_armadio_tecpt_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_finestra_tecpt
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_finestra_tecpt_abilitato
+                - entity: input_text.allarme_core_finestra_tecpt_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_finestra_tecpt_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_finestra_tecpt_abilitato') %} {%
+            set zone = states('input_text.allarme_core_finestra_tecpt_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_finestra_tecpt_camera') %} {% set
+            errore =
+            states('binary_sensor.allarme_core_finestra_tecpt_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+  - type: grid
+    cards:
+      - type: heading
+        icon: mdi:pine-tree
+        heading: Sensori esterni
+        heading_style: title
+      - type: heading
+        icon: ""
+        heading: Box
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 12
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_esterno_box
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_movimento_esterno_box_abilitato
+                - entity: input_text.allarme_core_movimento_esterno_box_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_esterno_box_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_esterno_box_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_movimento_esterno_box_zone') %} {%
+            set camera =
+            states('input_text.allarme_core_movimento_esterno_box_camera') %} {%
+            set errore =
+            states('binary_sensor.allarme_core_movimento_esterno_box_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Giardino
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 12
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_esterno_giardino
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: >-
+                    input_boolean.allarme_core_movimento_esterno_giardino_abilitato
+                - entity: input_text.allarme_core_movimento_esterno_giardino_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_esterno_giardino_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_esterno_giardino_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_movimento_esterno_giardino_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_movimento_esterno_giardino_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_movimento_esterno_giardino_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Dietro
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 12
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_esterno_dietro
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: >-
+                    input_boolean.allarme_core_movimento_esterno_dietro_abilitato
+                - entity: input_text.allarme_core_movimento_esterno_dietro_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_esterno_dietro_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_esterno_dietro_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_movimento_esterno_dietro_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_movimento_esterno_dietro_camera') %}
+            {% set errore =
+            states('binary_sensor.allarme_core_movimento_esterno_dietro_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Davanti
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 12
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_esterno_davanti
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: >-
+                    input_boolean.allarme_core_movimento_esterno_davanti_abilitato
+                - entity: input_text.allarme_core_movimento_esterno_davanti_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_esterno_davanti_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_esterno_davanti_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_movimento_esterno_davanti_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_movimento_esterno_davanti_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_movimento_esterno_davanti_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Locale Attrezzi
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_porta_ingresso_locale_attrezzi
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: >-
+                    input_boolean.allarme_core_porta_ingresso_locale_attrezzi_abilitato
+                - entity: input_text.allarme_core_porta_ingresso_locale_attrezzi_zone
+                  secondary_info: last-updated
+                - entity: >-
+                    input_text.allarme_core_porta_ingresso_locale_attrezzi_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_porta_ingresso_locale_attrezzi_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_porta_ingresso_locale_attrezzi_zone')
+            %} {% set camera =
+            states('input_text.allarme_core_porta_ingresso_locale_attrezzi_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_porta_ingresso_locale_attrezzi_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_movimento_locale_attrezzi
+        name: " "
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: >-
+                    input_boolean.allarme_core_movimento_locale_attrezzi_abilitato
+                - entity: input_text.allarme_core_movimento_locale_attrezzi_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_movimento_locale_attrezzi_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_movimento_locale_attrezzi_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_movimento_locale_attrezzi_zone') %}
+            {% set camera =
+            states('input_text.allarme_core_movimento_locale_attrezzi_camera')
+            %} {% set errore =
+            states('binary_sensor.allarme_core_movimento_locale_attrezzi_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: heading
+        icon: ""
+        heading: Locali Tecnici
+        heading_style: subtitle
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_porta_caldaia_esterna
+        name: Caldaia
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_porta_caldaia_esterna_abilitato
+                - entity: input_text.allarme_core_porta_caldaia_esterna_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_porta_caldaia_esterna_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_porta_caldaia_esterna_abilitato')
+            %} {% set zone =
+            states('input_text.allarme_core_porta_caldaia_esterna_zone') %} {%
+            set camera =
+            states('input_text.allarme_core_porta_caldaia_esterna_camera') %} {%
+            set errore =
+            states('binary_sensor.allarme_core_porta_caldaia_esterna_zone_valida')
+            %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: binary_sensor.allarme_core_porta_gas
+        name: Gas
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Dettagli avanzati
+            content:
+              type: entities
+              entities:
+                - entity: input_boolean.allarme_core_porta_gas_abilitato
+                - entity: input_text.allarme_core_porta_gas_zone
+                  secondary_info: last-updated
+                - entity: input_text.allarme_core_porta_gas_camera
+                  secondary_info: last-updated
+        features_position: bottom
+        card_mod:
+          style: >
+            {% set enabled =
+            states('input_boolean.allarme_core_porta_gas_abilitato') %} {% set
+            zone = states('input_text.allarme_core_porta_gas_zone') %} {% set
+            camera = states('input_text.allarme_core_porta_gas_camera') %} {%
+            set errore =
+            states('binary_sensor.allarme_core_porta_gas_zone_valida') %}
+
+            {% set invalid_zone = zone in ['unknown','unavailable',''] %} {% set
+            invalid_camera = camera in ['unknown','unavailable',''] %}
+
+            {# Anomalia fisico: legge sensore_origine (singolo) o sensori_origine (lista JSON)
+               dal wrapper tramite config.entity. Usa namespace loop perché map('states')
+               non è un filtro Jinja2 registrato in HA — states() va chiamato come funzione. #}
+            {% set fisico_s = state_attr(config.entity, 'sensore_origine') %}
+            {% set fisici_json = state_attr(config.entity, 'sensori_origine') %}
+            {% set fisici_l = fisici_json | from_json if fisici_json is string else [] %}
+            {% set ns_fa = namespace(v=false) %}
+            {% if fisico_s is not none and states(fisico_s) not in ['on','off'] %}
+              {% set ns_fa.v = true %}
+            {% endif %}
+            {% for f in fisici_l %}
+              {% if states(f) not in ['on','off'] %}{% set ns_fa.v = true %}{% endif %}
+            {% endfor %}
+            {% set fisico_anomalo = enabled == 'on' and ns_fa.v %}
+
+            {# Colore bordo: rosso=disabilitato | arancio=fisico anomalo | verde=ok #}
+            {% set border_color = 'red' if enabled == 'off' else ('orange' if fisico_anomalo else 'green') %}
+
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ border_color }};
+              padding-left: 12px;
+              position: relative;
+            }
+
+            /* badge icona warning / errore */ {% if errore == 'off' %}
+            ha-card::after {
+              content: "❌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif fisico_anomalo %} ha-card::after {
+              content: "🔌";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% elif invalid_zone or invalid_camera %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              font-size: 1.2em;
+            } {% endif %}
+header:
+  card:
+    type: markdown
+    content: |
+      {% if is_state('input_boolean.allarme_core_modalita_test', 'on') %}
+      <ha-alert alert-type="warning">
+      🧪 **MODALITÀ TEST ATTIVA** —
+      {{ states('sensor.allarme_core_test_minuti_rimanenti') }} min rimanenti.
+      Sirene e notifiche sono disabilitate in Node-RED.
+      </ha-alert>
+      {% endif %}
+      {% if is_state('binary_sensor.allarme_core_batteria_critica', 'on') %}
+      <ha-alert alert-type="error">
+      🔋 **BATTERIA CRITICA** — Uno o più sensori hanno batteria sotto il 5%.
+      Sostituire immediatamente le batterie.
+      </ha-alert>
+      {% endif %}
+badges: []
+cards: []

@@ -12,7 +12,12 @@
       "Bash(where node:*)",
       "Bash(/c/Users/mm_an/AppData/Local/Microsoft/WindowsApps/python.exe --version)",
       "Bash(/c/Windows/System32/wscript.exe //?)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(grep -E \"\\\\.yaml$\")",
+      "Bash(wc:*)",
+      "Bash(python3:*)",
+      "Bash(python.exe --version)",
+      "Bash(grep -oE \"unique_id: allarme_core[a-z0-9_]+\" /c/VSCODE/Progetti/home-assistant/allarme-core/*.yaml)"
     ]
   }
 }

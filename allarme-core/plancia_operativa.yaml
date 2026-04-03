@@ -1,0 +1,635 @@
+type: sections
+max_columns: 4
+title: Controllo Allarme
+path: configurazione-allarme
+icon: mdi:shield-half-full
+sections:
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: Controllo Allarme
+      - type: tile
+        entity: sensor.allarme_core_zone_attive
+        state_content:
+          - state
+          - zones
+        vertical: false
+        features_position: bottom
+      - type: tile
+        entity: input_select.allarme_core_profilo
+        vertical: false
+        features_position: bottom
+        features:
+          - type: select-options
+      - type: tile
+        entity: alarm_control_panel.allarme_core
+        vertical: false
+        features:
+          - type: alarm-modes
+        features_position: bottom
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: alarm_control_panel.allarme_core
+            state: arming
+        card:
+          type: markdown
+          content: |
+            {%- set remaining = states('sensor.allarme_core_arming_secondi_rimanenti') | int(0) -%}
+            {%- set total = state_attr('sensor.allarme_core_arming_secondi_rimanenti', 'delay_totale') | int(60) -%}
+            {%- set pct = state_attr('sensor.allarme_core_arming_secondi_rimanenti', 'percentuale') | int(0) -%}
+            {%- set filled = (pct / 5) | int -%}
+            {%- set empty = 20 - filled -%}
+            {%- set icon = '🟢' if pct > 50 else ('🟡' if pct > 20 else '🔴') -%}
+            ## ⏱️ Arming — {{ remaining }}s rimanenti
+            {{ icon }} `{{ '█' * filled }}{{ '░' * empty }}` {{ pct }}%
+            _0s · · · · · · · · · · {{ total }}s_
+        grid_options:
+          columns: 12
+          rows: 2
+      - type: tile
+        entity: input_select.allarme_core_stato
+        vertical: false
+        features_position: bottom
+      - type: tile
+        entity: sensor.allarme_core_sensori_esclusi_memoria
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+      - type: tile
+        entity: input_text.allarme_core_sensori_esclusi
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 2
+      - type: heading
+        heading: Info Allarme
+        heading_style: title
+        icon: mdi:shield-alert-outline
+      - type: heading
+        heading: Stato Zone
+        heading_style: subtitle
+      - type: tile
+        entity: sensor.allarme_core_count_zona_sera
+        name: Sera
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            {% set on = is_state('binary_sensor.allarme_core_zona_sera','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.allarme_core_count_zona_giorno
+        name: Giorno
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            {% set on = is_state('binary_sensor.allarme_core_zona_giorno','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.allarme_core_count_zona_perimetrali
+        name: Perimetrali
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            {% set on = is_state('binary_sensor.allarme_core_zona_perimetrali','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.allarme_core_count_zona_volumetrici
+        name: Volumetrici
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            {% set on = is_state('binary_sensor.allarme_core_zona_volumetrici','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.allarme_core_count_zona_notte
+        name: Notte
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            {% set on = is_state('binary_sensor.allarme_core_zona_notte','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: heading
+        heading: Sensori Correnti
+        heading_style: subtitle
+      - type: tile
+        entity: sensor.allarme_core_sensori_aperti_filtrati
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+      - type: tile
+        entity: sensor.allarme_core_sensori_attivi
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 2
+        card_mod:
+          style: |
+            {% set nessuno = is_state('sensor.allarme_core_sensori_attivi','Nessun sensore attivo') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'green' if nessuno else 'red' }};
+              padding-left: 12px;
+            }
+      - type: heading
+        heading: Ultimo Allarme
+        heading_style: subtitle
+      - type: tile
+        entity: sensor.allarme_core_ultimo_trigger
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 2
+        card_mod:
+          style: |
+            {% set nessuno = is_state('sensor.allarme_core_ultimo_trigger','Nessun evento') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'grey' if nessuno else 'red' }};
+              padding-left: 12px;
+            }
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          data:
+            title: "Dettagli Ultimo Allarme"
+            content:
+              type: vertical-stack
+              cards:
+                - type: entities
+                  title: Informazioni Evento
+                  entities:
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: data_evento
+                      name: Data Evento
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: profilo
+                      name: Profilo Attivo
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: sensori_nomi
+                      name: Sensori Attivati
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: zone
+                      name: Zone Coinvolte
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: num_snapshot
+                      name: Numero Snapshot
+                    - type: attribute
+                      entity: sensor.allarme_core_ultimo_trigger
+                      attribute: num_clip
+                      name: Numero Clip
+                - type: markdown
+                  title: Media Disponibili
+                  content: |
+                    {% set clips = state_attr('sensor.allarme_core_ultimo_trigger', 'clip_urls') %}
+                    {% set snaps = state_attr('sensor.allarme_core_ultimo_trigger', 'snapshot_urls') %}
+
+                    {% if clips and clips | length > 0 %}
+                    **Clip video:**
+
+                    {% for url in clips %}
+                    - [Clip {{ loop.index }}]({{ url }})
+                    {% endfor %}
+                    {% else %}
+                    *Nessuna clip disponibile.*
+                    {% endif %}
+
+                    {% if snaps and snaps | length > 0 %}
+                    **Snapshot:**
+
+                    {% for url in snaps %}
+                    - [Snapshot {{ loop.index }}]({{ url }})
+                    {% endfor %}
+                    {% else %}
+                    *Nessuno snapshot disponibile.*
+                    {% endif %}
+      - type: heading
+        heading: Modalità Test
+        heading_style: title
+        icon: mdi:test-tube
+      - type: tile
+        entity: input_boolean.allarme_core_modalita_test
+        name: Test Mode
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: >
+            {% set on = is_state('input_boolean.allarme_core_modalita_test','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'orange' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.allarme_core_test_minuti_rimanenti
+        name: Scade tra
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+      - type: tile
+        entity: input_number.allarme_core_test_timeout_minuti
+        name: Timeout
+        vertical: false
+        features_position: bottom
+        features:
+          - type: numeric-input
+            mode: slider
+        grid_options:
+          columns: 4
+          rows: 1
+      - type: tile
+        entity: script.allarme_core_attiva_test_mode
+        name: Attiva Test
+        icon: mdi:test-tube
+        vertical: false
+        tap_action:
+          action: call-service
+          service: script.turn_on
+          target:
+            entity_id: script.allarme_core_attiva_test_mode
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+      - type: tile
+        entity: script.allarme_core_disattiva_test_mode
+        name: Disattiva Test
+        icon: mdi:test-tube-off
+        vertical: false
+        tap_action:
+          action: call-service
+          service: script.turn_on
+          target:
+            entity_id: script.allarme_core_disattiva_test_mode
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+      - type: button
+        name: Impostazioni Variabili
+        icon: mdi:cog-outline
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          data:
+            title: Impostazioni Variabili
+            content:
+              type: entities
+              entities:
+                - entity: input_text.allarme_core_url_base_ha
+                - entity: input_text.allarme_core_url_base_frigate
+                - entity: input_text.allarme_core_frigate_token
+                - entity: input_number.allarme_core_arming_delay
+                - entity: input_number.allarme_core_notifica_timeout_secondi
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: |
+            {% set ha_ok = states('input_text.allarme_core_url_base_ha') not in ['','unknown','unavailable'] %}
+            {% set fr_ok = states('input_text.allarme_core_url_base_frigate') not in ['','unknown','unavailable'] %}
+            {% set tk_ok = states('input_text.allarme_core_frigate_token') not in ['','unknown','unavailable'] %}
+            {% set all_ok = ha_ok and fr_ok and tk_ok %}
+            {% set none_ok = not ha_ok and not fr_ok and not tk_ok %}
+            {% set border_color = 'green' if all_ok else ('red' if none_ok else 'orange') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ border_color }};
+              position: relative;
+            }
+            {% if not all_ok %}
+            ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 6px;
+              right: 8px;
+              font-size: 0.85em;
+              pointer-events: none;
+              z-index: 1;
+            }
+            {% endif %}
+      - type: button
+        name: Debug Variabili
+        icon: mdi:bug
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px grey;
+              padding-left: 12px;
+            }
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          data:
+            title: "Debug — Variabili Allarme"
+            content:
+              type: entities
+              entities:
+                - entity: var.allarme_core_sensori_esclusi_var
+                - entity: var.allarme_core_sensori_attivazione_allarme_var
+                - entity: binary_sensor.allarme_core_dati_pronti
+                - entity: input_datetime.allarme_core_triggered_started
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        icon: mdi:math-log
+        heading: Log
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: script.allarme_core_logbook_cancella_tutto
+        name: Cancella tutti i log
+        vertical: false
+        tap_action:
+          action: toggle
+        icon_tap_action:
+          action: toggle
+        features_position: bottom
+      - type: tile
+        grid_options:
+          columns: 6
+          rows: 1
+        entity: script.allarme_core_logbook_nota_da_ui
+        name: Aggiungi Nota
+        icon: mdi:note-plus
+        vertical: false
+        tap_action:
+          action: call-service
+          service: browser_mod.popup
+          service_data:
+            title: Aggiungi nota al log
+            content:
+              type: entities
+              entities:
+                - entity: input_text.allarme_core_nota_manuale
+                  name: Testo della nota
+                - entity: script.allarme_core_logbook_nota_da_ui
+                  name: Salva nota
+        features_position: bottom
+      - type: custom:timeline-card
+        title: 🛡️ Allarme Core – Stato & Eventi
+        hours: 24
+        limit: 50
+        overflow: scroll
+        max_height: 420px
+        relative_time: true
+        refresh_interval: 30
+        entities:
+          - entity: input_select.allarme_core_stato
+            collapse_duplicates: true
+            name: " "
+            state_map:
+              armed: ARMATO
+              disarmed: DISARMATO
+              triggered: ALLARME
+              arming: ATTIVAZIONE
+            icon_map:
+              armed: mdi:lock
+              disarmed: mdi:lock-open
+              triggered: mdi:alarm-light
+              arming: mdi:lock-alert-outline
+            icon_color_map:
+              armed: yellow
+              disarmed: green
+              triggered: red
+              arming: grey
+      - type: markdown
+        title: 🧾 Time line Eventi
+        content: |
+          {{ state_attr('sensor.allarme_core_timeline_render','long_state') }}
+      - type: markdown
+        title: 🧾 Allarme Core – Registro
+        content: >
+          ### 📌 Ultimo evento **{{
+          states('input_text.allarme_core_logbook_ultimo_evento') }}**
+
+          ---
+
+          {% set c_raw =
+          state_attr('var.allarme_core_timeline_critici_md','long_state') |
+          default('', true) | string %} {% set c_list = c_raw.split('\n') |
+          map('trim') | reject('equalto','') | list %} ### 🚨 Critici ({{ c_list
+          | length }}) {{ c_raw | trim if c_list | length > 0 else '_Nessun
+          evento critico._' }}
+
+          ---
+
+          {% set o_raw =
+          state_attr('var.allarme_core_timeline_operazioni_md','long_state') |
+          default('', true) | string %} {% set o_list = o_raw.split('\n') |
+          map('trim') | reject('equalto','') | list %} ### ⚙️ Operazioni ({{
+          o_list | length }}) {{ o_raw | trim if o_list | length > 0 else
+          '_Nessuna operazione._' }}
+
+          ---
+
+          {% set n_raw =
+          state_attr('var.allarme_core_timeline_note_md','long_state') |
+          default('', true) | string %} {% set n_list = n_raw.split('\n') |
+          map('trim') | reject('equalto','') | list %} ### 📝 Note ({{ n_list |
+          length }}) {{ n_raw | trim if n_list | length > 0 else '_Nessuna
+          nota._' }}
+      - type: markdown
+        title: 🛡️ Allarme Core – Ultimo Evento
+        content: |
+          **{{ states('input_text.allarme_core_logbook_ultimo_evento') }}**
+      - type: logbook
+        title: 🛡️ Allarme Core – Eventi
+        entities:
+          - input_text.allarme_core_logbook_event
+        hours_to_show: 24
+  - type: grid
+    cards:
+      - type: heading
+        heading: Immagini
+        heading_style: title
+        icon: far:image
+      - type: markdown
+        title: 📸 Snapshot allarme
+        content: >
+          {% set s =
+          state_attr('var.allarme_core_last_snapshot_urls','long_state') |
+          default('', true) | string %} {% set arr = s.split('\n') | map('trim')
+          | reject('equalto','') | list %} {% set imgs = arr[:4] %}
+
+          {% if imgs|length == 0 %} Nessuno snapshot disponibile. {% else %} {%
+          for u in imgs %} [![]({{ u }})]({{ u }})
+
+          {% endfor %} {% endif %}
+      - type: markdown
+        title: 🎥 Clip allarme (30s)
+        content: >
+          {% set s = state_attr('var.allarme_core_last_clip_urls','long_state')
+          | default('', true) | string %} {% set arr = s.split('\n') |
+          map('trim') | reject('equalto','') | list %} {% set arr = arr[:4] %}
+          {% if arr|length == 0 %} Nessuna clip disponibile. {% else %} {% for u
+          in arr %} - [Apri clip {{ loop.index }}]({{ u }}) {% endfor %} {%
+          endif %}
+  - type: grid
+    cards:
+      - type: heading
+        heading: Batterie & Connettività
+        heading_style: title
+        icon: mdi:battery-heart-variant
+      - type: gauge
+        entity: sensor.allarme_core_batteria_minima
+        name: "Batteria Minima"
+        min: 0
+        max: 100
+        severity:
+          green: 30
+          yellow: 20
+          red: 0
+        needle: true
+      - type: entity
+        entity: sensor.allarme_core_batterie_basse
+        name: "Batterie Basse"
+        icon: mdi:battery-alert
+      - type: entity
+        entity: sensor.allarme_core_sensori_offline
+        name: "Sensori Offline"
+        icon: mdi:wifi-off
+      - type: markdown
+        title: "Sensori con batteria bassa"
+        content: |-
+          {% set lista = state_attr('sensor.allarme_core_batterie_basse', 'lista') | default([]) %}
+          {% if lista | length == 0 %}
+          Nessun sensore sotto soglia.
+          {% else %}
+          | Nome | Batteria |
+          |------|----------|
+          {% for s in lista %}| {{ s.nome }} | {{ s.batteria }}% |
+          {% endfor %}{% endif %}
+      - type: markdown
+        title: "Sensori offline"
+        content: |-
+          {% set lista = state_attr('sensor.allarme_core_sensori_offline', 'lista_offline') | default([]) %}
+          {% if lista | length == 0 %}
+          Tutti i sensori sono online.
+          {% else %}
+          | Nome | Fisico |
+          |------|--------|
+          {% for s in lista %}| {{ s.nome }} | {{ s.fisico }} |
+          {% endfor %}{% endif %}
+      - type: heading
+        heading: Anomalie Hardware
+        heading_style: subtitle
+        icon: mdi:alert-circle-outline
+      - type: tile
+        entity: binary_sensor.allarme_core_anomalia_rilevata
+        name: Anomalie Sensori Fisici
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        card_mod:
+          style: |
+            {% set anomalia = is_state('binary_sensor.allarme_core_anomalia_rilevata', 'on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'orange' if anomalia else 'green' }};
+              padding-left: 12px;
+            }
+      - type: markdown
+        title: "Sensori con anomalia (unknown / unavailable)"
+        content: |-
+          {% set lista = state_attr('binary_sensor.allarme_core_anomalia_rilevata', 'sensori_anomali') | default([]) %}
+          {% if lista | length == 0 %}
+          Tutti i sensori fisici sono operativi.
+          {% else %}
+          | Sensore Fisico | Wrapper | Stato |
+          |----------------|---------|-------|
+          {% for s in lista %}| {{ s.fisico }} | {{ s.wrapper }} | `{{ s.stato }}` |
+          {% endfor %}{% endif %}
+      - type: entities
+        title: "Configurazione monitoraggio"
+        entities:
+          - entity: input_number.allarme_core_soglia_batteria_bassa
+            name: "Soglia batteria bassa"
+          - entity: input_number.allarme_core_debounce_offline_minuti
+            name: "Debounce offline (minuti)"
+
+header:
+  card:
+    type: markdown
+    content: |
+      {% if is_state('input_boolean.allarme_core_modalita_test', 'on') %}
+      <ha-alert alert-type="warning">
+      🧪 **MODALITÀ TEST ATTIVA** —
+      {{ states('sensor.allarme_core_test_minuti_rimanenti') }} min rimanenti.
+      Sirene e notifiche sono disabilitate in Node-RED.
+      </ha-alert>
+      {% endif %}
+      {% if is_state('binary_sensor.allarme_core_batteria_critica', 'on') %}
+      <ha-alert alert-type="error">
+      🔋 **BATTERIA CRITICA** — Uno o più sensori hanno batteria sotto il 5%.
+      Sostituire immediatamente le batterie.
+      </ha-alert>
+      {% endif %}
+badges: []
+cards: []

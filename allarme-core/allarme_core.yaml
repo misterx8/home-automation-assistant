@@ -562,5 +562,46 @@ template:
           }}
 #-------------------------------------------------------------------------------------------------------------
 
+  - trigger:
+      - trigger: time_pattern
+        seconds: /1
+      - trigger: state
+        entity_id: alarm_control_panel.allarme_core
+        to: arming
+    sensor:
+      - name: "Allarme Core Arming Secondi Rimanenti"
+        unique_id: allarme_core_arming_secondi_rimanenti
+        unit_of_measurement: "s"
+        icon: mdi:timer-sand
+        state: >
+          {% if not is_state('alarm_control_panel.allarme_core', 'arming') %}
+            0
+          {% else %}
+            {% set started = states('input_datetime.allarme_core_arming_started') %}
+            {% if started not in ['unknown', 'unavailable', ''] %}
+              {% set delay = states('input_number.allarme_core_arming_delay') | float(60) %}
+              {% set elapsed = (now() - (started | as_datetime | as_local)).total_seconds() %}
+              {{ [delay - elapsed, 0] | max | int }}
+            {% else %}
+              0
+            {% endif %}
+          {% endif %}
+        attributes:
+          delay_totale: "{{ states('input_number.allarme_core_arming_delay') | int(60) }}"
+          percentuale: >
+            {% if not is_state('alarm_control_panel.allarme_core', 'arming') %}
+              0
+            {% else %}
+              {% set started = states('input_datetime.allarme_core_arming_started') %}
+              {% if started not in ['unknown', 'unavailable', ''] %}
+                {% set delay = states('input_number.allarme_core_arming_delay') | float(60) %}
+                {% set elapsed = (now() - (started | as_datetime | as_local)).total_seconds() %}
+                {% set remaining = [delay - elapsed, 0] | max %}
+                {{ ((remaining / delay) * 100) | int }}
+              {% else %}
+                0
+              {% endif %}
+            {% endif %}
+
 
 
