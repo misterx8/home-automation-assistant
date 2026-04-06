@@ -18,6 +18,12 @@ script:
           option: armed
   disarm_allarme_core:
     sequence:
+      # FIX AC-BUG-06: stoppa arm_allarme_core prima di impostare disarmed.
+      # Senza questo, il delay del script arm continua in background e dopo X secondi
+      # sovrascrive lo stato con 'armed', ignorando il disarm dell'utente.
+      - service: script.turn_off
+        target:
+          entity_id: script.arm_allarme_core
       # FIX AC-BUG-01: entity_id spostato da data: a target: (sintassi deprecata causava failure silenzioso)
       - service: input_select.select_option
         target:
