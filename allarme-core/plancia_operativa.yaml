@@ -28,44 +28,36 @@ sections:
         features:
           - type: alarm-modes
         features_position: bottom
-      - type: conditional
-        conditions:
-          - condition: state
-            entity: alarm_control_panel.allarme_core
-            state: arming
-        card:
-          type: markdown
-          content: |
-            {%- set remaining = states('sensor.allarme_core_arming_secondi_rimanenti') | int(0) -%}
-            {%- set total = state_attr('sensor.allarme_core_arming_secondi_rimanenti', 'delay_totale') | int(60) -%}
-            {%- set pct = state_attr('sensor.allarme_core_arming_secondi_rimanenti', 'percentuale') | int(0) -%}
-            {%- set filled = (pct / 5) | int -%}
-            {%- set empty = 20 - filled -%}
-            {%- set icon = '🟢' if pct > 50 else ('🟡' if pct > 20 else '🔴') -%}
-            ## ⏱️ Arming — {{ remaining }}s rimanenti
-            {{ icon }} `{{ '█' * filled }}{{ '░' * empty }}` {{ pct }}%
-            _0s · · · · · · · · · · {{ total }}s_
-        grid_options:
-          columns: 12
-          rows: 2
       - type: tile
         entity: input_select.allarme_core_stato
         vertical: false
         features_position: bottom
-      - type: tile
-        entity: sensor.allarme_core_sensori_esclusi_memoria
-        vertical: false
-        features_position: bottom
-        grid_options:
-          columns: 12
-          rows: 1
-      - type: tile
-        entity: input_text.allarme_core_sensori_esclusi
-        vertical: false
-        features_position: bottom
+      - type: heading
+        heading: Sensori Esclusi
+        heading_style: subtitle
+        icon: mdi:eye-off-outline
+      - type: markdown
         grid_options:
           columns: 12
           rows: 2
+        content: >-
+          {% set lista =
+          state_attr('sensor.allarme_core_sensori_esclusi_memoria', 'sensori') |
+          default([]) %}
+
+          {% if lista | length == 0 %}
+
+          ✅ Nessun sensore escluso al momento.
+
+          {% else %}
+
+          {% for s in lista %}
+
+          🚫 **{{ s }}**
+
+          {% endfor %}
+
+          {% endif %}
       - type: heading
         heading: Info Allarme
         heading_style: title
@@ -98,8 +90,10 @@ sections:
           columns: 4
           rows: 1
         card_mod:
-          style: |
-            {% set on = is_state('binary_sensor.allarme_core_zona_giorno','on') %}
+          style: >
+            {% set on = is_state('binary_sensor.allarme_core_zona_giorno','on')
+            %}
+
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
@@ -114,8 +108,10 @@ sections:
           columns: 4
           rows: 1
         card_mod:
-          style: |
-            {% set on = is_state('binary_sensor.allarme_core_zona_perimetrali','on') %}
+          style: >
+            {% set on =
+            is_state('binary_sensor.allarme_core_zona_perimetrali','on') %}
+
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
@@ -130,8 +126,10 @@ sections:
           columns: 4
           rows: 1
         card_mod:
-          style: |
-            {% set on = is_state('binary_sensor.allarme_core_zona_volumetrici','on') %}
+          style: >
+            {% set on =
+            is_state('binary_sensor.allarme_core_zona_volumetrici','on') %}
+
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
@@ -146,8 +144,10 @@ sections:
           columns: 4
           rows: 1
         card_mod:
-          style: |
-            {% set on = is_state('binary_sensor.allarme_core_zona_notte','on') %}
+          style: >
+            {% set on = is_state('binary_sensor.allarme_core_zona_notte','on')
+            %}
+
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ 'red' if on else 'green' }};
@@ -157,13 +157,6 @@ sections:
         heading: Sensori Correnti
         heading_style: subtitle
       - type: tile
-        entity: sensor.allarme_core_sensori_aperti_filtrati
-        vertical: false
-        features_position: bottom
-        grid_options:
-          columns: 12
-          rows: 1
-      - type: tile
         entity: sensor.allarme_core_sensori_attivi
         vertical: false
         features_position: bottom
@@ -171,8 +164,11 @@ sections:
           columns: 12
           rows: 2
         card_mod:
-          style: |
-            {% set nessuno = is_state('sensor.allarme_core_sensori_attivi','Nessun sensore attivo') %}
+          style: >
+            {% set nessuno =
+            is_state('sensor.allarme_core_sensori_attivi','Nessun sensore
+            attivo') %}
+
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ 'green' if nessuno else 'red' }};
@@ -189,8 +185,10 @@ sections:
           columns: 12
           rows: 2
         card_mod:
-          style: |
-            {% set nessuno = is_state('sensor.allarme_core_ultimo_trigger','Nessun evento') %}
+          style: >
+            {% set nessuno =
+            is_state('sensor.allarme_core_ultimo_trigger','Nessun evento') %}
+
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ 'grey' if nessuno else 'red' }};
@@ -200,7 +198,7 @@ sections:
           action: call-service
           service: browser_mod.popup
           data:
-            title: "Dettagli Ultimo Allarme"
+            title: Dettagli Ultimo Allarme
             content:
               type: vertical-stack
               cards:
@@ -233,28 +231,49 @@ sections:
                       name: Numero Clip
                 - type: markdown
                   title: Media Disponibili
-                  content: |
-                    {% set clips = state_attr('sensor.allarme_core_ultimo_trigger', 'clip_urls') %}
-                    {% set snaps = state_attr('sensor.allarme_core_ultimo_trigger', 'snapshot_urls') %}
+                  content: >
+                    {% set clips =
+                    state_attr('sensor.allarme_core_ultimo_trigger',
+                    'clip_urls') %}
+
+                    {% set snaps =
+                    state_attr('sensor.allarme_core_ultimo_trigger',
+                    'snapshot_urls') %}
+
 
                     {% if clips and clips | length > 0 %}
+
                     **Clip video:**
 
+
                     {% for url in clips %}
+
                     - [Clip {{ loop.index }}]({{ url }})
+
                     {% endfor %}
+
                     {% else %}
+
                     *Nessuna clip disponibile.*
+
                     {% endif %}
 
+
                     {% if snaps and snaps | length > 0 %}
+
                     **Snapshot:**
 
+
                     {% for url in snaps %}
+
                     - [Snapshot {{ loop.index }}]({{ url }})
+
                     {% endfor %}
+
                     {% else %}
+
                     *Nessuno snapshot disponibile.*
+
                     {% endif %}
       - type: heading
         heading: Modalità Test
@@ -270,8 +289,9 @@ sections:
           rows: 1
         card_mod:
           style: >
-            {% set on = is_state('input_boolean.allarme_core_modalita_test','on') %}
-            ha-card {
+            {% set on =
+            is_state('input_boolean.allarme_core_modalita_test','on') %} ha-card
+            {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ 'orange' if on else 'green' }};
               padding-left: 12px;
@@ -343,19 +363,31 @@ sections:
           columns: 6
           rows: 1
         card_mod:
-          style: |
-            {% set ha_ok = states('input_text.allarme_core_url_base_ha') not in ['','unknown','unavailable'] %}
-            {% set fr_ok = states('input_text.allarme_core_url_base_frigate') not in ['','unknown','unavailable'] %}
-            {% set tk_ok = states('input_text.allarme_core_frigate_token') not in ['','unknown','unavailable'] %}
+          style: >
+            {% set ha_ok = states('input_text.allarme_core_url_base_ha') not in
+            ['','unknown','unavailable'] %}
+
+            {% set fr_ok = states('input_text.allarme_core_url_base_frigate')
+            not in ['','unknown','unavailable'] %}
+
+            {% set tk_ok = states('input_text.allarme_core_frigate_token') not
+            in ['','unknown','unavailable'] %}
+
             {% set all_ok = ha_ok and fr_ok and tk_ok %}
+
             {% set none_ok = not ha_ok and not fr_ok and not tk_ok %}
-            {% set border_color = 'green' if all_ok else ('red' if none_ok else 'orange') %}
+
+            {% set border_color = 'green' if all_ok else ('red' if none_ok else
+            'orange') %}
+
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ border_color }};
               position: relative;
             }
+
             {% if not all_ok %}
+
             ha-card::after {
               content: "⚠️";
               position: absolute;
@@ -365,6 +397,7 @@ sections:
               pointer-events: none;
               z-index: 1;
             }
+
             {% endif %}
       - type: button
         name: Debug Variabili
@@ -383,7 +416,7 @@ sections:
           action: call-service
           service: browser_mod.popup
           data:
-            title: "Debug — Variabili Allarme"
+            title: Debug — Variabili Allarme
             content:
               type: entities
               entities:
@@ -420,7 +453,7 @@ sections:
         tap_action:
           action: call-service
           service: browser_mod.popup
-          service_data:
+          data:
             title: Aggiungi nota al log
             content:
               type: entities
@@ -537,7 +570,7 @@ sections:
         icon: mdi:battery-heart-variant
       - type: gauge
         entity: sensor.allarme_core_batteria_minima
-        name: "Batteria Minima"
+        name: Batteria Minima
         min: 0
         max: 100
         severity:
@@ -547,89 +580,145 @@ sections:
         needle: true
       - type: entity
         entity: sensor.allarme_core_batterie_basse
-        name: "Batterie Basse"
+        name: Batterie Basse
         icon: mdi:battery-alert
       - type: entity
         entity: sensor.allarme_core_sensori_offline
-        name: "Sensori Offline"
+        name: Sensori Offline
         icon: mdi:wifi-off
       - type: markdown
-        title: "Sensori con batteria bassa"
-        content: |-
-          {% set lista = state_attr('sensor.allarme_core_batterie_basse', 'lista') | default([]) %}
+        title: Sensori con batteria bassa
+        content: >-
+          {% set lista = state_attr('sensor.allarme_core_batterie_basse',
+          'lista') | default([]) %}
+
           {% if lista | length == 0 %}
+
           Nessun sensore sotto soglia.
+
           {% else %}
+
           | Nome | Batteria |
+
           |------|----------|
+
           {% for s in lista %}| {{ s.nome }} | {{ s.batteria }}% |
+
           {% endfor %}{% endif %}
       - type: markdown
-        title: "Sensori offline"
-        content: |-
-          {% set lista = state_attr('sensor.allarme_core_sensori_offline', 'lista_offline') | default([]) %}
+        title: Sensori offline
+        content: >-
+          {% set lista = state_attr('sensor.allarme_core_sensori_offline',
+          'lista_offline') | default([]) %}
+
           {% if lista | length == 0 %}
+
           Tutti i sensori sono online.
+
           {% else %}
+
           | Nome | Fisico |
+
           |------|--------|
+
           {% for s in lista %}| {{ s.nome }} | {{ s.fisico }} |
+
           {% endfor %}{% endif %}
       - type: heading
         heading: Anomalie Hardware
         heading_style: subtitle
         icon: mdi:alert-circle-outline
-      - type: tile
-        entity: binary_sensor.allarme_core_anomalia_rilevata
-        name: Anomalie Sensori Fisici
-        vertical: false
-        features_position: bottom
-        grid_options:
-          columns: 12
-          rows: 1
-        card_mod:
-          style: |
-            {% set anomalia = is_state('binary_sensor.allarme_core_anomalia_rilevata', 'on') %}
-            ha-card {
-              border-radius: 30px;
-              box-shadow: 0 0 0 3px {{ 'orange' if anomalia else 'green' }};
-              padding-left: 12px;
-            }
       - type: markdown
-        title: "Sensori con anomalia (unknown / unavailable)"
-        content: |-
-          {% set lista = state_attr('binary_sensor.allarme_core_anomalia_rilevata', 'sensori_anomali') | default([]) %}
+        title: Sensori con anomalia (unknown / unavailable)
+        content: >-
+          {% set lista =
+          state_attr('binary_sensor.allarme_core_anomalia_rilevata',
+          'sensori_anomali') | default([]) %}
+
           {% if lista | length == 0 %}
+
           Tutti i sensori fisici sono operativi.
+
           {% else %}
+
           | Sensore Fisico | Wrapper | Stato |
+
           |----------------|---------|-------|
-          {% for s in lista %}| {{ s.fisico }} | {{ s.wrapper }} | `{{ s.stato }}` |
+
+          {% for s in lista %}| {{ s.fisico }} | {{ s.wrapper }} | `{{ s.stato
+          }}` |
+
           {% endfor %}{% endif %}
       - type: entities
-        title: "Configurazione monitoraggio"
+        title: Configurazione monitoraggio
         entities:
           - entity: input_number.allarme_core_soglia_batteria_bassa
-            name: "Soglia batteria bassa"
+            name: Soglia batteria bassa
           - entity: input_number.allarme_core_debounce_offline_minuti
-            name: "Debounce offline (minuti)"
-
+            name: Debounce offline (minuti)
 header:
   card:
-    type: markdown
-    content: |
-      {% if is_state('input_boolean.allarme_core_modalita_test', 'on') %}
-      <ha-alert alert-type="warning">
-      🧪 **MODALITÀ TEST ATTIVA** —
-      {{ states('sensor.allarme_core_test_minuti_rimanenti') }} min rimanenti.
-      Sirene e notifiche sono disabilitate in Node-RED.
-      </ha-alert>
-      {% endif %}
-      {% if is_state('binary_sensor.allarme_core_batteria_critica', 'on') %}
-      <ha-alert alert-type="error">
-      🔋 **BATTERIA CRITICA** — Uno o più sensori hanno batteria sotto il 5%.
-      Sostituire immediatamente le batterie.
-      </ha-alert>
-      {% endif %}
+    type: vertical-stack
+    cards:
+      - type: markdown
+        content: >
+          {% if is_state('input_boolean.allarme_core_modalita_test', 'on') %}
+
+          <ha-alert alert-type="warning">
+
+          🧪 **MODALITÀ TEST ATTIVA** —
+
+          {{ states('sensor.allarme_core_test_minuti_rimanenti') }} min
+          rimanenti.
+
+          Sirene e notifiche sono disabilitate in Node-RED.
+
+          </ha-alert>
+
+          {% endif %}
+
+          {% if is_state('binary_sensor.allarme_core_batteria_critica', 'on') %}
+
+          <ha-alert alert-type="error">
+
+          🔋 **BATTERIA CRITICA** — Uno o più sensori hanno batteria sotto il
+          5%.
+
+          Sostituire immediatamente le batterie.
+
+          </ha-alert>
+
+          {% endif %}
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: alarm_control_panel.allarme_core
+            state: arming
+        card:
+          type: markdown
+          content: >
+            {%- set remaining =
+            states('sensor.allarme_core_arming_secondi_rimanenti') | int(0) -%}
+
+            {%- set total =
+            state_attr('sensor.allarme_core_arming_secondi_rimanenti',
+            'delay_totale') | int(60) -%}
+
+            {%- set pct =
+            state_attr('sensor.allarme_core_arming_secondi_rimanenti',
+            'percentuale') | int(0) -%}
+
+            {%- set filled = (pct / 5) | int -%}
+
+            {%- set empty = 20 - filled -%}
+
+            {%- set icon = '🟢' if pct > 50 else ('🟡' if pct > 20 else '🔴')
+            -%}
+
+            ## ⏱️ Arming — {{ remaining }}s rimanenti
+
+            {{ icon }} `{{ '█' * filled }}{{ '░' * empty }}` {{ pct }}%
+
+            _0s · · · · · · · · · · {{ total }}s_
 badges: []
 cards: []

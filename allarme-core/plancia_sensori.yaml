@@ -7,25 +7,6 @@ sections:
   - type: grid
     cards:
       - type: heading
-        heading: Sensori Esclusi
-        heading_style: title
-        icon: mdi:eye-off-outline
-      - type: markdown
-        grid_options:
-          columns: 12
-          rows: 2
-        content: |-
-          {% set lista = state_attr('sensor.allarme_core_sensori_esclusi_memoria', 'sensori') | default([]) %}
-          {% if lista | length == 0 %}
-          ✅ Nessun sensore escluso al momento.
-          {% else %}
-          {% for s in lista %}
-          🚫 **{{ s }}**
-          {% endfor %}
-          {% endif %}
-  - type: grid
-    cards:
-      - type: heading
         icon: mdi:home-floor-1
         heading: Sensori Primo Piano
         heading_style: title
