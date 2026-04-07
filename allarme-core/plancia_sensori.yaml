@@ -35,6 +35,8 @@ sections:
                   secondary_info: last-updated
                 - entity: input_text.allarme_core_porta_ingresso_sala_camera
                   secondary_info: last-updated
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -116,6 +118,8 @@ sections:
                 - entity: input_text.allarme_core_finestra_sala_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -195,6 +199,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_sala_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -278,6 +284,8 @@ sections:
                 - entity: input_text.allarme_core_finestra_camera_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -357,6 +365,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_camera_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -440,6 +450,8 @@ sections:
                   secondary_info: last-updated
                 - entity: input_text.allarme_core_finestra_ufficio_camera
                   secondary_info: last-updated
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -519,6 +531,8 @@ sections:
                   secondary_info: last-updated
                 - entity: input_text.allarme_core_movimento_ufficio_camera
                   secondary_info: last-updated
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -603,6 +617,8 @@ sections:
                   secondary_info: last-updated
                 - entity: input_text.allarme_core_finestra_doccia_camera
                   secondary_info: last-updated
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -682,6 +698,8 @@ sections:
                   secondary_info: last-updated
                 - entity: input_text.allarme_core_movimento_doccia_camera
                   secondary_info: last-updated
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -765,6 +783,8 @@ sections:
                 - entity: input_text.allarme_core_finestra_studio_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -844,6 +864,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_studio_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -927,6 +949,8 @@ sections:
                 - entity: input_text.allarme_core_porta_ingresso_tecp1_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1008,6 +1032,8 @@ sections:
                 - entity: input_text.allarme_core_finestra_tecp1_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1087,6 +1113,8 @@ sections:
                 - entity: input_text.allarme_core_armadio_tecp1_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1166,6 +1194,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_tecp1_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1249,6 +1279,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_solaio_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1338,6 +1370,8 @@ sections:
                 - entity: input_text.allarme_core_porta_ingresso_taverna_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1419,6 +1453,8 @@ sections:
                 - entity: input_text.allarme_core_finestre_taverna_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1498,6 +1534,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_taverna_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1579,6 +1617,8 @@ sections:
                 - entity: input_text.allarme_core_vibrazione_ingresso_taverna_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1661,6 +1701,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_corridoio_taverna_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1743,6 +1785,8 @@ sections:
                 - entity: input_text.allarme_core_barriera_tapparella_taverna_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1828,6 +1872,8 @@ sections:
                 - entity: input_text.allarme_core_finestra_cucina_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1907,6 +1953,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_cucina_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -1986,6 +2034,8 @@ sections:
                 - entity: input_text.allarme_core_vibrazione_cucina_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2067,6 +2117,8 @@ sections:
                 - entity: input_text.allarme_core_finestra_bagno_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2146,6 +2198,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_bagno_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2225,6 +2279,8 @@ sections:
                 - entity: input_text.allarme_core_vibrazione_bagno_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2306,6 +2362,8 @@ sections:
                 - entity: input_text.allarme_core_finestra_lavanderia_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2387,6 +2445,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_lavanderia_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2468,6 +2528,8 @@ sections:
                 - entity: input_text.allarme_core_vibrazione_lavanderia_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2549,6 +2611,8 @@ sections:
                 - entity: input_text.allarme_core_porta_ingresso_tecpt_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2630,6 +2694,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_tecpt_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2709,6 +2775,8 @@ sections:
                 - entity: input_text.allarme_core_armadio_tecpt_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2788,6 +2856,8 @@ sections:
                 - entity: input_text.allarme_core_finestra_tecpt_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2877,6 +2947,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_esterno_box_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -2963,6 +3035,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_esterno_giardino_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -3049,6 +3123,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_esterno_dietro_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -3135,6 +3211,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_esterno_davanti_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -3220,6 +3298,8 @@ sections:
                 - entity: input_text.allarme_core_pir_bidoni_esterni_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -3307,6 +3387,8 @@ sections:
                     input_text.allarme_core_porta_ingresso_locale_attrezzi_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -3389,6 +3471,8 @@ sections:
                 - entity: input_text.allarme_core_movimento_locale_attrezzi_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -3474,6 +3558,8 @@ sections:
                 - entity: input_text.allarme_core_porta_caldaia_esterna_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =
@@ -3555,6 +3641,8 @@ sections:
                 - entity: input_text.allarme_core_porta_gas_camera
                   secondary_info: last-updated
         features_position: bottom
+        hold_action:
+          action: more-info
         card_mod:
           style: >
             {% set enabled =

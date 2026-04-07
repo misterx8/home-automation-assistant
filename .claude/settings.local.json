@@ -17,7 +17,12 @@
       "Bash(wc:*)",
       "Bash(python3:*)",
       "Bash(python.exe --version)",
-      "Bash(grep -oE \"unique_id: allarme_core[a-z0-9_]+\" /c/VSCODE/Progetti/home-assistant/allarme-core/*.yaml)"
+      "Bash(grep -oE \"unique_id: allarme_core[a-z0-9_]+\" /c/VSCODE/Progetti/home-assistant/allarme-core/*.yaml)",
+      "Bash(py -3 -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(python -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(node -e \"console.log\\('ok'\\)\")",
+      "Bash(powershell -Command \"Write-Host 'ps ok'\")",
+      "Bash(powershell.exe:*)"
     ]
   }
 }

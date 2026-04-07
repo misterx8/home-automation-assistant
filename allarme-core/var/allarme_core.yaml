@@ -26,6 +26,12 @@ allarme_core_timeline_note_md:
   friendly_name: Allarme Core - Timeline Note (MD)
   attributes:
     long_state: ""
+allarme_core_ultimo_allarme_per_sensore:
+  friendly_name: "Allarme Core - Ultimo Allarme per Sensore (JSON)"
+  icon: mdi:history
+  attributes:
+    long_state: "{}"
+
 allarme_core_last_snapshot_urls:
   friendly_name: Allarme Core - snapshot urls
   attributes:
