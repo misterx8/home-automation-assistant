@@ -340,6 +340,15 @@ template:
           {% else %}
             {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
           {% endif %}
+    - name: "allarme_core_pir_bidoni_esterni_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_pir_bidoni_esterni_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
 
     - name: "allarme_core_porta_ingresso_locale_attrezzi_zone_valida"
       state: >

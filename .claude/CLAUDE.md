@@ -244,3 +244,71 @@ Rules:
 Even if the user writes in another language, Claude must still answer in Italian.
 
 The only exception is code, configuration files, or technical identifiers which must remain unchanged.
+
+---
+
+# Procedura: Aggiunta Nuovo Sensore in Allarme Core
+
+Quando l'utente richiede di aggiungere un nuovo sensore al sistema Allarme Core, seguire questa procedura esatta. Le entità fisiche del sensore sono sempre indicate in `TODO_sensori.md`.
+
+## File da modificare (nell'ordine)
+
+### 1. `allarme-core/allarme_core_sensori.yaml` — 4 inserimenti
+
+Aggiungere nella `#region` di appartenenza del sensore (es. `#region esterno`):
+
+**a) Sezione `input_boolean`:**
+```yaml
+  allarme_core_<nome>_abilitato:
+    name: "Allarme <Nome Leggibile> Abilitato"
+    icon: mdi:shield-check
+```
+
+**b) Sezione `input_text` zone:**
+```yaml
+  allarme_core_<nome>_zone:
+      name: "Zone <Nome Leggibile>"
+      pattern: "^[^,]+(,[^,]+)*$"
+```
+
+**c) Sezione `input_text` camera:**
+```yaml
+  allarme_core_<nome>_camera:
+    name: "Camera <Nome Leggibile> Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+```
+
+**d) Sezione `template binary_sensor`:**
+- Sensore singolo wireless: usa `sensore_origine`, `batteria_origine`, `disponibilita_origine`
+- Sensore singolo filare: usa `sensore_origine`, `batteria_origine: ""`, `disponibilita_origine: ""`
+- Sensore multi-sorgente: usa `sensori_config` (lista JSON) + lista sorgenti
+- `device_class`: `motion` per PIR/volumetrici, `door` per contatti porte/finestre, `vibration` per vibrazioni
+- `tipo_connessione`: `wireless` o `filare`
+- `tipo`: `volumetrico`, `perimetrale`, ecc.
+- Se batteria viene da `sensor.batteria_xxx` usare `sensor.xxx`, se da `binary_sensor.batteria_xxx` usare `binary_sensor.xxx`
+
+### 2. `allarme-core/allarme_core_supporto.yaml` — 1 inserimento
+
+Aggiungere nella sezione `binary_sensor` del file (template zone_valida), nella `#region` corretta:
+```yaml
+    - name: "allarme_core_<nome>_zone_valida"
+      state: >
+          {% set zone_list = states('input_text.allarme_core_<nome>_zone').split(',') | map('trim') | list %}
+          {% set available_zones = state_attr('input_select.allarme_core_zone_disponibili','options') %}
+          {% if zone_list == [''] %}
+            false
+          {% else %}
+            {{ zone_list | select('in', available_zones) | list | length == zone_list | length }}
+          {% endif %}
+```
+
+### 3. `allarme-core/plancia_sensori.yaml` — 1 inserimento
+
+Aggiungere nella sezione di appartenenza (es. "Sensori esterni") il heading subtitle + tile card, copiando esattamente il pattern delle card adiacenti (incluso il `card_mod` completo con anomalia fisico).
+
+## File che NON vanno modificati
+
+- `allarme_core_batterie.yaml` — itera automaticamente tutti i wrapper via template
+- `allarme_core_anomalie_sensori.yaml` — itera automaticamente tutti i wrapper via template
+- `allarme_core_automazioni.yaml` — nessuna modifica necessaria
+- `allarme_core_log.yaml` — nessuna modifica necessaria

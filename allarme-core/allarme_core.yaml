@@ -1,3 +1,8 @@
+input_boolean:
+  allarme_core_panico_attivo:
+    name: "Allarme Core - Panico Attivo"
+    icon: mdi:alarm-light
+
 script:
   arm_allarme_core:
     mode: restart
@@ -16,6 +21,32 @@ script:
           entity_id: input_select.allarme_core_stato
         data:
           option: armed
+  allarme_core_attiva_panico:
+    alias: "Allarme Core - Attiva PANICO"
+    icon: mdi:alarm-light
+    mode: single
+    sequence:
+      # Attiva segnale canale separato per Node-RED PRIMA del triggered
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.allarme_core_panico_attivo
+      # Registra timestamp triggered (anticipa l'automazione automatica)
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.allarme_core_triggered_started
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+      # Forza stato triggered
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.allarme_core_stato
+        data:
+          option: triggered
+      # Log evento PANICO
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: "🚨 PANICO manuale attivato da UI"
+
   disarm_allarme_core:
     sequence:
       # FIX AC-BUG-06: stoppa arm_allarme_core prima di impostare disarmed.

@@ -32,6 +32,27 @@ sections:
         entity: input_select.allarme_core_stato
         vertical: false
         features_position: bottom
+      - type: button
+        name: "PANICO"
+        icon: mdi:alarm-light
+        grid_options:
+          columns: 12
+          rows: 2
+        tap_action:
+          action: call-service
+          service: script.turn_on
+          target:
+            entity_id: script.allarme_core_attiva_panico
+          confirmation:
+            text: "⚠️ Confermi attivazione PANICO? L'allarme scatterà immediatamente su canale prioritario."
+        card_mod:
+          style: |
+            ha-card {
+              background: #c0392b;
+              color: white;
+              border-radius: 30px;
+              box-shadow: 0 0 0 4px #e74c3c;
+            }
       - type: heading
         heading: Sensori Esclusi
         heading_style: subtitle
@@ -340,6 +361,37 @@ sections:
           target:
             entity_id: script.allarme_core_disattiva_test_mode
         features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+      - type: heading
+        heading: Auto-Reset Triggered
+        heading_style: subtitle
+        icon: mdi:timer-off-outline
+      - type: tile
+        entity: input_boolean.allarme_core_auto_reset_triggered
+        name: Auto-Reset al Timeout
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set on = is_state('input_boolean.allarme_core_auto_reset_triggered', 'on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'orange' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: input_number.allarme_core_auto_reset_minuti
+        name: Minuti prima del reset
+        vertical: false
+        features_position: bottom
+        features:
+          - type: numeric-input
+            mode: slider
         grid_options:
           columns: 6
           rows: 1

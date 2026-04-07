@@ -28,7 +28,7 @@ automation:
         entity_id: input_select.allarme_core_stato
         to: "triggered"
     action:
-      - action: input_datetime.set_datetime
+      - service: input_datetime.set_datetime
         target:
           entity_id: input_datetime.allarme_core_triggered_started
         data:
@@ -168,6 +168,103 @@ automation:
             {{ aperti | join(', ') }}
           attributes:
             profilo: "{{ states('input_select.allarme_core_profilo') }}"
+
+  # Resetta il flag panico al disarm
+  - alias: "Allarme Core - Reset panico al disarm"
+    id: allarme_core_aut_reset_panico_disarm
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "disarmed"
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.allarme_core_panico_attivo
+
+  # Resetta la guardia avviso auto-reset ogni volta che scatta triggered
+  - alias: "Allarme Core - Reset guardia avviso auto-reset"
+    id: allarme_core_aut_reset_avviso_auto_reset
+    mode: single
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+        to: "triggered"
+    action:
+      - service: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.allarme_core_auto_reset_avviso_loggato
+
+  # Log avviso 30 secondi prima dell'auto-reset
+  - alias: "Allarme Core - Log avviso pre auto-reset triggered"
+    id: allarme_core_aut_log_avviso_auto_reset
+    mode: single
+    trigger:
+      - platform: time_pattern
+        seconds: "/5"
+    condition:
+      - condition: state
+        entity_id: input_select.allarme_core_stato
+        state: "triggered"
+      - condition: state
+        entity_id: input_boolean.allarme_core_auto_reset_triggered
+        state: "on"
+      - condition: state
+        entity_id: input_boolean.allarme_core_auto_reset_avviso_loggato
+        state: "off"
+      - condition: template
+        value_template: >
+          {% set ts = states('input_datetime.allarme_core_triggered_started') %}
+          {% if ts not in ['unknown', 'unavailable', ''] %}
+            {% set elapsed = (now() - (ts | as_datetime | as_local)).total_seconds() %}
+            {% set target = states('input_number.allarme_core_auto_reset_minuti') | float(5) * 60 %}
+            {{ elapsed >= (target - 30) and elapsed < target }}
+          {% else %}
+            false
+          {% endif %}
+    action:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.allarme_core_auto_reset_avviso_loggato
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: >
+            ⚠️ Auto-reset triggered in 30 secondi
+            (timeout: {{ states('input_number.allarme_core_auto_reset_minuti') | int }} min)
+
+  # Auto-reset: disarma automaticamente dopo N minuti da triggered
+  - alias: "Allarme Core - Auto-reset da triggered"
+    id: allarme_core_aut_auto_reset_triggered
+    mode: single
+    trigger:
+      - platform: time_pattern
+        seconds: "/5"
+    condition:
+      - condition: state
+        entity_id: input_select.allarme_core_stato
+        state: "triggered"
+      - condition: state
+        entity_id: input_boolean.allarme_core_auto_reset_triggered
+        state: "on"
+      - condition: template
+        value_template: >
+          {% set ts = states('input_datetime.allarme_core_triggered_started') %}
+          {% if ts not in ['unknown', 'unavailable', ''] %}
+            {% set elapsed = (now() - (ts | as_datetime | as_local)).total_seconds() %}
+            {% set target = states('input_number.allarme_core_auto_reset_minuti') | float(5) * 60 %}
+            {{ elapsed >= target }}
+          {% else %}
+            false
+          {% endif %}
+    action:
+      - service: script.allarme_core_logbook_emit
+        data:
+          msg: >
+            🔓 Auto-reset triggered — disarmato automaticamente dopo
+            {{ states('input_number.allarme_core_auto_reset_minuti') | int }} min
+      - service: script.turn_on
+        target:
+          entity_id: script.disarm_allarme_core
 
   # Disattiva automaticamente la modalità test.
   # Due trigger per coprire tutti i casi:

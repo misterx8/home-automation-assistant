@@ -157,6 +157,9 @@ input_boolean:
   allarme_core_movimento_esterno_davanti_abilitato:
     name: "Allarme movimento esterno davanti Abilitato"
     icon: mdi:shield-check
+  allarme_core_pir_bidoni_esterni_abilitato:
+    name: "Allarme PIR Bidoni Esterni Abilitato"
+    icon: mdi:shield-check
   #endregion
 
   #region locale attrezzi
@@ -339,6 +342,9 @@ input_text:
   allarme_core_movimento_esterno_davanti_zone:
       name: "Zone Movimento esterno davanti"
       pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_pir_bidoni_esterni_zone:
+      name: "Zone PIR Bidoni Esterni"
+      pattern: "^[^,]+(,[^,]+)*$"
   #endregion
 
   #region locale attrezzi
@@ -519,6 +525,9 @@ input_text:
     pattern: "^[^,]+(,[^,]+)*$"
   allarme_core_movimento_esterno_davanti_camera:
     name: "Camera Movimento esterno davanti Allarme"
+    pattern: "^[^,]+(,[^,]+)*$"
+  allarme_core_pir_bidoni_esterni_camera:
+    name: "Camera PIR Bidoni Esterni Allarme"
     pattern: "^[^,]+(,[^,]+)*$"
   #endregion
 
@@ -2122,6 +2131,37 @@ template:
         camera: "{{ states('input_text.allarme_core_movimento_esterno_davanti_camera').split(',') }}"
 
         abilitato: "{{ is_state('input_boolean.allarme_core_movimento_esterno_davanti_abilitato','on') }}"
+
+    - name: "Allarme Core Pir Bidoni Esterni"
+      unique_id: allarme_core_pir_bidoni_esterni
+      device_class: motion
+
+      state: >
+        {% set pir = states('binary_sensor.pir_bidoni_esterni') %}
+        {% set abilitato = is_state('input_boolean.allarme_core_pir_bidoni_esterni_abilitato','on') %}
+        {% if pir in ['on','off'] %}
+          {% if abilitato %}
+            {{ pir }}
+          {% else %}
+            off
+          {% endif %}
+        {% else %}
+          off
+        {% endif %}
+      attributes:
+        sensore_origine: binary_sensor.pir_bidoni_esterni
+        tipo_connessione: wireless
+        batteria_origine: sensor.batteria_pir_bidoni_esterni
+        disponibilita_origine: binary_sensor.disponibilita_pir_bidoni_esterni
+
+        tipo: volumetrico
+        priorita: media
+        ritardo: 0
+
+        zone: "{{ states('input_text.allarme_core_pir_bidoni_esterni_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_pir_bidoni_esterni_camera').split(',') }}"
+
+        abilitato: "{{ is_state('input_boolean.allarme_core_pir_bidoni_esterni_abilitato','on') }}"
 
   #endregion
 

@@ -1,18 +1,6 @@
-🔹 Sensori vibrazione (binary_sensor)
-binary_sensor.vibrazione_cucina_sottoscala
-binary_sensor.vibrazione_cucina_lavello
-binary_sensor.vibrazione_taverna_divano
-binary_sensor.vibrazione_bagno
-binary_sensor.vibrazione_lavanderia
+🔹 Sensori allarme (binary_sensor)
+binary_sensor.pir_bidoni_esterni
 🔹 Sensori disponibilità (binary_sensor)
-binary_sensor.disponibilita_vibrazione_cucina_sottoscala
-binary_sensor.disponibilita_vibrazione_cucina_lavello
-binary_sensor.disponibilita_vibrazione_taverna_divano
-binary_sensor.disponibilita_vibrazione_bagno
-binary_sensor.disponibilita_vibrazione_lavanderia
+binary_sensor.disponibilita_pir_bidoni_esterni
 🔹 Sensori batteria (sensor)
-sensor.batteria_vibrazione_cucina_sottoscala
-sensor.batteria_vibrazione_cucina_lavello
-sensor.batteria_vibrazione_taverna_divano
-sensor.batteria_vibrazione_bagno
-sensor.batteria_vibrazione_lavanderia
+sensor.batteria_pir_bidoni_esterni
