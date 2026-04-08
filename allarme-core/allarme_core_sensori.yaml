@@ -915,8 +915,8 @@ template:
         priorita: media
         ritardo: 0
 
-        zone: "{{ states('input_text.allarme_core_finestre_cucina_zone').split(',') }}"
-        camera: "{{ states('input_text.allarme_core_finestre_cucina_camera').split(',') }}"
+        zone: "{{ states('input_text.allarme_core_finestra_cucina_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestra_cucina_camera').split(',') }}"
 
         abilitato: "{{ is_state('input_boolean.allarme_core_finestra_cucina_abilitato','on') }}"
         ultimo_allarme: >
@@ -1068,8 +1068,8 @@ template:
         priorita: media
         ritardo: 0
 
-        zone: "{{ states('input_text.allarme_core_finestre_bagno_zone').split(',') }}"
-        camera: "{{ states('input_text.allarme_core_finestre_bagno_camera').split(',') }}"
+        zone: "{{ states('input_text.allarme_core_finestra_bagno_zone').split(',') }}"
+        camera: "{{ states('input_text.allarme_core_finestra_bagno_camera').split(',') }}"
 
         abilitato: "{{ is_state('input_boolean.allarme_core_finestra_bagno_abilitato','on') }}"
         ultimo_allarme: >
