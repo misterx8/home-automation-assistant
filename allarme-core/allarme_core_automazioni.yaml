@@ -159,6 +159,33 @@ automation:
         {% endif %}
         {{ ns.nomi }}
       ts: "{{ now().isoformat() }}"
+      # Pre-calcola il JSON aggiornato nella sezione variables (HA usa render() completo qui,
+      # a differenza di render_complex() usato in data: che non gestisce namespace/for loop).
+      # NOTA: le variabili in variables: non condividono scope, quindi replica la logica
+      # di filtro di 'aperti' in modo autonomo senza dipendere da quella variabile.
+      ultimo_allarme_json: >
+        {% set esclusi_raw = states('var.allarme_core_sensori_esclusi_var') | string | trim %}
+        {% set esclusi_raw = esclusi_raw | replace("'", '"') %}
+        {% set esclusi = (esclusi_raw | from_json) if esclusi_raw.startswith('[') else [] %}
+        {% set zone_att = state_attr('sensor.allarme_core_zone_attive', 'zones') or [] %}
+        {% set raw = state_attr('var.allarme_core_ultimo_allarme_per_sensore','long_state') | default('{}') | string | trim %}
+        {% set existing = (raw | from_json) if raw.startswith('{') else {} %}
+        {% set ts_str = now().strftime('%d/%m/%Y %H:%M:%S') %}
+        {% set ns = namespace(d=existing) %}
+        {% if states('input_select.allarme_core_profilo') != 'nessuno' %}
+          {% for sensor in states.binary_sensor
+            | selectattr('entity_id', 'search', 'binary_sensor.allarme_core_')
+            | selectattr('state', 'eq', 'on')
+            | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+            | selectattr('attributes.zone', 'defined') %}
+            {% if sensor.entity_id not in esclusi %}
+              {% if sensor.attributes.zone | select('in', zone_att) | list | length > 0 %}
+                {% set ns.d = ns.d | combine({sensor.entity_id: ts_str}) %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {{ ns.d | tojson }}
     action:
       - service: var.set
         data:
@@ -173,15 +200,7 @@ automation:
         data:
           entity_id: var.allarme_core_ultimo_allarme_per_sensore
           attributes:
-            long_state: >
-              {% set raw = state_attr('var.allarme_core_ultimo_allarme_per_sensore','long_state') | default('{}') | string %}
-              {% set existing = (raw | from_json) if raw.startswith('{') else {} %}
-              {% set ts = now().strftime('%d/%m/%Y %H:%M:%S') %}
-              {% set ns = namespace(d=existing) %}
-              {% for eid in aperti %}
-                {% set ns.d = ns.d | combine(dict([(eid, ts)])) %}
-              {% endfor %}
-              {{ ns.d | tojson }}
+            long_state: "{{ ultimo_allarme_json | trim }}"
 
   # Resetta il flag panico al disarm
   - alias: "Allarme Core - Reset panico al disarm"
