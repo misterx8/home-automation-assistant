@@ -20,7 +20,6 @@ input_number:
     max: 50
     step: 5
     unit_of_measurement: "%"
-    initial: 20
     icon: mdi:battery-alert
 
   allarme_core_debounce_offline_minuti:
@@ -29,7 +28,6 @@ input_number:
     max: 30
     step: 1
     unit_of_measurement: "min"
-    initial: 2
     icon: mdi:timer-outline
 
 # ---------------------------------------------------------------------------

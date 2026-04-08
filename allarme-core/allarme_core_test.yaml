@@ -32,7 +32,6 @@ input_number:
     min: 5
     max: 120
     step: 5
-    initial: 30
     unit_of_measurement: min
     icon: mdi:timer
   allarme_core_auto_reset_minuti:
@@ -40,7 +39,6 @@ input_number:
     min: 1
     max: 30
     step: 1
-    initial: 5
     unit_of_measurement: min
     icon: mdi:timer-off-outline
     mode: slider

@@ -237,20 +237,6 @@ automation:
             | Aperti: {{ aperti | length }}{% if aperti | length > 0 %} — {{ aperti | join(', ') }}{% endif %}
             | Esclusi: {{ esclusi | length }}{% if esclusi | length > 0 %} — {{ esclusi | join(', ') }}{% endif %}
             (Profilo: {{ states('input_select.allarme_core_profilo') }})
-      # Aggiorna il dizionario JSON con il timestamp dell'ultimo allarme per ciascun sensore attivato
-      - service: var.set
-        data:
-          entity_id: var.allarme_core_ultimo_allarme_per_sensore
-          attributes:
-            long_state: >
-              {% set raw = state_attr('var.allarme_core_ultimo_allarme_per_sensore','long_state') | default('{}') | string %}
-              {% set existing = (raw | from_json) if raw.startswith('{') else {} %}
-              {% set ts = now().strftime('%d/%m/%Y %H:%M:%S') %}
-              {% set ns = namespace(d=existing) %}
-              {% for eid in aperti %}
-                {% set ns.d = ns.d | combine(dict([(eid, ts)])) %}
-              {% endfor %}
-              {{ ns.d | tojson }}
 
   # Log e salvataggio snap telecamere
   - alias: "Allarme Core - Snapshot e clips su Triggered (camere da sensori)"
