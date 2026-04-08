@@ -866,7 +866,7 @@ template:
           'binary_sensor.contatto_finestra_cucina_1',
           'binary_sensor.contatto_finestra_cucina_2'
         ] %}
-        {% set abilitato = is_state('input_boolean.allarme_core_finestre_cucina_abilitato','on') %}
+        {% set abilitato = is_state('input_boolean.allarme_core_finestra_cucina_abilitato','on') %}
 
         {% if not abilitato %}
           off
@@ -1019,7 +1019,7 @@ template:
           'binary_sensor.contatto_finestra_bagno_1',
           'binary_sensor.contatto_finestra_bagno_2'
         ] %}
-        {% set abilitato = is_state('input_boolean.allarme_core_finestre_bagno_abilitato','on') %}
+        {% set abilitato = is_state('input_boolean.allarme_core_finestra_bagno_abilitato','on') %}
 
         {% if not abilitato %}
           off
@@ -1071,7 +1071,7 @@ template:
         zone: "{{ states('input_text.allarme_core_finestre_bagno_zone').split(',') }}"
         camera: "{{ states('input_text.allarme_core_finestre_bagno_camera').split(',') }}"
 
-        abilitato: "{{ is_state('input_boolean.allarme_core_finestre_bagno_abilitato','on') }}"
+        abilitato: "{{ is_state('input_boolean.allarme_core_finestra_bagno_abilitato','on') }}"
         ultimo_allarme: >
           {%- set raw = state_attr('var.allarme_core_ultimo_allarme_per_sensore','long_state') | default('{}') | string %}
           {%- set d = (raw | from_json) if raw.startswith('{') else {} %}
