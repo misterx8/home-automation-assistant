@@ -24,7 +24,9 @@
       "Bash(powershell -Command \"Write-Host 'ps ok'\")",
       "Bash(powershell.exe:*)",
       "WebSearch",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:kadenthomp36.github.io)",
+      "WebFetch(domain:community.home-assistant.io)"
     ]
   }
 }

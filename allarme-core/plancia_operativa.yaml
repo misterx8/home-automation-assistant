@@ -9,6 +9,49 @@ sections:
       - type: heading
         heading_style: title
         heading: Controllo Allarme
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: input_select.allarme_core_stato
+            state: triggered
+        card:
+          type: markdown
+          content: >
+            {% set sensori = state_attr('sensor.allarme_core_ultimo_trigger','sensori_nomi') | default('—') %}
+            {% set zone = state_attr('sensor.allarme_core_ultimo_trigger','zone') | default('—') %}
+            {% set data = state_attr('sensor.allarme_core_ultimo_trigger','data_evento') | default('') %}
+            <div style="text-align:center; padding: 6px 0 2px;">
+              <div style="font-size:3.6em; line-height:1.1;">🚨</div>
+              <div style="font-size:1.1em; font-weight:700; letter-spacing:0.08em; color:#ff4444; margin: 4px 0 6px;">ALLARME ATTIVO</div>
+              <div style="font-size:0.82em; color: var(--secondary-text-color); margin-bottom:10px;">{{ data }}</div>
+              <div style="background: rgba(255,68,68,0.12); border-radius:12px; padding:10px 14px; margin-bottom:8px; text-align:left;">
+                <div style="font-size:0.72em; text-transform:uppercase; letter-spacing:0.1em; color:#ff4444; margin-bottom:4px;">Sensori attivanti</div>
+                <div style="font-size:0.92em; font-weight:600;">{{ sensori }}</div>
+              </div>
+              <div style="background: rgba(255,68,68,0.08); border-radius:12px; padding:8px 14px; text-align:left;">
+                <div style="font-size:0.72em; text-transform:uppercase; letter-spacing:0.1em; color:#ff4444; margin-bottom:4px;">Zone coinvolte</div>
+                <div style="font-size:0.92em; font-weight:600;">{{ zone }}</div>
+              </div>
+            </div>
+          card_mod:
+            style: |
+              @keyframes alarm-glow {
+                0%, 100% {
+                  box-shadow: 0 0 12px 3px rgba(255,68,68,0.4);
+                  border-color: #ff4444;
+                }
+                50% {
+                  box-shadow: 0 0 36px 12px rgba(255,68,68,0.75);
+                  border-color: #ff8888;
+                }
+              }
+              ha-card {
+                background: linear-gradient(135deg, #2d0a0a 0%, #1a0000 100%);
+                border: 2px solid #ff4444;
+                border-radius: 18px;
+                overflow: hidden;
+                animation: alarm-glow 1.4s ease-in-out infinite;
+              }
       - type: tile
         entity: sensor.allarme_core_zone_attive
         state_content:
@@ -299,53 +342,53 @@ sections:
 
                     {% endif %}
       - type: heading
-        heading: Modalità Test
+        heading: Configurazione
         heading_style: title
-        icon: mdi:test-tube
+        icon: mdi:cog-outline
+
+      # --- Riga stato: Test Mode + Auto-Reset ---
       - type: tile
         entity: input_boolean.allarme_core_modalita_test
-        name: Test Mode
+        name: Modalità Test
         vertical: false
         features_position: bottom
         grid_options:
-          columns: 4
+          columns: 6
           rows: 1
         card_mod:
           style: >
-            {% set on =
-            is_state('input_boolean.allarme_core_modalita_test','on') %} ha-card
-            {
+            {% set on = is_state('input_boolean.allarme_core_modalita_test','on') %}
+            ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ 'orange' if on else 'green' }};
               padding-left: 12px;
             }
       - type: tile
-        entity: sensor.allarme_core_test_minuti_rimanenti
-        name: Scade tra
+        entity: input_boolean.allarme_core_auto_reset_triggered
+        name: Auto-Reset
         vertical: false
         features_position: bottom
         grid_options:
-          columns: 4
+          columns: 6
           rows: 1
-      - type: tile
-        entity: input_number.allarme_core_test_timeout_minuti
-        name: Timeout
-        vertical: false
-        features_position: bottom
-        features:
-          - type: numeric-input
-            mode: slider
-        grid_options:
-          columns: 4
-          rows: 1
+        card_mod:
+          style: >
+            {% set on = is_state('input_boolean.allarme_core_auto_reset_triggered','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'orange' if on else 'green' }};
+              padding-left: 12px;
+            }
+
+      # --- Riga azioni test ---
       - type: tile
         entity: script.allarme_core_attiva_test_mode
         name: Attiva Test
         icon: mdi:test-tube
         vertical: false
         tap_action:
-          action: call-service
-          service: script.turn_on
+          action: perform-action
+          perform_action: script.turn_on
           target:
             entity_id: script.allarme_core_attiva_test_mode
         features_position: bottom
@@ -358,93 +401,78 @@ sections:
         icon: mdi:test-tube-off
         vertical: false
         tap_action:
-          action: call-service
-          service: script.turn_on
+          action: perform-action
+          perform_action: script.turn_on
           target:
             entity_id: script.allarme_core_disattiva_test_mode
         features_position: bottom
         grid_options:
           columns: 6
           rows: 1
-      - type: heading
-        heading: Auto-Reset Triggered
-        heading_style: subtitle
-        icon: mdi:timer-off-outline
-      - type: tile
-        entity: input_boolean.allarme_core_auto_reset_triggered
-        name: Auto-Reset al Timeout
-        vertical: false
-        features_position: bottom
-        grid_options:
-          columns: 6
-          rows: 2
-        card_mod:
-          style: >
-            {% set on =
-            is_state('input_boolean.allarme_core_auto_reset_triggered', 'on') %}
-            ha-card {
-              border-radius: 30px;
-              box-shadow: 0 0 0 3px {{ 'orange' if on else 'green' }};
-              padding-left: 12px;
-            }
-      - type: tile
-        entity: input_number.allarme_core_auto_reset_minuti
-        name: Minuti prima del reset
-        vertical: false
-        features_position: bottom
-        features:
-          - type: numeric-input
-            mode: slider
-        grid_options:
-          columns: 6
-          rows: 1
+
+      # --- Configurazione avanzata + Debug ---
       - type: button
-        name: Impostazioni Variabili
+        name: Configurazione Avanzata
         icon: mdi:cog-outline
-        tap_action:
-          action: call-service
-          service: browser_mod.popup
-          data:
-            title: Impostazioni Variabili
-            content:
-              type: entities
-              entities:
-                - entity: input_text.allarme_core_url_base_ha
-                - entity: input_text.allarme_core_url_base_frigate
-                - entity: input_text.allarme_core_frigate_token
-                - entity: input_number.allarme_core_arming_delay
-                - entity: input_number.allarme_core_notifica_timeout_secondi
-                - entity: input_number.allarme_core_clip_secondi_prima
-                - entity: input_number.allarme_core_clip_secondi_dopo
         grid_options:
-          columns: 6
+          columns: 9
           rows: 1
+        tap_action:
+          action: perform-action
+          perform_action: browser_mod.popup
+          data:
+            title: "⚙️ Configurazione Avanzata"
+            content:
+              type: vertical-stack
+              cards:
+                - type: entities
+                  title: "🧪 Modalità Test"
+                  entities:
+                    - entity: input_number.allarme_core_test_timeout_minuti
+                      name: Timeout (minuti)
+                    - entity: sensor.allarme_core_test_minuti_rimanenti
+                      name: Scade tra
+                - type: entities
+                  title: "🔁 Auto-Reset Triggered"
+                  entities:
+                    - entity: input_boolean.allarme_core_auto_reset_triggered
+                      name: Auto-Reset al timeout
+                    - entity: input_number.allarme_core_auto_reset_minuti
+                      name: Minuti prima del reset
+                - type: entities
+                  title: "🔗 URL & Credenziali"
+                  entities:
+                    - entity: input_text.allarme_core_url_base_ha
+                      name: URL Home Assistant
+                    - entity: input_text.allarme_core_url_base_frigate
+                      name: URL Frigate
+                    - entity: input_text.allarme_core_frigate_token
+                      name: Token Frigate
+                - type: entities
+                  title: "⏱️ Timing & Notifiche"
+                  entities:
+                    - entity: input_number.allarme_core_arming_delay
+                      name: Ritardo armamento (s)
+                    - entity: input_number.allarme_core_notifica_timeout_secondi
+                      name: Timeout notifica (s)
+                    - entity: input_number.allarme_core_clip_secondi_prima
+                      name: Clip — secondi prima
+                    - entity: input_number.allarme_core_clip_secondi_dopo
+                      name: Clip — secondi dopo
         card_mod:
           style: >
-            {% set ha_ok = states('input_text.allarme_core_url_base_ha') not in
-            ['','unknown','unavailable'] %}
-
-            {% set fr_ok = states('input_text.allarme_core_url_base_frigate')
-            not in ['','unknown','unavailable'] %}
-
-            {% set tk_ok = states('input_text.allarme_core_frigate_token') not
-            in ['','unknown','unavailable'] %}
-
+            {% set ha_ok = states('input_text.allarme_core_url_base_ha') not in ['','unknown','unavailable'] %}
+            {% set fr_ok = states('input_text.allarme_core_url_base_frigate') not in ['','unknown','unavailable'] %}
+            {% set tk_ok = states('input_text.allarme_core_frigate_token') not in ['','unknown','unavailable'] %}
             {% set all_ok = ha_ok and fr_ok and tk_ok %}
-
             {% set none_ok = not ha_ok and not fr_ok and not tk_ok %}
-
-            {% set border_color = 'green' if all_ok else ('red' if none_ok else
-            'orange') %}
-
+            {% set border_color = 'green' if all_ok else ('red' if none_ok else 'orange') %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ border_color }};
               position: relative;
             }
-
             {% if not all_ok %}
-
             ha-card::after {
               content: "⚠️";
               position: absolute;
@@ -454,26 +482,25 @@ sections:
               pointer-events: none;
               z-index: 1;
             }
-
             {% endif %}
       - type: button
-        name: Debug Variabili
-        icon: mdi:bug
+        name: Debug
+        icon: mdi:bug-outline
         grid_options:
-          columns: 6
+          columns: 3
           rows: 1
         card_mod:
           style: |
             ha-card {
               border-radius: 30px;
-              box-shadow: 0 0 0 3px grey;
-              padding-left: 12px;
+              box-shadow: 0 0 0 3px #444;
+              opacity: 0.5;
             }
         tap_action:
-          action: call-service
-          service: browser_mod.popup
+          action: perform-action
+          perform_action: browser_mod.popup
           data:
-            title: Debug — Variabili Allarme
+            title: "🐛 Debug — Variabili"
             content:
               type: entities
               entities:
