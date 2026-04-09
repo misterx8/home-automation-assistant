@@ -482,17 +482,81 @@ sections:
                 - entity: binary_sensor.allarme_core_dati_pronti
                 - entity: input_datetime.allarme_core_triggered_started
   - type: grid
+    columns: 12
     cards:
       - type: heading
         heading_style: title
         icon: mdi:math-log
         heading: Log
-      - type: tile
+      - type: button
         grid_options:
           columns: 6
+          rows: 2
+        name: Registro
+        icon: mdi:book-open-outline
+        tap_action:
+          action: perform-action
+          perform_action: browser_mod.popup
+          data:
+            title: Registro Log
+            content:
+              type: vertical-stack
+              cards:
+                - type: markdown
+                  title: Critici
+                  content: >
+                    {% set c_raw =
+                    state_attr('var.allarme_core_timeline_critici_md','long_state')
+                    | default('', true) | string %} {% set c_list =
+                    c_raw.split('\n') | map('trim') | reject('equalto','') |
+                    list %} ### 🚨 Critici ({{ c_list | length }}) {{ c_raw |
+                    trim if c_list | length > 0 else '_Nessun evento critico._'
+                    }}
+                  card_mod:
+                    style: |
+                      ha-markdown {
+                        max-height: 200px;
+                        overflow-y: auto;
+                        display: block;
+                      }
+                - type: markdown
+                  title: Operazioni
+                  content: >
+                    {% set o_raw =
+                    state_attr('var.allarme_core_timeline_operazioni_md','long_state')
+                    | default('', true) | string %} {% set o_list =
+                    o_raw.split('\n') | map('trim') | reject('equalto','') |
+                    list %} ### ⚙️ Operazioni ({{ o_list | length }}) {{ o_raw |
+                    trim if o_list | length > 0 else '_Nessuna operazione._' }}
+                  card_mod:
+                    style: |
+                      ha-markdown {
+                        max-height: 200px;
+                        overflow-y: auto;
+                        display: block;
+                      }
+                - type: markdown
+                  title: Note
+                  content: >
+                    {% set n_raw =
+                    state_attr('var.allarme_core_timeline_note_md','long_state')
+                    | default('', true) | string %} {% set n_list =
+                    n_raw.split('\n') | map('trim') | reject('equalto','') |
+                    list %} ### 📝 Note ({{ n_list | length }}) {{ n_raw | trim
+                    if n_list | length > 0 else '_Nessuna nota._' }}
+                  card_mod:
+                    style: |
+                      ha-markdown {
+                        max-height: 200px;
+                        overflow-y: auto;
+                        display: block;
+                      }
+      - type: tile
+        grid_options:
+          columns: 4
           rows: 1
         entity: script.allarme_core_logbook_cancella_tutto
-        name: Cancella tutti i log
+        name: Cancella Log
         vertical: false
         tap_action:
           action: toggle
@@ -501,15 +565,15 @@ sections:
         features_position: bottom
       - type: tile
         grid_options:
-          columns: 6
+          columns: 4
           rows: 1
         entity: script.allarme_core_logbook_nota_da_ui
         name: Aggiungi Nota
         icon: mdi:note-plus
         vertical: false
         tap_action:
-          action: call-service
-          service: browser_mod.popup
+          action: perform-action
+          perform_action: browser_mod.popup
           data:
             title: Aggiungi nota al log
             content:
@@ -521,7 +585,7 @@ sections:
                   name: Salva nota
         features_position: bottom
       - type: custom:timeline-card
-        title: 🛡️ Allarme Core – Stato & Eventi
+        title: Allarme Core – Stato & Eventi
         hours: 24
         limit: 50
         overflow: scroll
@@ -531,7 +595,7 @@ sections:
         entities:
           - entity: input_select.allarme_core_stato
             collapse_duplicates: true
-            name: " "
+            name: Stato
             state_map:
               armed: ARMATO
               disarmed: DISARMATO
@@ -547,51 +611,47 @@ sections:
               disarmed: green
               triggered: red
               arming: grey
-      - type: markdown
-        title: 🧾 Time line Eventi
-        content: |
-          {{ state_attr('sensor.allarme_core_timeline_render','long_state') }}
-      - type: markdown
-        title: 🧾 Allarme Core – Registro
-        content: >
-          ### 📌 Ultimo evento **{{
-          states('input_text.allarme_core_logbook_ultimo_evento') }}**
-
-          ---
-
-          {% set c_raw =
-          state_attr('var.allarme_core_timeline_critici_md','long_state') |
-          default('', true) | string %} {% set c_list = c_raw.split('\n') |
-          map('trim') | reject('equalto','') | list %} ### 🚨 Critici ({{ c_list
-          | length }}) {{ c_raw | trim if c_list | length > 0 else '_Nessun
-          evento critico._' }}
-
-          ---
-
-          {% set o_raw =
-          state_attr('var.allarme_core_timeline_operazioni_md','long_state') |
-          default('', true) | string %} {% set o_list = o_raw.split('\n') |
-          map('trim') | reject('equalto','') | list %} ### ⚙️ Operazioni ({{
-          o_list | length }}) {{ o_raw | trim if o_list | length > 0 else
-          '_Nessuna operazione._' }}
-
-          ---
-
-          {% set n_raw =
-          state_attr('var.allarme_core_timeline_note_md','long_state') |
-          default('', true) | string %} {% set n_list = n_raw.split('\n') |
-          map('trim') | reject('equalto','') | list %} ### 📝 Note ({{ n_list |
-          length }}) {{ n_raw | trim if n_list | length > 0 else '_Nessuna
-          nota._' }}
-      - type: markdown
-        title: 🛡️ Allarme Core – Ultimo Evento
-        content: |
-          **{{ states('input_text.allarme_core_logbook_ultimo_evento') }}**
-      - type: logbook
-        title: 🛡️ Allarme Core – Eventi
-        entities:
-          - input_text.allarme_core_logbook_event
-        hours_to_show: 24
+          - entity: input_select.allarme_core_profilo
+            collapse_duplicates: true
+            name: Profilo
+            state_map:
+              nessuno: NESSUNO
+              sera: SERA
+              giorno: GIORNO
+              notte: NOTTE
+              tutti: TUTTI
+            icon_map:
+              nessuno: mdi:shield-off-outline
+              sera: mdi:weather-sunset
+              giorno: mdi:weather-sunny
+              notte: mdi:weather-night
+              tutti: mdi:shield-home
+            icon_color_map:
+              nessuno: grey
+              sera: orange
+              giorno: yellow
+              notte: purple
+              tutti: red
+          - entity: input_boolean.allarme_core_modalita_test
+            collapse_duplicates: true
+            name: Test
+            state_map:
+              "on": TEST ON
+              "off": TEST OFF
+            icon_map:
+              "on": mdi:test-tube
+              "off": mdi:test-tube-off
+            icon_color_map:
+              "on": orange
+              "off": grey
+      - type: tile
+        grid_options:
+          columns: 12
+          rows: 1
+        entity: input_text.allarme_core_logbook_ultimo_evento
+        name: Ultimo Evento
+        vertical: false
+        features_position: bottom
   - type: grid
     cards:
       - type: heading
@@ -603,23 +663,19 @@ sections:
         content: >
           {% set s =
           state_attr('var.allarme_core_last_snapshot_urls','long_state') |
-          default('', true) | string %}
-          {% set arr = s.split('\n') | map('trim') | reject('equalto','') | list %}
-          {% set imgs = arr[:4] %}
-          {% set base_raw = states('input_text.allarme_core_url_base_ha') | trim %}
-          {% set base = '' if base_raw in ['unknown','unavailable'] else base_raw %}
-          {% if imgs|length == 0 %}
-          Nessuno snapshot disponibile.
-          {% else %}
-          {% for u in imgs %}
-          [![]({{ u }})]({{ base ~ u }})
-          {% endfor %}
-          {% endif %}
+          default('', true) | string %} {% set arr = s.split('\n') | map('trim')
+          | reject('equalto','') | list %} {% set imgs = arr[:4] %} {% set
+          base_raw = states('input_text.allarme_core_url_base_ha') | trim %} {%
+          set base = '' if base_raw in ['unknown','unavailable'] else base_raw
+          %} {% if imgs|length == 0 %} Nessuno snapshot disponibile. {% else %}
+          {% for u in imgs %} [![]({{ u }})]({{ base ~ u }}) {% endfor %} {%
+          endif %}
       - type: markdown
         title: 🎥 Clip allarme
         content: >
-          _{{ states('input_number.allarme_core_clip_secondi_prima') | int(30) }}s prima
-          + {{ states('input_number.allarme_core_clip_secondi_dopo') | int(10) }}s dopo_
+          _{{ states('input_number.allarme_core_clip_secondi_prima') | int(30)
+          }}s prima + {{ states('input_number.allarme_core_clip_secondi_dopo') |
+          int(10) }}s dopo_
 
           {% set s = state_attr('var.allarme_core_last_clip_urls','long_state')
           | default('', true) | string %} {% set arr = s.split('\n') |
