@@ -589,7 +589,7 @@ sections:
         hours: 24
         limit: 50
         overflow: scroll
-        max_height: 420px
+        max_height: 720px
         relative_time: true
         refresh_interval: 30
         entities:

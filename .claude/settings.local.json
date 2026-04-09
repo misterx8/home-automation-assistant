@@ -22,7 +22,9 @@
       "Bash(python -c \"import sys; print\\(sys.version\\)\")",
       "Bash(node -e \"console.log\\('ok'\\)\")",
       "Bash(powershell -Command \"Write-Host 'ps ok'\")",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
     ]
   }
 }
