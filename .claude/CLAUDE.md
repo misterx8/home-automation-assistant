@@ -247,6 +247,26 @@ The only exception is code, configuration files, or technical identifiers which 
 
 ---
 
+# Analisi Tecnica Allarme Core
+
+Il file `allarme-core/ANALISI_TECNICA.md` contiene l'analisi tecnica completa e aggiornata del progetto Allarme Core:
+struttura file, inventario sensori (46 totali per 15 region), macchina a stati, profili/zone, variabili persistenti,
+scripts, automazioni, integrazione Frigate, sistema batterie, anomalie, modalità test e bug corretti.
+
+**REGOLA OBBLIGATORIA:** Ogni volta che si effettua una modifica strutturale al progetto Allarme Core
+(aggiunta/rimozione sensori, nuovi file, nuove automazioni, nuovi script, nuove entità, modifiche architetturali)
+Claude DEVE aggiornare il file `allarme-core/ANALISI_TECNICA.md` per riflettere lo stato attuale.
+
+Sezioni da aggiornare a seconda della modifica:
+- Nuovo sensore → sezione 4 (inventario sensori)
+- Nuova automazione → sezione 8
+- Nuovo script → sezione 7
+- Nuova var → sezione 6
+- Bug corretto → sezione 15
+- Nuova feature → sezione appropriata o nuova sezione
+
+---
+
 # Procedura: Aggiunta Nuovo Sensore in Allarme Core
 
 Quando l'utente richiede di aggiungere un nuovo sensore al sistema Allarme Core, seguire questa procedura esatta. Le entità fisiche del sensore sono sempre indicate in `TODO_sensori.md`.
