@@ -5,6 +5,34 @@
 
 ---
 
+## 0. PRINCIPIO ARCHITETTURALE — REGOLA OBBLIGATORIA
+
+**Ogni file dichiara le entità che usa.**
+
+Le entità HA (`input_boolean`, `input_number`, `input_text`, `input_datetime`, `input_select`, `template`, `script`, ecc.)
+devono essere definite nel file che le utilizza, non centralizzate in `allarme_core.yaml` salvo che appartengano
+concettualmente al core del sistema (stato macchina, profilo, script arm/disarm).
+
+| File | Dichiara le entità di... |
+|------|--------------------------|
+| `allarme_core.yaml` | Stato macchina, profili, zone, scripts arm/disarm/panico, sensori aggregati globali |
+| `allarme_core_sensori.yaml` | input_boolean/input_text per ogni sensore wrapper |
+| `allarme_core_log.yaml` | input_text logbook, input_number clip video, script di log, template timeline |
+| `allarme_core_test.yaml` | input_boolean/input_number/input_datetime modalità test |
+| `allarme_core_batterie.yaml` | input_number soglia/debounce, template sensor batterie |
+| `allarme_core_automazioni.yaml` | Solo automazioni — nessuna entità propria |
+| `allarme_core_supporto.yaml` | binary_sensor zone_valida |
+| `allarme_core_anomalie_sensori.yaml` | binary_sensor anomalia_rilevata |
+
+**Esempi corretti:**
+- `input_number.allarme_core_clip_secondi_prima/dopo` → in `allarme_core_log.yaml` (usati dall'automazione snapshot lì definita)
+- `input_number.allarme_core_test_timeout_minuti` → in `allarme_core_test.yaml` (usato solo dalla modalità test)
+- `input_number.allarme_core_soglia_batteria_bassa` → in `allarme_core_batterie.yaml` (usato solo dai template batterie)
+
+**Prima di aggiungere una nuova entità, chiedersi: quale file la usa? Quella è dove va dichiarata.**
+
+---
+
 ## 1. STRUTTURA FILE DEL PROGETTO
 
 ```
@@ -230,6 +258,8 @@ File: `var/allarme_core.yaml`
 - `input_text.allarme_core_url_base_ha` — URL esterno Home Assistant (es. https://mia-casa.duckdns.org)
 - `input_text.allarme_core_url_base_frigate` — URL esterno Frigate (es. http://192.168.x.x:5000)
 - `input_text.allarme_core_frigate_token` — Token autenticazione Frigate
+- `input_number.allarme_core_clip_secondi_prima` — Secondi di clip prima del trigger (5-120, default 30) — definito in `allarme_core_log.yaml`
+- `input_number.allarme_core_clip_secondi_dopo` — Secondi di clip dopo il trigger (0-60, default 10) — definito in `allarme_core_log.yaml`
 
 **Flusso su triggered:**
 1. Automazione aspetta che `var.allarme_core_sensori_attivazione_allarme_var` venga aggiornata (wait_for_trigger 5s)
@@ -328,7 +358,7 @@ Per ogni sensore esiste un `binary_sensor.allarme_core_<nome>_zone_valida` che v
 | tile x2 | script attiva/disattiva test | Pulsanti azione |
 | tile | `input_boolean.allarme_core_auto_reset_triggered` | Border arancio se on |
 | tile | `input_number.allarme_core_auto_reset_minuti` | Slider |
-| button | Impostazioni Variabili | Popup con URL HA/Frigate/token/delay/timeout — border verde/arancio/rosso in base a compilazione campi |
+| button | Impostazioni Variabili | Popup con URL HA/Frigate/token/delay/timeout/clip_prima/clip_dopo — border verde/arancio/rosso in base a compilazione campi |
 | button | Debug Variabili | Popup con var esclusi, var attivazione, dati_pronti, triggered_started |
 
 **Sezione 2 — Log:**

@@ -414,6 +414,8 @@ sections:
                 - entity: input_text.allarme_core_frigate_token
                 - entity: input_number.allarme_core_arming_delay
                 - entity: input_number.allarme_core_notifica_timeout_secondi
+                - entity: input_number.allarme_core_clip_secondi_prima
+                - entity: input_number.allarme_core_clip_secondi_dopo
         grid_options:
           columns: 6
           rows: 1
@@ -601,16 +603,24 @@ sections:
         content: >
           {% set s =
           state_attr('var.allarme_core_last_snapshot_urls','long_state') |
-          default('', true) | string %} {% set arr = s.split('\n') | map('trim')
-          | reject('equalto','') | list %} {% set imgs = arr[:4] %}
-
-          {% if imgs|length == 0 %} Nessuno snapshot disponibile. {% else %} {%
-          for u in imgs %} [![]({{ u }})]({{ u }})
-
-          {% endfor %} {% endif %}
+          default('', true) | string %}
+          {% set arr = s.split('\n') | map('trim') | reject('equalto','') | list %}
+          {% set imgs = arr[:4] %}
+          {% set base_raw = states('input_text.allarme_core_url_base_ha') | trim %}
+          {% set base = '' if base_raw in ['unknown','unavailable'] else base_raw %}
+          {% if imgs|length == 0 %}
+          Nessuno snapshot disponibile.
+          {% else %}
+          {% for u in imgs %}
+          [![]({{ u }})]({{ base ~ u }})
+          {% endfor %}
+          {% endif %}
       - type: markdown
-        title: 🎥 Clip allarme (30s)
+        title: 🎥 Clip allarme
         content: >
+          _{{ states('input_number.allarme_core_clip_secondi_prima') | int(30) }}s prima
+          + {{ states('input_number.allarme_core_clip_secondi_dopo') | int(10) }}s dopo_
+
           {% set s = state_attr('var.allarme_core_last_clip_urls','long_state')
           | default('', true) | string %} {% set arr = s.split('\n') |
           map('trim') | reject('equalto','') | list %} {% set arr = arr[:4] %}

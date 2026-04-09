@@ -261,7 +261,9 @@ Il file `safety-core/ANALISI_TECNICA.md` contiene l'analisi tecnica completa e a
 struttura file, inventario sensori (19 in 4 categorie: fumo/gas/carbonio/acqua), macchina a stati semplificata (ok/triggered),
 master switch per categoria, sensori aggregati, reset manuale con finestra di grazia, integrazione Frigate, batterie, dashboard e bug corretti.
 
-**REGOLA OBBLIGATORIA:** Ogni volta che si effettua una modifica strutturale a uno dei progetti Core
+**REGOLA OBBLIGATORIA — Pattern entità:** Ogni nuova entità (`input_number`, `input_boolean`, `input_text`, ecc.) va dichiarata nel file che la utilizza, non in `allarme_core.yaml` o `safety_core.yaml` salvo che appartenga concettualmente al core del sistema (stato macchina, scripts principali). Vedere sezione 0 di ogni `ANALISI_TECNICA.md` per la mappatura file→entità.
+
+**REGOLA OBBLIGATORIA — Aggiornamento analisi:** Ogni volta che si effettua una modifica strutturale a uno dei progetti Core
 (aggiunta/rimozione sensori, nuovi file, nuove automazioni, nuovi script, nuove entità, modifiche architetturali)
 Claude DEVE aggiornare il relativo file `ANALISI_TECNICA.md` per riflettere lo stato attuale.
 
