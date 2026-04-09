@@ -247,22 +247,38 @@ The only exception is code, configuration files, or technical identifiers which 
 
 ---
 
-# Analisi Tecnica Allarme Core
+# Analisi Tecnica dei Progetti Core
+
+## Allarme Core
 
 Il file `allarme-core/ANALISI_TECNICA.md` contiene l'analisi tecnica completa e aggiornata del progetto Allarme Core:
 struttura file, inventario sensori (46 totali per 15 region), macchina a stati, profili/zone, variabili persistenti,
-scripts, automazioni, integrazione Frigate, sistema batterie, anomalie, modalità test e bug corretti.
+scripts, automazioni, integrazione Frigate, sistema batterie, anomalie, modalità test, dashboard e bug corretti.
 
-**REGOLA OBBLIGATORIA:** Ogni volta che si effettua una modifica strutturale al progetto Allarme Core
+## Safety Core
+
+Il file `safety-core/ANALISI_TECNICA.md` contiene l'analisi tecnica completa e aggiornata del progetto Safety Core:
+struttura file, inventario sensori (19 in 4 categorie: fumo/gas/carbonio/acqua), macchina a stati semplificata (ok/triggered),
+master switch per categoria, sensori aggregati, reset manuale con finestra di grazia, integrazione Frigate, batterie, dashboard e bug corretti.
+
+**REGOLA OBBLIGATORIA:** Ogni volta che si effettua una modifica strutturale a uno dei progetti Core
 (aggiunta/rimozione sensori, nuovi file, nuove automazioni, nuovi script, nuove entità, modifiche architetturali)
-Claude DEVE aggiornare il file `allarme-core/ANALISI_TECNICA.md` per riflettere lo stato attuale.
+Claude DEVE aggiornare il relativo file `ANALISI_TECNICA.md` per riflettere lo stato attuale.
 
-Sezioni da aggiornare a seconda della modifica:
+Sezioni da aggiornare per **allarme-core** a seconda della modifica:
 - Nuovo sensore → sezione 4 (inventario sensori)
 - Nuova automazione → sezione 8
 - Nuovo script → sezione 7
 - Nuova var → sezione 6
-- Bug corretto → sezione 15
+- Bug corretto → sezione 18
+- Nuova feature → sezione appropriata o nuova sezione
+
+Sezioni da aggiornare per **safety-core** a seconda della modifica:
+- Nuovo sensore → sezione 4 (inventario per categoria)
+- Nuova automazione → sezione 8
+- Nuovo script → sezione 7
+- Nuova var → sezione 9
+- Bug corretto → sezione 16
 - Nuova feature → sezione appropriata o nuova sezione
 
 ---
