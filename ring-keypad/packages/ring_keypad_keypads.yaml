@@ -1,0 +1,74 @@
+###############################################################################
+# RING KEYPAD V2 - SENSORI MQTT PER TASTIERA FISICA
+#
+# Una sezione per ogni tastiera fisica presente nell'impianto.
+# Questi sensori forniscono stato batteria e connettività di ogni device.
+#
+# Per aggiungere una nuova tastiera:
+#   1. Decommentare il blocco template corrispondente
+#   2. Sostituire <topic_base> con il nome nodo reale in zwave2mqtt
+#   3. Sostituire <id_univoco> con un identificatore univoco (snake_case)
+#   4. Aggiungere il topic base in input_text.ring_keypad_active_keypads
+#      (separato da virgola)
+#
+# NOTA: il topic "status" di zwave2mqtt pubblica il payload come stringa
+# semplice ("Alive"/"Dead"), non JSON. Per questo value_template è omesso
+# nei binary_sensor di connettività.
+###############################################################################
+
+mqtt:
+  sensor:
+
+    # ── TASTIERA 1: tastiera_camera ────────────────────────────────────────
+    - name: "Tastiera Camera - Batteria"
+      unique_id: ring_keypad_tastiera_camera_battery
+      state_topic: "zwave2mqtt/tastiera_camera/battery/0/isLow"
+      value_template: "{% if value_json.value == true %}10{% else %}100{% endif %}"
+      device_class: battery
+      unit_of_measurement: "%"
+      icon: mdi:battery
+
+    # ── TEMPLATE NUOVA TASTIERA - BATTERIA (decommentare e modificare) ─────
+    # - name: "Tastiera Ingresso - Batteria"
+    #   unique_id: ring_keypad_tastiera_ingresso_battery
+    #   state_topic: "zwave2mqtt/tastiera_ingresso/battery/0/isLow"
+    #   value_template: "{% if value_json.value == true %}10{% else %}100{% endif %}"
+    #   device_class: battery
+    #   unit_of_measurement: "%"
+    #   icon: mdi:battery
+
+    # - name: "Tastiera Garage - Batteria"
+    #   unique_id: ring_keypad_tastiera_garage_battery
+    #   state_topic: "zwave2mqtt/tastiera_garage/battery/0/isLow"
+    #   value_template: "{% if value_json.value == true %}10{% else %}100{% endif %}"
+    #   device_class: battery
+    #   unit_of_measurement: "%"
+    #   icon: mdi:battery
+
+  binary_sensor:
+
+    # ── TASTIERA 1: tastiera_camera ────────────────────────────────────────
+    - name: "Tastiera Camera - Online"
+      unique_id: ring_keypad_tastiera_camera_online
+      state_topic: "zwave2mqtt/tastiera_camera/status"
+      payload_on: "Alive"
+      payload_off: "Dead"
+      device_class: connectivity
+      icon: mdi:keyboard
+
+    # ── TEMPLATE NUOVA TASTIERA - ONLINE (decommentare e modificare) ───────
+    # - name: "Tastiera Ingresso - Online"
+    #   unique_id: ring_keypad_tastiera_ingresso_online
+    #   state_topic: "zwave2mqtt/tastiera_ingresso/status"
+    #   payload_on: "Alive"
+    #   payload_off: "Dead"
+    #   device_class: connectivity
+    #   icon: mdi:keyboard
+
+    # - name: "Tastiera Garage - Online"
+    #   unique_id: ring_keypad_tastiera_garage_online
+    #   state_topic: "zwave2mqtt/tastiera_garage/status"
+    #   payload_on: "Alive"
+    #   payload_off: "Dead"
+    #   device_class: connectivity
+    #   icon: mdi:keyboard

@@ -1,0 +1,127 @@
+###############################################################################
+# RING KEYPAD V2 - HELPERS GLOBALI
+# Stato allarme, utenti, PIN, configurazione tastiere
+#
+# ── PIN UTENTI ────────────────────────────────────────────────────────────────
+# I PIN sono in modalità password (nascosti in UI). NON serve secrets.yaml.
+# Impostare i PIN dalla UI di Home Assistant dopo il primo avvio.
+# Lasciare vuoti gli utenti non utilizzati.
+#
+# ── TASTIERE ATTIVE ───────────────────────────────────────────────────────────
+# In ring_keypad_active_keypads: inserire i topic base separati da virgola.
+# Esempio: "tastiera_camera,tastiera_ingresso"
+# Il topic base corrisponde al nome del nodo in zwave2mqtt.
+###############################################################################
+
+input_select:
+  ring_keypad_alarm_state:
+    name: "Keypad - Stato Allarme"
+    options:
+      - disarmed
+      - armed_home
+      - armed_away
+      - arming
+      - pending
+      - triggered_burglar
+      - triggered_fire
+      - triggered_co
+      - triggered_medical
+    initial: disarmed
+    icon: mdi:shield-home
+
+input_text:
+  # ── REGISTRO TASTIERE ──────────────────────────────────────────────────────
+  ring_keypad_active_keypads:
+    name: "Keypad - Tastiere attive (topic base, separati da virgola)"
+    initial: "tastiera_camera"
+    max: 255
+    icon: mdi:keyboard-settings
+
+  # ── LOG E TRACCIAMENTO ─────────────────────────────────────────────────────
+  ring_keypad_last_user:
+    name: "Keypad - Ultimo utente"
+    max: 32
+
+  ring_keypad_last_event:
+    name: "Keypad - Ultimo evento"
+    max: 128
+
+  ring_keypad_last_keypad:
+    name: "Keypad - Ultima tastiera usata"
+    max: 64
+
+  # ── PIN UTENTI (mode:password = nascosti in UI, non serve secrets.yaml) ────
+  ring_keypad_pin_master:
+    name: "Keypad PIN - Master"
+    max: 16
+    mode: password
+    icon: mdi:shield-key
+
+  ring_keypad_pin_user1:
+    name: "Keypad PIN - Utente 1"
+    max: 16
+    mode: password
+    icon: mdi:account-key
+
+  ring_keypad_pin_user2:
+    name: "Keypad PIN - Utente 2"
+    max: 16
+    mode: password
+    icon: mdi:account-key
+
+  ring_keypad_pin_user3:
+    name: "Keypad PIN - Utente 3"
+    max: 16
+    mode: password
+    icon: mdi:account-key
+
+  # ── NOMI UTENTI ────────────────────────────────────────────────────────────
+  ring_keypad_name_master:
+    name: "Keypad Nome - Master"
+    initial: "Master"
+    max: 32
+
+  ring_keypad_name_user1:
+    name: "Keypad Nome - Utente 1"
+    initial: "Utente 1"
+    max: 32
+
+  ring_keypad_name_user2:
+    name: "Keypad Nome - Utente 2"
+    initial: "Utente 2"
+    max: 32
+
+  ring_keypad_name_user3:
+    name: "Keypad Nome - Utente 3"
+    initial: "Utente 3"
+    max: 32
+
+input_number:
+  ring_keypad_exit_delay:
+    name: "Keypad - Exit Delay (sec)"
+    min: 5
+    max: 120
+    step: 5
+    initial: 30
+    unit_of_measurement: "s"
+    icon: mdi:timer-outline
+
+  ring_keypad_entry_delay:
+    name: "Keypad - Entry Delay (sec)"
+    min: 5
+    max: 120
+    step: 5
+    initial: 30
+    unit_of_measurement: "s"
+    icon: mdi:timer-outline
+
+input_boolean:
+  ring_keypad_debug:
+    name: "Keypad - Debug Mode"
+    initial: false
+    icon: mdi:bug
+
+  ring_keypad_require_code_to_arm:
+    name: "Keypad - Richiedi codice per armare"
+    initial: false
+    icon: mdi:shield-lock-outline

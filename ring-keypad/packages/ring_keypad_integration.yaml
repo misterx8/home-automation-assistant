@@ -1,0 +1,222 @@
+###############################################################################
+# RING KEYPAD V2 - BRIDGE VERSO SISTEMI ESTERNI
+#
+# Questo file è il bridge bidirezionale tra il Ring Keypad e il sistema
+# di allarme installato. È progettato per essere agnostico: basta
+# abilitare la sezione relativa al proprio sistema e commentare le altre.
+#
+# SISTEMI SUPPORTATI:
+#   [ATTIVO]    allarme-core  (sezione 1)
+#   [TEMPLATE]  alarm_control_panel generico / Alarmo (sezione 2, commentata)
+#
+# ── MAPPATURA STATI allarme-core → ring_keypad ────────────────────────────
+#   allarme-core: disarmed | arming | armed | triggered
+#   ring_keypad:  disarmed | arming | armed_away | triggered_burglar
+#
+# ── MAPPATURA STATI ring_keypad → allarme-core ────────────────────────────
+#   disarmed   → script.disarm_allarme_core
+#   armed_home → script.arm_allarme_core  (allarme-core non distingue home/away)
+#   armed_away → script.arm_allarme_core
+###############################################################################
+
+automation:
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # SEZIONE 1: INTEGRAZIONE CON ALLARME-CORE
+  # ══════════════════════════════════════════════════════════════════════════
+
+  # ── SYNC IN: allarme-core → ring_keypad ───────────────────────────────────
+  # Quando lo stato di allarme-core cambia, aggiorna ring_keypad_alarm_state
+  - id: ring_keypad_sync_from_allarme_core
+    alias: "Keypad - Sync da allarme-core"
+    description: >
+      Aggiorna lo stato del keypad quando cambia input_select.allarme_core_stato.
+      La mappatura è: disarmed→disarmed, arming→arming,
+      armed→armed_away, triggered→triggered_burglar.
+    trigger:
+      - platform: state
+        entity_id: input_select.allarme_core_stato
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'disarmed' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.ring_keypad_alarm_state
+                data:
+                  option: "disarmed"
+
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'arming' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.ring_keypad_alarm_state
+                data:
+                  option: "arming"
+
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'armed' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.ring_keypad_alarm_state
+                data:
+                  # allarme-core ha un solo stato "armed" → armed_away sul keypad
+                  option: "armed_away"
+
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'triggered' }}"
+            sequence:
+              - service: input_select.select_option
+                target:
+                  entity_id: input_select.ring_keypad_alarm_state
+                data:
+                  option: "triggered_burglar"
+
+  # ── SYNC OUT: ring_keypad → allarme-core ──────────────────────────────────
+  # Quando il keypad cambia stato (per comando da tastiera), invia al core.
+  # ANTI-LOOP: prima di inviare il comando verifica che allarme-core non
+  # sia già nello stato corrispondente (evita ring_keypad ↔ allarme-core loop).
+  - id: ring_keypad_command_to_allarme_core
+    alias: "Keypad - Comandi verso allarme-core"
+    description: >
+      Quando ring_keypad_alarm_state passa a disarmed/armed_home/armed_away,
+      richiama gli script di allarme-core solo se lo stato di allarme-core
+      è già diverso (prevenzione loop bidirezionale).
+    trigger:
+      - platform: state
+        entity_id: input_select.ring_keypad_alarm_state
+        to:
+          - disarmed
+          - armed_home
+          - armed_away
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'disarmed' }}"
+              # Anti-loop: invia solo se allarme-core non è già disarmed
+              - condition: template
+                value_template: "{{ states('input_select.allarme_core_stato') != 'disarmed' }}"
+            sequence:
+              - service: script.disarm_allarme_core
+
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.state in ['armed_home', 'armed_away'] }}"
+              # Anti-loop: invia solo se allarme-core non è già armed
+              - condition: template
+                value_template: "{{ states('input_select.allarme_core_stato') != 'armed' }}"
+            sequence:
+              # allarme-core non distingue home/away: usa arm generico
+              - service: script.arm_allarme_core
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SEZIONE 2: INTEGRAZIONE CON alarm_control_panel GENERICO (es. Alarmo)
+# Decommentare questa sezione e commentare la sezione 1 per usarla.
+# ══════════════════════════════════════════════════════════════════════════════
+
+# automation:
+#
+#   # ── SYNC IN: alarm_control_panel → ring_keypad ──────────────────────────
+#   - id: ring_keypad_sync_from_alarm_panel
+#     alias: "Keypad - Sync da alarm_control_panel"
+#     trigger:
+#       - platform: state
+#         entity_id: alarm_control_panel.alarmo_principale  # ← sostituire
+#     action:
+#       - choose:
+#           - conditions:
+#               - condition: template
+#                 value_template: "{{ trigger.to_state.state == 'disarmed' }}"
+#             sequence:
+#               - service: input_select.select_option
+#                 target:
+#                   entity_id: input_select.ring_keypad_alarm_state
+#                 data:
+#                   option: "disarmed"
+#           - conditions:
+#               - condition: template
+#                 value_template: "{{ trigger.to_state.state == 'armed_home' }}"
+#             sequence:
+#               - service: input_select.select_option
+#                 target:
+#                   entity_id: input_select.ring_keypad_alarm_state
+#                 data:
+#                   option: "armed_home"
+#           - conditions:
+#               - condition: template
+#                 value_template: "{{ trigger.to_state.state == 'armed_away' }}"
+#             sequence:
+#               - service: input_select.select_option
+#                 target:
+#                   entity_id: input_select.ring_keypad_alarm_state
+#                 data:
+#                   option: "armed_away"
+#           - conditions:
+#               - condition: template
+#                 value_template: "{{ trigger.to_state.state == 'arming' }}"
+#             sequence:
+#               - service: input_select.select_option
+#                 target:
+#                   entity_id: input_select.ring_keypad_alarm_state
+#                 data:
+#                   option: "arming"
+#           - conditions:
+#               - condition: template
+#                 value_template: "{{ trigger.to_state.state == 'pending' }}"
+#             sequence:
+#               - service: input_select.select_option
+#                 target:
+#                   entity_id: input_select.ring_keypad_alarm_state
+#                 data:
+#                   option: "pending"
+#           - conditions:
+#               - condition: template
+#                 value_template: "{{ trigger.to_state.state == 'triggered' }}"
+#             sequence:
+#               - service: input_select.select_option
+#                 target:
+#                   entity_id: input_select.ring_keypad_alarm_state
+#                 data:
+#                   option: "triggered_burglar"
+#
+#   # ── SYNC OUT: ring_keypad → alarm_control_panel ──────────────────────────
+#   - id: ring_keypad_command_to_alarm_panel
+#     alias: "Keypad - Comandi verso alarm_control_panel"
+#     trigger:
+#       - platform: state
+#         entity_id: input_select.ring_keypad_alarm_state
+#         to:
+#           - disarmed
+#           - armed_home
+#           - armed_away
+#     action:
+#       - choose:
+#           - conditions:
+#               - condition: template
+#                 value_template: "{{ trigger.to_state.state == 'disarmed' }}"
+#             sequence:
+#               - service: alarm_control_panel.alarm_disarm
+#                 target:
+#                   entity_id: alarm_control_panel.alarmo_principale  # ← sostituire
+#           - conditions:
+#               - condition: template
+#                 value_template: "{{ trigger.to_state.state == 'armed_home' }}"
+#             sequence:
+#               - service: alarm_control_panel.alarm_arm_home
+#                 target:
+#                   entity_id: alarm_control_panel.alarmo_principale  # ← sostituire
+#           - conditions:
+#               - condition: template
+#                 value_template: "{{ trigger.to_state.state == 'armed_away' }}"
+#             sequence:
+#               - service: alarm_control_panel.alarm_arm_away
+#                 target:
+#                   entity_id: alarm_control_panel.alarmo_principale  # ← sostituire

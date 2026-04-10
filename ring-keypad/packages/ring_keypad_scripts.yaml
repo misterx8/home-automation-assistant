@@ -1,0 +1,606 @@
+###############################################################################
+# RING KEYPAD V2 - SCRIPT PARAMETRICI
+#
+# Tutti gli script che interagiscono con l'hardware accettano `keypad_id`
+# come campo obbligatorio (topic base del nodo zwave2mqtt).
+# Il topic MQTT viene costruito dinamicamente:
+#   zwave2mqtt/{keypad_id}/135/0/{indicator}/{sub_cmd}/set
+#
+# SCHEMA INDICATOR CC (135):
+#   sub_cmd 1 = on/off       (payload: 0 o 99)
+#   sub_cmd 7 = timeout sec  (payload: secondi)
+#   sub_cmd 9 = level        (payload: 0-99)
+#
+# SCRIPT PRINCIPALI:
+#   ring_keypad_sync_state    → dispatcher per singola tastiera
+#   ring_keypad_sync_all      → broadcast sync a tutte le tastiere attive
+#   ring_keypad_broadcast_alarm → allarme a tutte le tastiere attive
+###############################################################################
+
+script:
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # INDICATORE GENERICO
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_send_indicator:
+    alias: "Keypad - Invia indicatore generico"
+    description: "Invia un comando Indicator CC a una tastiera specifica"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera (es. tastiera_camera)"
+        required: true
+      indicator:
+        description: "Nome indicatore (es. Not_armed__disarmed)"
+        required: true
+      sub_cmd:
+        description: "Sub-command (1=on/off, 7=timeout, 9=level)"
+        required: true
+      value:
+        description: "Valore payload"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/{{ indicator }}/{{ sub_cmd }}/set"
+          payload: "{{ value }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # STATI MODALITÀ
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_show_disarmed:
+    alias: "Keypad → Disarmed"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Not_armed__disarmed/1/set"
+          payload: "99"
+
+  ring_keypad_show_armed_home:
+    alias: "Keypad → Armed Home"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Armed_Stay/1/set"
+          payload: "99"
+
+  ring_keypad_show_armed_away:
+    alias: "Keypad → Armed Away"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Armed_Away/1/set"
+          payload: "99"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # FEEDBACK CODICE
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_code_rejected:
+    alias: "Keypad → Codice non accettato"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Code_not_accepted/1/set"
+          payload: "1"
+
+  ring_keypad_bypass_challenge:
+    alias: "Keypad → Bypass richiesto"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Bypass_challenge/1/set"
+          payload: "1"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # DELAY CON COUNTDOWN
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_show_exit_delay:
+    alias: "Keypad → Exit Delay"
+    description: "Mostra countdown exit delay (legge input_number.ring_keypad_exit_delay)"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Exit_Delay/7/set"
+          payload: "{{ states('input_number.ring_keypad_exit_delay') | int }}"
+
+  ring_keypad_show_entry_delay:
+    alias: "Keypad → Entry Delay"
+    description: "Mostra countdown entry delay (legge input_number.ring_keypad_entry_delay)"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Entry_Delay/7/set"
+          payload: "{{ states('input_number.ring_keypad_entry_delay') | int }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # ALLARMI
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_alarm_burglar:
+    alias: "Keypad → Allarme Burglar"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Burglar/9/set"
+          payload: "99"
+
+  ring_keypad_alarm_fire:
+    alias: "Keypad → Allarme Fuoco"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Smoke__Fire/9/set"
+          payload: "99"
+
+  ring_keypad_alarm_co:
+    alias: "Keypad → Allarme CO"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Carbon_Monoxide/9/set"
+          payload: "99"
+
+  ring_keypad_alarm_medical:
+    alias: "Keypad → Allarme Medical"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Medical/9/set"
+          payload: "99"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # SUONI NOTIFICA
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_sound_beep:
+    alias: "Keypad → Beep"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Generic_event_sound_notification_1/9/set"
+          payload: "50"
+
+  ring_keypad_sound_chime:
+    alias: "Keypad → Chime"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Generic_event_sound_notification_4/9/set"
+          payload: "50"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # SYNC STATO → SINGOLA TASTIERA (dispatcher)
+  # Legge input_select.ring_keypad_alarm_state e invia l'indicatore corretto
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_sync_state:
+    alias: "Keypad → Sync stato indicatori (singola tastiera)"
+    description: "Dispatcher: invia l'indicatore corretto in base allo stato attuale"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "disarmed"
+            sequence:
+              - service: script.ring_keypad_show_disarmed
+                data:
+                  keypad_id: "{{ keypad_id }}"
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "armed_home"
+            sequence:
+              - service: script.ring_keypad_show_armed_home
+                data:
+                  keypad_id: "{{ keypad_id }}"
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "armed_away"
+            sequence:
+              - service: script.ring_keypad_show_armed_away
+                data:
+                  keypad_id: "{{ keypad_id }}"
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "arming"
+            sequence:
+              - service: script.ring_keypad_show_exit_delay
+                data:
+                  keypad_id: "{{ keypad_id }}"
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "pending"
+            sequence:
+              - service: script.ring_keypad_show_entry_delay
+                data:
+                  keypad_id: "{{ keypad_id }}"
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "triggered_burglar"
+            sequence:
+              - service: script.ring_keypad_alarm_burglar
+                data:
+                  keypad_id: "{{ keypad_id }}"
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "triggered_fire"
+            sequence:
+              - service: script.ring_keypad_alarm_fire
+                data:
+                  keypad_id: "{{ keypad_id }}"
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "triggered_co"
+            sequence:
+              - service: script.ring_keypad_alarm_co
+                data:
+                  keypad_id: "{{ keypad_id }}"
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "triggered_medical"
+            sequence:
+              - service: script.ring_keypad_alarm_medical
+                data:
+                  keypad_id: "{{ keypad_id }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # SYNC TUTTE LE TASTIERE
+  # Itera ring_keypad_active_keypads e chiama sync_state su ognuna
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_sync_all:
+    alias: "Keypad → Sync tutte le tastiere"
+    description: "Invia lo stato corrente a tutte le tastiere registrate in ring_keypad_active_keypads"
+    sequence:
+      - repeat:
+          for_each: >
+            {{ states('input_text.ring_keypad_active_keypads')
+               .split(',')
+               | map('trim')
+               | select('ne', '')
+               | list }}
+          sequence:
+            - service: script.ring_keypad_sync_state
+              data:
+                keypad_id: "{{ repeat.item }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # BROADCAST ALLARME A TUTTE LE TASTIERE
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_broadcast_alarm:
+    alias: "Keypad → Broadcast allarme"
+    description: "Invia un tipo di allarme a tutte le tastiere attive"
+    fields:
+      alarm_type:
+        description: "Tipo allarme: burglar | fire | co | medical"
+        required: true
+    sequence:
+      - repeat:
+          for_each: >
+            {{ states('input_text.ring_keypad_active_keypads')
+               .split(',')
+               | map('trim')
+               | select('ne', '')
+               | list }}
+          sequence:
+            - choose:
+                - conditions:
+                    - condition: template
+                      value_template: "{{ alarm_type == 'burglar' }}"
+                  sequence:
+                    - service: script.ring_keypad_alarm_burglar
+                      data:
+                        keypad_id: "{{ repeat.item }}"
+                - conditions:
+                    - condition: template
+                      value_template: "{{ alarm_type == 'fire' }}"
+                  sequence:
+                    - service: script.ring_keypad_alarm_fire
+                      data:
+                        keypad_id: "{{ repeat.item }}"
+                - conditions:
+                    - condition: template
+                      value_template: "{{ alarm_type == 'co' }}"
+                  sequence:
+                    - service: script.ring_keypad_alarm_co
+                      data:
+                        keypad_id: "{{ repeat.item }}"
+                - conditions:
+                    - condition: template
+                      value_template: "{{ alarm_type == 'medical' }}"
+                  sequence:
+                    - service: script.ring_keypad_alarm_medical
+                      data:
+                        keypad_id: "{{ repeat.item }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # RISOLUZIONE UTENTE DA PIN
+  # Pattern sicuro: ignora PIN vuoti (lunghezza < 4)
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_resolve_user:
+    alias: "Keypad - Risolvi utente da PIN"
+    description: "Imposta ring_keypad_last_user in base al PIN inserito"
+    fields:
+      code:
+        description: "Codice inserito"
+        required: true
+    sequence:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ states('input_text.ring_keypad_pin_master') | length >= 4
+                     and code == states('input_text.ring_keypad_pin_master') }}
+            sequence:
+              - service: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_last_user
+                data:
+                  value: "{{ states('input_text.ring_keypad_name_master') }}"
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ states('input_text.ring_keypad_pin_user1') | length >= 4
+                     and code == states('input_text.ring_keypad_pin_user1') }}
+            sequence:
+              - service: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_last_user
+                data:
+                  value: "{{ states('input_text.ring_keypad_name_user1') }}"
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ states('input_text.ring_keypad_pin_user2') | length >= 4
+                     and code == states('input_text.ring_keypad_pin_user2') }}
+            sequence:
+              - service: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_last_user
+                data:
+                  value: "{{ states('input_text.ring_keypad_name_user2') }}"
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ states('input_text.ring_keypad_pin_user3') | length >= 4
+                     and code == states('input_text.ring_keypad_pin_user3') }}
+            sequence:
+              - service: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_last_user
+                data:
+                  value: "{{ states('input_text.ring_keypad_name_user3') }}"
+        default:
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.ring_keypad_last_user
+            data:
+              value: "sconosciuto"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # VALIDAZIONE PIN E DISARMO
+  # Pattern sicuro: il PIN vuoto non viene mai considerato valido
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_validate_and_disarm:
+    alias: "Keypad - Valida PIN e disarma"
+    fields:
+      code:
+        description: "Codice inserito"
+        required: true
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - if:
+          - condition: template
+            value_template: >
+              {% set ns = namespace(valid=false) %}
+              {% for pin in [
+                states('input_text.ring_keypad_pin_master'),
+                states('input_text.ring_keypad_pin_user1'),
+                states('input_text.ring_keypad_pin_user2'),
+                states('input_text.ring_keypad_pin_user3')
+              ] %}
+                {% if pin | length >= 4 and pin == code %}{% set ns.valid = true %}{% endif %}
+              {% endfor %}
+              {{ ns.valid }}
+        then:
+          - service: script.ring_keypad_resolve_user
+            data:
+              code: "{{ code }}"
+          - service: script.ring_keypad_do_disarm
+            data:
+              keypad_id: "{{ keypad_id }}"
+        else:
+          - service: script.ring_keypad_code_rejected
+            data:
+              keypad_id: "{{ keypad_id }}"
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.ring_keypad_last_event
+            data:
+              value: "PIN errato - tentativo disarmo"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # VALIDAZIONE PIN E ARMO
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_validate_and_arm:
+    alias: "Keypad - Valida PIN e arma"
+    fields:
+      code:
+        description: "Codice inserito"
+        required: true
+      mode:
+        description: "armed_home o armed_away"
+        required: true
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - if:
+          - condition: template
+            value_template: >
+              {% set ns = namespace(valid=false) %}
+              {% for pin in [
+                states('input_text.ring_keypad_pin_master'),
+                states('input_text.ring_keypad_pin_user1'),
+                states('input_text.ring_keypad_pin_user2'),
+                states('input_text.ring_keypad_pin_user3')
+              ] %}
+                {% if pin | length >= 4 and pin == code %}{% set ns.valid = true %}{% endif %}
+              {% endfor %}
+              {{ ns.valid }}
+        then:
+          - service: script.ring_keypad_resolve_user
+            data:
+              code: "{{ code }}"
+          - service: script.ring_keypad_do_arm
+            data:
+              mode: "{{ mode }}"
+              keypad_id: "{{ keypad_id }}"
+        else:
+          - service: script.ring_keypad_code_rejected
+            data:
+              keypad_id: "{{ keypad_id }}"
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.ring_keypad_last_event
+            data:
+              value: "PIN errato - tentativo armo {{ mode }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # DISARMO EFFETTIVO
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_do_disarm:
+    alias: "Keypad - Esegui disarmo"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera (per log)"
+        required: true
+    sequence:
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.ring_keypad_alarm_state
+        data:
+          option: "disarmed"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_last_event
+        data:
+          value: "Disarmato da {{ states('input_text.ring_keypad_last_user') }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_last_keypad
+        data:
+          value: "{{ keypad_id }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # ARMO EFFETTIVO (con exit delay)
+  # Imposta arming → attende exit_delay → imposta stato finale
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_do_arm:
+    alias: "Keypad - Esegui armo"
+    fields:
+      mode:
+        description: "armed_home o armed_away"
+        required: true
+      keypad_id:
+        description: "Topic base della tastiera (per log)"
+        required: true
+    sequence:
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.ring_keypad_alarm_state
+        data:
+          option: "arming"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_last_event
+        data:
+          value: "Armo {{ mode }} da {{ states('input_text.ring_keypad_last_user') }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_last_keypad
+        data:
+          value: "{{ keypad_id }}"
+      # Attende exit delay, poi imposta stato armato finale
+      - delay:
+          seconds: "{{ states('input_number.ring_keypad_exit_delay') | int }}"
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.ring_keypad_alarm_state
+        data:
+          option: "{{ mode }}"
