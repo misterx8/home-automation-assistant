@@ -263,6 +263,31 @@ master switch per categoria, sensori aggregati, reset manuale con finestra di gr
 
 **REGOLA OBBLIGATORIA — Pattern entità:** Ogni nuova entità (`input_number`, `input_boolean`, `input_text`, ecc.) va dichiarata nel file che la utilizza, non in `allarme_core.yaml` o `safety_core.yaml` salvo che appartenga concettualmente al core del sistema (stato macchina, scripts principali). Vedere sezione 0 di ogni `ANALISI_TECNICA.md` per la mappatura file→entità.
 
+## Ring Keypad
+
+Il file `ring-keypad/ANALISI_TECNICA.md` contiene l'analisi tecnica completa e aggiornata del progetto Ring Keypad V2:
+struttura file (5 package), protocollo Z-Wave/MQTT (Entry Control CC 111 + Indicator CC 135), architettura
+multi-tastiera con wildcard MQTT, entità helper (input_select, input_text, input_number, input_boolean),
+sensori MQTT per tastiera (batteria + connettività), script parametrici, automazioni, integrazione bidirezionale
+con allarme-core, prevenzione loop, gestione PIN, flussi operativi e bug noti.
+
+**REGOLA OBBLIGATORIA — Lettura preliminare:** Prima di rispondere a qualsiasi richiesta riguardante il
+progetto ring-keypad (modifiche, nuove feature, dashboard, debug, integrazioni), Claude DEVE leggere
+`ring-keypad/ANALISI_TECNICA.md` per avere il contesto aggiornato del progetto.
+
+**REGOLA OBBLIGATORIA — Aggiornamento analisi:** Ogni volta che si effettua una modifica strutturale
+al progetto Ring Keypad (nuovi file, nuove automazioni, nuovi script, nuove entità, nuove tastiere,
+modifiche architetturali, bug corretti), Claude DEVE aggiornare `ring-keypad/ANALISI_TECNICA.md`.
+
+Sezioni da aggiornare per **ring-keypad** a seconda della modifica:
+- Nuova tastiera → sezione 3 (multi-tastiera) e sezione 4 (sensori MQTT)
+- Nuova entità helper → sezione 4 (entità helper)
+- Nuovo script → sezione 6
+- Nuova automazione → sezione 7
+- Nuova integrazione esterna → sezione 9
+- Bug corretto → sezione 12
+- Nuova feature → sezione appropriata o nuova sezione
+
 **REGOLA OBBLIGATORIA — Aggiornamento analisi:** Ogni volta che si effettua una modifica strutturale a uno dei progetti Core
 (aggiunta/rimozione sensori, nuovi file, nuove automazioni, nuovi script, nuove entità, modifiche architetturali)
 Claude DEVE aggiornare il relativo file `ANALISI_TECNICA.md` per riflettere lo stato attuale.

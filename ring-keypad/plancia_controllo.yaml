@@ -1,0 +1,471 @@
+type: sections
+max_columns: 4
+title: Ring Keypad
+path: ring-keypad
+icon: mdi:keyboard-settings
+
+# ── HEADER ALERTS ─────────────────────────────────────────────────────────────
+header:
+  card:
+    type: vertical-stack
+    cards:
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: input_boolean.ring_keypad_debug
+            state: "on"
+        card:
+          type: markdown
+          content: >
+            <ha-alert alert-type="warning">
+              DEBUG ATTIVO — la modalità debug è abilitata sul sistema keypad
+            </ha-alert>
+      - type: conditional
+        conditions:
+          - condition: template
+            value_template: >
+              {{ states('input_select.ring_keypad_alarm_state').startswith('triggered_') }}
+        card:
+          type: markdown
+          content: >
+            <ha-alert alert-type="error">
+              ALLARME IN CORSO — stato: {{ states('input_select.ring_keypad_alarm_state') | replace('triggered_','') | upper }}
+            </ha-alert>
+
+sections:
+
+  # ── SEZIONE 1: STATO KEYPAD ──────────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Controllo Tastiere Ring
+        heading_style: title
+        icon: mdi:shield-home
+
+      # Stato principale con colore dinamico
+      - type: tile
+        entity: input_select.ring_keypad_alarm_state
+        name: Stato Allarme
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        card_mod:
+          style: >
+            {% set stato = states('input_select.ring_keypad_alarm_state') %}
+            {% if stato.startswith('triggered_') %}
+              {% set color = 'red' %}
+            {% elif stato in ['armed_home','armed_away','arming','pending'] %}
+              {% set color = '#f0a500' %}
+            {% else %}
+              {% set color = 'green' %}
+            {% endif %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ color }};
+              padding-left: 12px;
+            }
+
+      # Info contestuale: stato leggibile, utente, tastiera
+      - type: custom:mushroom-template-card
+        primary: >
+          {% set stato = states('input_select.ring_keypad_alarm_state') %}
+          {% set mappa = {
+            'disarmed':          'Disinserito',
+            'armed_home':        'Armato Casa',
+            'armed_away':        'Armato Fuori',
+            'arming':            'Armamento in corso...',
+            'pending':           'Ingresso rilevato...',
+            'triggered_burglar': 'ALLARME INTRUSIONE',
+            'triggered_fire':    'ALLARME INCENDIO',
+            'triggered_co':      'ALLARME CO',
+            'triggered_medical': 'EMERGENZA MEDICA'
+          } %}
+          {{ mappa.get(stato, stato) }}
+        secondary: >
+          {% set utente = states('input_text.ring_keypad_last_user') %}
+          {% set tastiera = states('input_text.ring_keypad_last_keypad') %}
+          {% if utente not in ['','unknown','unavailable'] %}
+            Utente: {{ utente }}
+            {%- if tastiera not in ['','unknown','unavailable'] %} — Tastiera: {{ tastiera }}{% endif %}
+          {% else %}
+            Nessuna attività recente
+          {% endif %}
+        icon: >
+          {% set stato = states('input_select.ring_keypad_alarm_state') %}
+          {% if stato.startswith('triggered_') %}
+            mdi:alarm-light
+          {% elif stato in ['armed_home','armed_away'] %}
+            mdi:shield-lock
+          {% elif stato == 'arming' %}
+            mdi:shield-sync
+          {% elif stato == 'pending' %}
+            mdi:shield-alert
+          {% else %}
+            mdi:shield-home-outline
+          {% endif %}
+        icon_color: >
+          {% set stato = states('input_select.ring_keypad_alarm_state') %}
+          {% if stato.startswith('triggered_') %}
+            red
+          {% elif stato in ['armed_home','armed_away','arming','pending'] %}
+            orange
+          {% else %}
+            green
+          {% endif %}
+        grid_options:
+          columns: 12
+          rows: 1
+        tap_action:
+          action: none
+
+      # Card alarm-glow — visibile solo quando triggered_*
+      - type: conditional
+        conditions:
+          - condition: template
+            value_template: >
+              {{ states('input_select.ring_keypad_alarm_state').startswith('triggered_') }}
+        card:
+          type: markdown
+          content: >
+            {% set stato = states('input_select.ring_keypad_alarm_state') %}
+            {% set tipo = stato | replace('triggered_','') | upper %}
+            ## ALLARME ATTIVO: {{ tipo }}
+
+            Intervenire immediatamente o inserire il codice PIN sulla tastiera per disattivare l'allarme.
+          grid_options:
+            columns: 12
+            rows: 2
+          card_mod:
+            style: |
+              @keyframes pulse-border {
+                0%   { box-shadow: 0 0 0 3px red; }
+                50%  { box-shadow: 0 0 0 8px rgba(255,0,0,0.3); }
+                100% { box-shadow: 0 0 0 3px red; }
+              }
+              ha-card {
+                border-radius: 16px;
+                background: linear-gradient(135deg, #1a0000 0%, #3d0000 100%);
+                color: #ff4444;
+                padding: 12px;
+                animation: pulse-border 1.5s ease-in-out infinite;
+              }
+
+  # ── SEZIONE 2: TASTIERE HARDWARE ─────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Stato Hardware
+        heading_style: subtitle
+        icon: mdi:keyboard-variant
+
+      # Connettività tastiera_camera
+      - type: tile
+        entity: binary_sensor.tastiera_camera_online
+        name: Camera — Online
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set online = is_state('binary_sensor.tastiera_camera_online','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'green' if online else 'red' }};
+              padding-left: 12px;
+            }
+
+      # Batteria tastiera_camera
+      - type: tile
+        entity: sensor.tastiera_camera_batteria
+        name: Camera — Batteria
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set batt = states('sensor.tastiera_camera_batteria') | int(0) %}
+            {% set color = 'green' if batt >= 50 else 'red' %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ color }};
+              padding-left: 12px;
+            }
+
+      # Riepilogo tastiere attive
+      - type: custom:mushroom-template-card
+        primary: Tastiere attive
+        secondary: >
+          {% set raw = states('input_text.ring_keypad_active_keypads') %}
+          {% if raw in ['','unknown','unavailable'] %}
+            Nessuna tastiera configurata
+          {% else %}
+            {% set lista = raw.split(',') | map('trim') | list %}
+            {{ lista | join(' • ') }} ({{ lista | count }} tastier{{ 'a' if lista | count == 1 else 'e' }})
+          {% endif %}
+        icon: mdi:keyboard-multiple
+        icon_color: >
+          {% set raw = states('input_text.ring_keypad_active_keypads') %}
+          {{ 'green' if raw not in ['','unknown','unavailable'] else 'red' }}
+        grid_options:
+          columns: 12
+          rows: 1
+        tap_action:
+          action: none
+
+  # ── SEZIONE 3: CONFIGURAZIONE ────────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Configurazione
+        heading_style: title
+        icon: mdi:cog
+
+      # Richiedi codice per armare
+      - type: tile
+        entity: input_boolean.ring_keypad_require_code_to_arm
+        name: Richiedi PIN per armare
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set on = is_state('input_boolean.ring_keypad_require_code_to_arm','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'orange' if on else 'green' }};
+              padding-left: 12px;
+            }
+
+      # Debug mode
+      - type: tile
+        entity: input_boolean.ring_keypad_debug
+        name: Modalità Debug
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set on = is_state('input_boolean.ring_keypad_debug','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'orange' if on else 'grey' }};
+              padding-left: 12px;
+            }
+
+      # Exit delay
+      - type: tile
+        entity: input_number.ring_keypad_exit_delay
+        name: Ritardo Uscita
+        vertical: false
+        features_position: bottom
+        features:
+          - type: numeric-input
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px #4a90d9;
+              padding-left: 12px;
+            }
+
+      # Entry delay
+      - type: tile
+        entity: input_number.ring_keypad_entry_delay
+        name: Ritardo Entrata
+        vertical: false
+        features_position: bottom
+        features:
+          - type: numeric-input
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px #4a90d9;
+              padding-left: 12px;
+            }
+
+      # Bottone Configurazione Avanzata (pill, 9 colonne)
+      - type: button
+        name: Configurazione Avanzata
+        icon: mdi:account-key
+        grid_options:
+          columns: 9
+          rows: 1
+        tap_action:
+          action: perform-action
+          perform_action: browser_mod.popup
+          data:
+            title: "⚙️ Configurazione Avanzata — Ring Keypad"
+            content:
+              type: vertical-stack
+              cards:
+                - type: entities
+                  title: Utenti e PIN
+                  entities:
+                    - entity: input_text.ring_keypad_name_master
+                      name: Nome Master
+                    - entity: input_text.ring_keypad_pin_master
+                      name: PIN Master
+                    - entity: input_text.ring_keypad_name_user1
+                      name: Nome Utente 1
+                    - entity: input_text.ring_keypad_pin_user1
+                      name: PIN Utente 1
+                    - entity: input_text.ring_keypad_name_user2
+                      name: Nome Utente 2
+                    - entity: input_text.ring_keypad_pin_user2
+                      name: PIN Utente 2
+                    - entity: input_text.ring_keypad_name_user3
+                      name: Nome Utente 3
+                    - entity: input_text.ring_keypad_pin_user3
+                      name: PIN Utente 3
+                - type: entities
+                  title: Timing
+                  entities:
+                    - entity: input_number.ring_keypad_exit_delay
+                      name: Ritardo Uscita (sec)
+                    - entity: input_number.ring_keypad_entry_delay
+                      name: Ritardo Entrata (sec)
+                - type: entities
+                  title: Tastiere
+                  entities:
+                    - entity: input_text.ring_keypad_active_keypads
+                      name: Tastiere Attive (topic CSV)
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px #4a90d9;
+            }
+
+      # Bottone Debug (3 colonne, semi-trasparente)
+      - type: button
+        name: Debug
+        icon: mdi:bug-check
+        grid_options:
+          columns: 3
+          rows: 1
+        tap_action:
+          action: perform-action
+          perform_action: browser_mod.popup
+          data:
+            title: "🐛 Debug — Ring Keypad"
+            content:
+              type: entities
+              title: Registro e Diagnostica
+              entities:
+                - entity: input_boolean.ring_keypad_debug
+                  name: Debug Mode
+                - entity: input_text.ring_keypad_last_user
+                  name: Ultimo Utente
+                  secondary_info: last-updated
+                - entity: input_text.ring_keypad_last_event
+                  name: Ultimo Evento
+                  secondary_info: last-updated
+                - entity: input_text.ring_keypad_last_keypad
+                  name: Ultima Tastiera
+                  secondary_info: last-updated
+                - entity: input_select.ring_keypad_alarm_state
+                  name: Stato Corrente
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              opacity: 0.55;
+              box-shadow: 0 0 0 2px grey;
+            }
+
+  # ── SEZIONE 4: LOG & ATTIVITÀ ───────────────────────────────────────────────
+  - type: grid
+    cards:
+      - type: heading
+        heading: Log & Attività
+        heading_style: title
+        icon: mdi:math-log
+
+      # Card riepilogo ultimo evento
+      - type: custom:mushroom-template-card
+        primary: Ultimo Evento
+        secondary: >
+          {% set ev = states('input_text.ring_keypad_last_event') %}
+          {{ ev if ev not in ['','unknown','unavailable'] else 'Nessun evento registrato' }}
+        icon: mdi:history
+        icon_color: >
+          {% set ev = states('input_text.ring_keypad_last_event') %}
+          {{ 'orange' if ev not in ['','unknown','unavailable'] else 'grey' }}
+        grid_options:
+          columns: 12
+          rows: 1
+        tap_action:
+          action: none
+
+      # Ultima tastiera usata
+      - type: tile
+        entity: input_text.ring_keypad_last_keypad
+        name: Ultima Tastiera
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px #555;
+              padding-left: 12px;
+            }
+
+      # Ultimo utente
+      - type: tile
+        entity: input_text.ring_keypad_last_user
+        name: Ultimo Utente
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px #555;
+              padding-left: 12px;
+            }
+
+      # Ultimo evento (bordo arancio se presente)
+      - type: tile
+        entity: input_text.ring_keypad_last_event
+        name: Ultimo Evento
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: >
+            {% set ev = states('input_text.ring_keypad_last_event') %}
+            {% set color = 'orange' if ev not in ['','unknown','unavailable'] else '#555' %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ color }};
+              padding-left: 12px;
+            }
+
+badges: []
+cards: []
