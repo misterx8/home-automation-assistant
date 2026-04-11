@@ -1,6 +1,6 @@
 # Ring Keypad V2 — Analisi Tecnica
 
-> Ultima revisione: 2026-04-10  
+> Ultima revisione: 2026-04-11  
 > Versione architettura: 2.0 (multi-tastiera, parametrica)
 
 ---
@@ -98,7 +98,8 @@ Topic pubblicati: `zwave2mqtt/{keypad_id}/135/0/{indicator}/{sub_cmd}/set`
 ### Status nodo
 
 - Topic: `zwave2mqtt/{keypad_id}/status`
-- Payload JSON: `{"status": "Alive"}` o `{"status": "Dead"}`
+- Payload: **stringa semplice** `Alive` o `Dead` (non JSON)
+- ⚠️ Non usare `value_template: "{{ value_json.status }}"` nei trigger MQTT su questo topic: `value_json` fallisce silenziosamente su payload non-JSON e il trigger non scatterebbe mai.
 
 ### Batteria
 
@@ -489,9 +490,12 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 
 ## Sezione 12 — Bug e Limitazioni Conosciute
 
-| # | Descrizione | Workaround |
-|---|-------------|------------|
-| RK-01 | `armed_home` mappato a `arm_allarme_core` (stesso di armed_away) | Per sistemi con distinzione, personalizzare `ring_keypad_integration.yaml` |
-| RK-02 | Delay in `do_arm` non interrompibile dall'esterno | Nessuno (limitazione HA scripts) |
-| RK-03 | Nessuna protezione brute-force su PIN | Implementazione futura con `counter` helper |
-| RK-04 | `ring_keypad_sync_on_state_change` si attiva anche per transizioni `→unknown` | Accettato: il sync_all è idempotente |
+| # | Descrizione | Stato | Fix |
+|---|-------------|-------|-----|
+| RK-01 | `armed_home` mappato a `arm_allarme_core` (stesso di armed_away) | Aperto | Per sistemi con distinzione, personalizzare `ring_keypad_integration.yaml` |
+| RK-02 | Delay in `do_arm` non interrompibile dall'esterno | Aperto | Nessuno (limitazione HA scripts) |
+| RK-03 | Nessuna protezione brute-force su PIN | Aperto | Implementazione futura con `counter` helper |
+| RK-04 | `ring_keypad_sync_on_state_change` si attiva anche per transizioni `→unknown` | Accettato | Il sync_all è idempotente, nessun impatto operativo |
+| RK-05 | `ring_keypad_restore_on_connect`: `value_template: "{{ value_json.status }}"` su payload stringa → trigger mai scattato | **Corretto 2026-04-11** | Rimosso `value_template` — il topic pubblica stringa semplice, non JSON |
+| RK-06 | `ring_keypad_code_rejected`: payload `"1"` non-standard per Indicator CC sub_cmd 1 | **Corretto 2026-04-11** | Payload cambiato a `"99"` (0xFF = on, secondo specifica Z-Wave) |
+| RK-07 | `ring_keypad_bypass_challenge`: payload `"1"` non-standard per Indicator CC sub_cmd 1 | **Corretto 2026-04-11** | Payload cambiato a `"99"` |

@@ -42,7 +42,7 @@ automation:
               - condition: template
                 value_template: "{{ trigger.to_state.state == 'disarmed' }}"
             sequence:
-              - service: input_select.select_option
+              - action: input_select.select_option
                 target:
                   entity_id: input_select.ring_keypad_alarm_state
                 data:
@@ -52,7 +52,7 @@ automation:
               - condition: template
                 value_template: "{{ trigger.to_state.state == 'arming' }}"
             sequence:
-              - service: input_select.select_option
+              - action: input_select.select_option
                 target:
                   entity_id: input_select.ring_keypad_alarm_state
                 data:
@@ -62,7 +62,7 @@ automation:
               - condition: template
                 value_template: "{{ trigger.to_state.state == 'armed' }}"
             sequence:
-              - service: input_select.select_option
+              - action: input_select.select_option
                 target:
                   entity_id: input_select.ring_keypad_alarm_state
                 data:
@@ -73,7 +73,7 @@ automation:
               - condition: template
                 value_template: "{{ trigger.to_state.state == 'triggered' }}"
             sequence:
-              - service: input_select.select_option
+              - action: input_select.select_option
                 target:
                   entity_id: input_select.ring_keypad_alarm_state
                 data:
@@ -105,7 +105,7 @@ automation:
               - condition: template
                 value_template: "{{ states('input_select.allarme_core_stato') != 'disarmed' }}"
             sequence:
-              - service: script.disarm_allarme_core
+              - action: script.disarm_allarme_core
 
           - conditions:
               - condition: template
@@ -115,7 +115,7 @@ automation:
                 value_template: "{{ states('input_select.allarme_core_stato') != 'armed' }}"
             sequence:
               # allarme-core non distingue home/away: usa arm generico
-              - service: script.arm_allarme_core
+              - action: script.arm_allarme_core
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SEZIONE 2: INTEGRAZIONE CON alarm_control_panel GENERICO (es. Alarmo)
@@ -136,7 +136,7 @@ automation:
 #               - condition: template
 #                 value_template: "{{ trigger.to_state.state == 'disarmed' }}"
 #             sequence:
-#               - service: input_select.select_option
+#               - action: input_select.select_option
 #                 target:
 #                   entity_id: input_select.ring_keypad_alarm_state
 #                 data:
@@ -145,7 +145,7 @@ automation:
 #               - condition: template
 #                 value_template: "{{ trigger.to_state.state == 'armed_home' }}"
 #             sequence:
-#               - service: input_select.select_option
+#               - action: input_select.select_option
 #                 target:
 #                   entity_id: input_select.ring_keypad_alarm_state
 #                 data:
@@ -154,7 +154,7 @@ automation:
 #               - condition: template
 #                 value_template: "{{ trigger.to_state.state == 'armed_away' }}"
 #             sequence:
-#               - service: input_select.select_option
+#               - action: input_select.select_option
 #                 target:
 #                   entity_id: input_select.ring_keypad_alarm_state
 #                 data:
@@ -163,7 +163,7 @@ automation:
 #               - condition: template
 #                 value_template: "{{ trigger.to_state.state == 'arming' }}"
 #             sequence:
-#               - service: input_select.select_option
+#               - action: input_select.select_option
 #                 target:
 #                   entity_id: input_select.ring_keypad_alarm_state
 #                 data:
@@ -172,7 +172,7 @@ automation:
 #               - condition: template
 #                 value_template: "{{ trigger.to_state.state == 'pending' }}"
 #             sequence:
-#               - service: input_select.select_option
+#               - action: input_select.select_option
 #                 target:
 #                   entity_id: input_select.ring_keypad_alarm_state
 #                 data:
@@ -181,7 +181,7 @@ automation:
 #               - condition: template
 #                 value_template: "{{ trigger.to_state.state == 'triggered' }}"
 #             sequence:
-#               - service: input_select.select_option
+#               - action: input_select.select_option
 #                 target:
 #                   entity_id: input_select.ring_keypad_alarm_state
 #                 data:
@@ -203,20 +203,20 @@ automation:
 #               - condition: template
 #                 value_template: "{{ trigger.to_state.state == 'disarmed' }}"
 #             sequence:
-#               - service: alarm_control_panel.alarm_disarm
+#               - action: alarm_control_panel.alarm_disarm
 #                 target:
 #                   entity_id: alarm_control_panel.alarmo_principale  # ← sostituire
 #           - conditions:
 #               - condition: template
 #                 value_template: "{{ trigger.to_state.state == 'armed_home' }}"
 #             sequence:
-#               - service: alarm_control_panel.alarm_arm_home
+#               - action: alarm_control_panel.alarm_arm_home
 #                 target:
 #                   entity_id: alarm_control_panel.alarmo_principale  # ← sostituire
 #           - conditions:
 #               - condition: template
 #                 value_template: "{{ trigger.to_state.state == 'armed_away' }}"
 #             sequence:
-#               - service: alarm_control_panel.alarm_arm_away
+#               - action: alarm_control_panel.alarm_arm_away
 #                 target:
 #                   entity_id: alarm_control_panel.alarmo_principale  # ← sostituire

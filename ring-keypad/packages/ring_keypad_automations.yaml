@@ -37,7 +37,7 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      - service: script.ring_keypad_validate_and_disarm
+      - action: script.ring_keypad_validate_and_disarm
         data:
           code: "{{ trigger.payload_json.value }}"
           keypad_id: "{{ keypad_id }}"
@@ -53,7 +53,7 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      - service: script.ring_keypad_validate_and_disarm
+      - action: script.ring_keypad_validate_and_disarm
         data:
           code: "{{ trigger.payload_json.value }}"
           keypad_id: "{{ keypad_id }}"
@@ -69,7 +69,7 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      - service: script.ring_keypad_validate_and_arm
+      - action: script.ring_keypad_validate_and_arm
         data:
           code: "{{ trigger.payload_json.value }}"
           mode: "armed_away"
@@ -93,12 +93,12 @@ automation:
                 entity_id: input_boolean.ring_keypad_require_code_to_arm
                 state: "off"
             sequence:
-              - service: script.ring_keypad_do_arm
+              - action: script.ring_keypad_do_arm
                 data:
                   mode: "armed_away"
                   keypad_id: "{{ keypad_id }}"
         default:
-          - service: script.ring_keypad_code_rejected
+          - action: script.ring_keypad_code_rejected
             data:
               keypad_id: "{{ keypad_id }}"
 
@@ -113,7 +113,7 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      - service: script.ring_keypad_validate_and_arm
+      - action: script.ring_keypad_validate_and_arm
         data:
           code: "{{ trigger.payload_json.value }}"
           mode: "armed_home"
@@ -137,12 +137,12 @@ automation:
                 entity_id: input_boolean.ring_keypad_require_code_to_arm
                 state: "off"
             sequence:
-              - service: script.ring_keypad_do_arm
+              - action: script.ring_keypad_do_arm
                 data:
                   mode: "armed_home"
                   keypad_id: "{{ keypad_id }}"
         default:
-          - service: script.ring_keypad_code_rejected
+          - action: script.ring_keypad_code_rejected
             data:
               keypad_id: "{{ keypad_id }}"
 
@@ -157,12 +157,12 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_event
         data:
           value: "Cancel premuto"
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_keypad
         data:
@@ -171,7 +171,7 @@ automation:
       # - condition: state
       #   entity_id: input_select.ring_keypad_alarm_state
       #   state: "pending"
-      # - service: script.ring_keypad_do_disarm
+      # - action: script.ring_keypad_do_disarm
       #   data:
       #     keypad_id: "{{ keypad_id }}"
 
@@ -186,22 +186,22 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      - service: input_select.select_option
+      - action: input_select.select_option
         target:
           entity_id: input_select.ring_keypad_alarm_state
         data:
           option: "triggered_fire"
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_event
         data:
           value: "FIRE alarm dalla tastiera {{ keypad_id }}"
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_keypad
         data:
           value: "{{ keypad_id }}"
-      - service: script.ring_keypad_broadcast_alarm
+      - action: script.ring_keypad_broadcast_alarm
         data:
           alarm_type: "fire"
 
@@ -216,22 +216,22 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      - service: input_select.select_option
+      - action: input_select.select_option
         target:
           entity_id: input_select.ring_keypad_alarm_state
         data:
           option: "triggered_burglar"
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_event
         data:
           value: "POLICE alarm dalla tastiera {{ keypad_id }}"
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_keypad
         data:
           value: "{{ keypad_id }}"
-      - service: script.ring_keypad_broadcast_alarm
+      - action: script.ring_keypad_broadcast_alarm
         data:
           alarm_type: "burglar"
 
@@ -246,22 +246,22 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      - service: input_select.select_option
+      - action: input_select.select_option
         target:
           entity_id: input_select.ring_keypad_alarm_state
         data:
           option: "triggered_medical"
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_event
         data:
           value: "MEDICAL alarm dalla tastiera {{ keypad_id }}"
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_keypad
         data:
           value: "{{ keypad_id }}"
-      - service: script.ring_keypad_broadcast_alarm
+      - action: script.ring_keypad_broadcast_alarm
         data:
           alarm_type: "medical"
 
@@ -275,7 +275,7 @@ automation:
       - platform: state
         entity_id: input_select.ring_keypad_alarm_state
     action:
-      - service: script.ring_keypad_sync_all
+      - action: script.ring_keypad_sync_all
 
   # ════════════════════════════════════════════════════════════════════════
   # RIPRISTINO INDICATORI QUANDO UNA TASTIERA TORNA ONLINE
@@ -287,7 +287,9 @@ automation:
     trigger:
       - platform: mqtt
         topic: "zwave2mqtt/+/status"
-        value_template: "{{ value_json.status }}"
+        # zwave2mqtt pubblica stringa semplice "Alive"/"Dead", non JSON.
+        # Non usare value_template qui (value_json fallirebbe silenziosamente
+        # e il trigger non scatterebbe mai).
         payload: "Alive"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
@@ -300,7 +302,7 @@ automation:
     action:
       - delay:
           seconds: 3
-      - service: script.ring_keypad_sync_state
+      - action: script.ring_keypad_sync_state
         data:
           keypad_id: "{{ keypad_id }}"
 
@@ -315,4 +317,4 @@ automation:
     action:
       - delay:
           seconds: 15
-      - service: script.ring_keypad_sync_all
+      - action: script.ring_keypad_sync_all

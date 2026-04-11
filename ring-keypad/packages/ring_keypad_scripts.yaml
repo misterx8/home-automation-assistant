@@ -40,7 +40,7 @@ script:
         description: "Valore payload"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/{{ indicator }}/{{ sub_cmd }}/set"
           payload: "{{ value }}"
@@ -56,7 +56,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Not_armed__disarmed/1/set"
           payload: "99"
@@ -68,7 +68,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Armed_Stay/1/set"
           payload: "99"
@@ -80,7 +80,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Armed_Away/1/set"
           payload: "99"
@@ -96,10 +96,11 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Code_not_accepted/1/set"
-          payload: "1"
+          # sub_cmd 1 = on/off: valore "on" secondo specifica Z-Wave Indicator CC = 99 (0xFF)
+          payload: "99"
 
   ring_keypad_bypass_challenge:
     alias: "Keypad → Bypass richiesto"
@@ -108,10 +109,11 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Bypass_challenge/1/set"
-          payload: "1"
+          # sub_cmd 1 = on/off: valore "on" secondo specifica Z-Wave Indicator CC = 99 (0xFF)
+          payload: "99"
 
   # ══════════════════════════════════════════════════════════════════════════
   # DELAY CON COUNTDOWN
@@ -125,7 +127,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Exit_Delay/7/set"
           payload: "{{ states('input_number.ring_keypad_exit_delay') | int }}"
@@ -138,7 +140,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Entry_Delay/7/set"
           payload: "{{ states('input_number.ring_keypad_entry_delay') | int }}"
@@ -154,7 +156,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Burglar/9/set"
           payload: "99"
@@ -166,7 +168,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Smoke__Fire/9/set"
           payload: "99"
@@ -178,7 +180,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Carbon_Monoxide/9/set"
           payload: "99"
@@ -190,7 +192,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Medical/9/set"
           payload: "99"
@@ -206,7 +208,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Generic_event_sound_notification_1/9/set"
           payload: "50"
@@ -218,7 +220,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - service: mqtt.publish
+      - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/135/0/Generic_event_sound_notification_4/9/set"
           payload: "50"
@@ -242,7 +244,7 @@ script:
                 entity_id: input_select.ring_keypad_alarm_state
                 state: "disarmed"
             sequence:
-              - service: script.ring_keypad_show_disarmed
+              - action: script.ring_keypad_show_disarmed
                 data:
                   keypad_id: "{{ keypad_id }}"
           - conditions:
@@ -250,7 +252,7 @@ script:
                 entity_id: input_select.ring_keypad_alarm_state
                 state: "armed_home"
             sequence:
-              - service: script.ring_keypad_show_armed_home
+              - action: script.ring_keypad_show_armed_home
                 data:
                   keypad_id: "{{ keypad_id }}"
           - conditions:
@@ -258,7 +260,7 @@ script:
                 entity_id: input_select.ring_keypad_alarm_state
                 state: "armed_away"
             sequence:
-              - service: script.ring_keypad_show_armed_away
+              - action: script.ring_keypad_show_armed_away
                 data:
                   keypad_id: "{{ keypad_id }}"
           - conditions:
@@ -266,7 +268,7 @@ script:
                 entity_id: input_select.ring_keypad_alarm_state
                 state: "arming"
             sequence:
-              - service: script.ring_keypad_show_exit_delay
+              - action: script.ring_keypad_show_exit_delay
                 data:
                   keypad_id: "{{ keypad_id }}"
           - conditions:
@@ -274,7 +276,7 @@ script:
                 entity_id: input_select.ring_keypad_alarm_state
                 state: "pending"
             sequence:
-              - service: script.ring_keypad_show_entry_delay
+              - action: script.ring_keypad_show_entry_delay
                 data:
                   keypad_id: "{{ keypad_id }}"
           - conditions:
@@ -282,7 +284,7 @@ script:
                 entity_id: input_select.ring_keypad_alarm_state
                 state: "triggered_burglar"
             sequence:
-              - service: script.ring_keypad_alarm_burglar
+              - action: script.ring_keypad_alarm_burglar
                 data:
                   keypad_id: "{{ keypad_id }}"
           - conditions:
@@ -290,7 +292,7 @@ script:
                 entity_id: input_select.ring_keypad_alarm_state
                 state: "triggered_fire"
             sequence:
-              - service: script.ring_keypad_alarm_fire
+              - action: script.ring_keypad_alarm_fire
                 data:
                   keypad_id: "{{ keypad_id }}"
           - conditions:
@@ -298,7 +300,7 @@ script:
                 entity_id: input_select.ring_keypad_alarm_state
                 state: "triggered_co"
             sequence:
-              - service: script.ring_keypad_alarm_co
+              - action: script.ring_keypad_alarm_co
                 data:
                   keypad_id: "{{ keypad_id }}"
           - conditions:
@@ -306,7 +308,7 @@ script:
                 entity_id: input_select.ring_keypad_alarm_state
                 state: "triggered_medical"
             sequence:
-              - service: script.ring_keypad_alarm_medical
+              - action: script.ring_keypad_alarm_medical
                 data:
                   keypad_id: "{{ keypad_id }}"
 
@@ -327,7 +329,7 @@ script:
                | select('ne', '')
                | list }}
           sequence:
-            - service: script.ring_keypad_sync_state
+            - action: script.ring_keypad_sync_state
               data:
                 keypad_id: "{{ repeat.item }}"
 
@@ -356,28 +358,28 @@ script:
                     - condition: template
                       value_template: "{{ alarm_type == 'burglar' }}"
                   sequence:
-                    - service: script.ring_keypad_alarm_burglar
+                    - action: script.ring_keypad_alarm_burglar
                       data:
                         keypad_id: "{{ repeat.item }}"
                 - conditions:
                     - condition: template
                       value_template: "{{ alarm_type == 'fire' }}"
                   sequence:
-                    - service: script.ring_keypad_alarm_fire
+                    - action: script.ring_keypad_alarm_fire
                       data:
                         keypad_id: "{{ repeat.item }}"
                 - conditions:
                     - condition: template
                       value_template: "{{ alarm_type == 'co' }}"
                   sequence:
-                    - service: script.ring_keypad_alarm_co
+                    - action: script.ring_keypad_alarm_co
                       data:
                         keypad_id: "{{ repeat.item }}"
                 - conditions:
                     - condition: template
                       value_template: "{{ alarm_type == 'medical' }}"
                   sequence:
-                    - service: script.ring_keypad_alarm_medical
+                    - action: script.ring_keypad_alarm_medical
                       data:
                         keypad_id: "{{ repeat.item }}"
 
@@ -401,7 +403,7 @@ script:
                   {{ states('input_text.ring_keypad_pin_master') | length >= 4
                      and code == states('input_text.ring_keypad_pin_master') }}
             sequence:
-              - service: input_text.set_value
+              - action: input_text.set_value
                 target:
                   entity_id: input_text.ring_keypad_last_user
                 data:
@@ -412,7 +414,7 @@ script:
                   {{ states('input_text.ring_keypad_pin_user1') | length >= 4
                      and code == states('input_text.ring_keypad_pin_user1') }}
             sequence:
-              - service: input_text.set_value
+              - action: input_text.set_value
                 target:
                   entity_id: input_text.ring_keypad_last_user
                 data:
@@ -423,7 +425,7 @@ script:
                   {{ states('input_text.ring_keypad_pin_user2') | length >= 4
                      and code == states('input_text.ring_keypad_pin_user2') }}
             sequence:
-              - service: input_text.set_value
+              - action: input_text.set_value
                 target:
                   entity_id: input_text.ring_keypad_last_user
                 data:
@@ -434,13 +436,13 @@ script:
                   {{ states('input_text.ring_keypad_pin_user3') | length >= 4
                      and code == states('input_text.ring_keypad_pin_user3') }}
             sequence:
-              - service: input_text.set_value
+              - action: input_text.set_value
                 target:
                   entity_id: input_text.ring_keypad_last_user
                 data:
                   value: "{{ states('input_text.ring_keypad_name_user3') }}"
         default:
-          - service: input_text.set_value
+          - action: input_text.set_value
             target:
               entity_id: input_text.ring_keypad_last_user
             data:
@@ -475,17 +477,17 @@ script:
               {% endfor %}
               {{ ns.valid }}
         then:
-          - service: script.ring_keypad_resolve_user
+          - action: script.ring_keypad_resolve_user
             data:
               code: "{{ code }}"
-          - service: script.ring_keypad_do_disarm
+          - action: script.ring_keypad_do_disarm
             data:
               keypad_id: "{{ keypad_id }}"
         else:
-          - service: script.ring_keypad_code_rejected
+          - action: script.ring_keypad_code_rejected
             data:
               keypad_id: "{{ keypad_id }}"
-          - service: input_text.set_value
+          - action: input_text.set_value
             target:
               entity_id: input_text.ring_keypad_last_event
             data:
@@ -522,18 +524,18 @@ script:
               {% endfor %}
               {{ ns.valid }}
         then:
-          - service: script.ring_keypad_resolve_user
+          - action: script.ring_keypad_resolve_user
             data:
               code: "{{ code }}"
-          - service: script.ring_keypad_do_arm
+          - action: script.ring_keypad_do_arm
             data:
               mode: "{{ mode }}"
               keypad_id: "{{ keypad_id }}"
         else:
-          - service: script.ring_keypad_code_rejected
+          - action: script.ring_keypad_code_rejected
             data:
               keypad_id: "{{ keypad_id }}"
-          - service: input_text.set_value
+          - action: input_text.set_value
             target:
               entity_id: input_text.ring_keypad_last_event
             data:
@@ -550,17 +552,17 @@ script:
         description: "Topic base della tastiera (per log)"
         required: true
     sequence:
-      - service: input_select.select_option
+      - action: input_select.select_option
         target:
           entity_id: input_select.ring_keypad_alarm_state
         data:
           option: "disarmed"
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_event
         data:
           value: "Disarmato da {{ states('input_text.ring_keypad_last_user') }}"
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_keypad
         data:
@@ -581,17 +583,17 @@ script:
         description: "Topic base della tastiera (per log)"
         required: true
     sequence:
-      - service: input_select.select_option
+      - action: input_select.select_option
         target:
           entity_id: input_select.ring_keypad_alarm_state
         data:
           option: "arming"
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_event
         data:
           value: "Armo {{ mode }} da {{ states('input_text.ring_keypad_last_user') }}"
-      - service: input_text.set_value
+      - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_keypad
         data:
@@ -599,7 +601,7 @@ script:
       # Attende exit delay, poi imposta stato armato finale
       - delay:
           seconds: "{{ states('input_number.ring_keypad_exit_delay') | int }}"
-      - service: input_select.select_option
+      - action: input_select.select_option
         target:
           entity_id: input_select.ring_keypad_alarm_state
         data:
