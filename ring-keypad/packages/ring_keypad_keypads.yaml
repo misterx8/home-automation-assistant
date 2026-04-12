@@ -11,19 +11,24 @@
 #   4. Aggiungere il topic base in input_text.ring_keypad_active_keypads
 #      (separato da virgola)
 #
-# NOTA: il topic "status" di zwave2mqtt pubblica il payload come stringa
-# semplice ("Alive"/"Dead"), non JSON. Per questo value_template è omesso
-# nei binary_sensor di connettività.
+# NOTA: il topic "status" di zwave2mqtt pubblica payload JSON con struttura:
+#   {"time":..., "value":true, "status":"Alive", "nodeId":N}
+#   Usare value_template: "{{ value_json.status }}" per estrarre "Alive"/"Dead".
+#
+# NOTA: il topic "battery" pubblica il livello reale (0-100) con struttura:
+#   {"time":..., "value":100}
+#   Topic: zwave2mqtt/{keypad_id}/battery/endpoint_0/level
 ###############################################################################
 
 mqtt:
   sensor:
 
-    # ── TASTIERA 1: tastiera_camera ────────────────────────────────────────
+    # ── TASTIERA 1: tastiera_allarme_camera ───────────────────────────────
     - name: "Tastiera Camera - Batteria"
-      unique_id: ring_keypad_tastiera_camera_battery
-      state_topic: "zwave2mqtt/tastiera_camera/battery/0/isLow"
-      value_template: "{% if value_json.value == true %}10{% else %}100{% endif %}"
+      unique_id: ring_keypad_tastiera_allarme_camera_battery
+      object_id: tastiera_camera_allarme_batteria
+      state_topic: "zwave2mqtt/tastiera_allarme_camera/battery/endpoint_0/level"
+      value_template: "{{ value_json.value }}"
       device_class: battery
       unit_of_measurement: "%"
       icon: mdi:battery
@@ -31,26 +36,29 @@ mqtt:
     # ── TEMPLATE NUOVA TASTIERA - BATTERIA (decommentare e modificare) ─────
     # - name: "Tastiera Ingresso - Batteria"
     #   unique_id: ring_keypad_tastiera_ingresso_battery
-    #   state_topic: "zwave2mqtt/tastiera_ingresso/battery/0/isLow"
-    #   value_template: "{% if value_json.value == true %}10{% else %}100{% endif %}"
+    #   state_topic: "zwave2mqtt/tastiera_ingresso/battery/endpoint_0/level"
+    #   value_template: "{{ value_json.value }}"
     #   device_class: battery
     #   unit_of_measurement: "%"
     #   icon: mdi:battery
 
     # - name: "Tastiera Garage - Batteria"
     #   unique_id: ring_keypad_tastiera_garage_battery
-    #   state_topic: "zwave2mqtt/tastiera_garage/battery/0/isLow"
-    #   value_template: "{% if value_json.value == true %}10{% else %}100{% endif %}"
+    #   state_topic: "zwave2mqtt/tastiera_garage/battery/endpoint_0/level"
+    #   value_template: "{{ value_json.value }}"
     #   device_class: battery
     #   unit_of_measurement: "%"
     #   icon: mdi:battery
 
   binary_sensor:
 
-    # ── TASTIERA 1: tastiera_camera ────────────────────────────────────────
+    # ── TASTIERA 1: tastiera_allarme_camera ───────────────────────────────
     - name: "Tastiera Camera - Online"
-      unique_id: ring_keypad_tastiera_camera_online
-      state_topic: "zwave2mqtt/tastiera_camera/status"
+      unique_id: ring_keypad_tastiera_allarme_camera_online
+      object_id: tastiera_camera_allarme_online
+      state_topic: "zwave2mqtt/tastiera_allarme_camera/status"
+      # Payload JSON: {"time":..., "value":true, "status":"Alive", "nodeId":N}
+      value_template: "{{ value_json.status }}"
       payload_on: "Alive"
       payload_off: "Dead"
       device_class: connectivity
@@ -60,6 +68,7 @@ mqtt:
     # - name: "Tastiera Ingresso - Online"
     #   unique_id: ring_keypad_tastiera_ingresso_online
     #   state_topic: "zwave2mqtt/tastiera_ingresso/status"
+    #   value_template: "{{ value_json.status }}"
     #   payload_on: "Alive"
     #   payload_off: "Dead"
     #   device_class: connectivity
@@ -68,6 +77,7 @@ mqtt:
     # - name: "Tastiera Garage - Online"
     #   unique_id: ring_keypad_tastiera_garage_online
     #   state_topic: "zwave2mqtt/tastiera_garage/status"
+    #   value_template: "{{ value_json.status }}"
     #   payload_on: "Alive"
     #   payload_off: "Dead"
     #   device_class: connectivity

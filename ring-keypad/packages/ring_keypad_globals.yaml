@@ -1,6 +1,11 @@
 ###############################################################################
 # RING KEYPAD V2 - HELPERS GLOBALI
-# Stato allarme, utenti, PIN, configurazione tastiere
+# Stato allarme, utenti, PIN, configurazione tastiere, LED
+#
+# ── PROTOCOLLO Z-WAVE (aggiornato) ───────────────────────────────────────────
+# Entry Control CC: unknownClass_111/endpoint_0/{event_type}/{data_type}
+# Indicator CC:     indicator/endpoint_0/{Name}/{sub_cmd}/set
+# LED config:       configuration/endpoint_0/System_Security_Mode_Display/set
 #
 # ── PIN UTENTI ────────────────────────────────────────────────────────────────
 # I PIN sono in modalità password (nascosti in UI). NON serve secrets.yaml.
@@ -14,26 +19,42 @@
 ###############################################################################
 
 input_select:
+
+  # ── STATO ALLARME (unica fonte di verità per tutti gli indicatori LED) ──────
   ring_keypad_alarm_state:
     name: "Keypad - Stato Allarme"
     options:
-      - disarmed
-      - armed_home
-      - armed_away
-      - arming
-      - pending
-      - triggered_burglar
-      - triggered_fire
-      - triggered_co
-      - triggered_medical
+      - disarmed           # Sistema disarmato
+      - armed_home         # Armato in modalità casa
+      - armed_away         # Armato in modalità fuori
+      - arming             # In fase di uscita (exit delay in corso)
+      - pending            # In fase di entrata (entry delay in corso)
+      - triggered_burglar  # Allarme intrusione (CON suono)
+      - triggered_rapina   # Anti-rapina (SEMPRE SILENZIOSO - Alarming_Burglar payload 1)
+      - triggered_fire     # Allarme fuoco
+      - triggered_medical  # Allarme medico
+      - triggered_water    # Allarme perdita acqua
     initial: disarmed
     icon: mdi:shield-home
 
+  # ── MODALITÀ LED TASTIERA ───────────────────────────────────────────────────
+  # Controlla i LED di stato della tastiera (System_Security_Mode_Display)
+  # Spenti=0, Lampeggio 3s=3, Sempre accesi=601
+  ring_keypad_led_mode:
+    name: "Keypad - Modalità LED"
+    options:
+      - "Spenti"
+      - "Lampeggio (3s)"
+      - "Sempre accesi"
+    initial: "Sempre accesi"
+    icon: mdi:led-outline
+
 input_text:
+
   # ── REGISTRO TASTIERE ──────────────────────────────────────────────────────
   ring_keypad_active_keypads:
     name: "Keypad - Tastiere attive (topic base, separati da virgola)"
-    initial: "tastiera_camera"
+    initial: "tastiera_allarme_camera"
     max: 255
     icon: mdi:keyboard-settings
 
@@ -97,6 +118,7 @@ input_text:
     max: 32
 
 input_number:
+
   ring_keypad_exit_delay:
     name: "Keypad - Exit Delay (sec)"
     min: 5
@@ -116,6 +138,7 @@ input_number:
     icon: mdi:timer-outline
 
 input_boolean:
+
   ring_keypad_debug:
     name: "Keypad - Debug Mode"
     initial: false
@@ -125,3 +148,11 @@ input_boolean:
     name: "Keypad - Richiedi codice per armare"
     initial: false
     icon: mdi:shield-lock-outline
+
+  # ── FEEDBACK VOCALE ────────────────────────────────────────────────────────
+  # Se on: payload 99 (suono+LED) per disarmed/armed_home/armed_away
+  # Se off: payload 1 (solo LED, nessun suono di conferma)
+  ring_keypad_voice_feedback:
+    name: "Keypad - Feedback vocale"
+    initial: true
+    icon: mdi:volume-high

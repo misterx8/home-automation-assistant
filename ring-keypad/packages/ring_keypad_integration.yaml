@@ -17,6 +17,11 @@
 #   disarmed   → script.disarm_allarme_core
 #   armed_home → script.arm_allarme_core  (allarme-core non distingue home/away)
 #   armed_away → script.arm_allarme_core
+#
+# NOTA: triggered_rapina, triggered_water, triggered_medical, triggered_fire
+#   sono generati direttamente dai tasti fisici della tastiera.
+#   Non vengono propagati verso allarme-core (logica separata).
+#   Per integrare safety-core (perdita acqua), decommentare la sezione 3.
 ###############################################################################
 
 automation:
@@ -31,7 +36,7 @@ automation:
     alias: "Keypad - Sync da allarme-core"
     description: >
       Aggiorna lo stato del keypad quando cambia input_select.allarme_core_stato.
-      La mappatura è: disarmed→disarmed, arming→arming,
+      Mappatura: disarmed→disarmed, arming→arming,
       armed→armed_away, triggered→triggered_burglar.
     trigger:
       - platform: state
@@ -124,7 +129,6 @@ automation:
 
 # automation:
 #
-#   # ── SYNC IN: alarm_control_panel → ring_keypad ──────────────────────────
 #   - id: ring_keypad_sync_from_alarm_panel
 #     alias: "Keypad - Sync da alarm_control_panel"
 #     trigger:
@@ -170,15 +174,6 @@ automation:
 #                   option: "arming"
 #           - conditions:
 #               - condition: template
-#                 value_template: "{{ trigger.to_state.state == 'pending' }}"
-#             sequence:
-#               - action: input_select.select_option
-#                 target:
-#                   entity_id: input_select.ring_keypad_alarm_state
-#                 data:
-#                   option: "pending"
-#           - conditions:
-#               - condition: template
 #                 value_template: "{{ trigger.to_state.state == 'triggered' }}"
 #             sequence:
 #               - action: input_select.select_option
@@ -187,7 +182,6 @@ automation:
 #                 data:
 #                   option: "triggered_burglar"
 #
-#   # ── SYNC OUT: ring_keypad → alarm_control_panel ──────────────────────────
 #   - id: ring_keypad_command_to_alarm_panel
 #     alias: "Keypad - Comandi verso alarm_control_panel"
 #     trigger:
@@ -220,3 +214,37 @@ automation:
 #               - action: alarm_control_panel.alarm_arm_away
 #                 target:
 #                   entity_id: alarm_control_panel.alarmo_principale  # ← sostituire
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SEZIONE 3: INTEGRAZIONE CON SAFETY-CORE (perdita acqua)
+# Da abilitare quando safety-core sarà integrato con il keypad.
+# Decommentare e adattare l'entity_id del sensore/stato safety-core.
+# ══════════════════════════════════════════════════════════════════════════════
+
+# automation:
+#
+#   - id: ring_keypad_sync_from_safety_core_water
+#     alias: "Keypad - Sync allarme acqua da safety-core"
+#     trigger:
+#       - platform: state
+#         entity_id: input_select.safety_core_water_stato  # ← adattare
+#         to: "triggered"
+#     action:
+#       - action: input_select.select_option
+#         target:
+#           entity_id: input_select.ring_keypad_alarm_state
+#         data:
+#           option: "triggered_water"
+#
+#   - id: ring_keypad_sync_from_safety_core_fire
+#     alias: "Keypad - Sync allarme fuoco da safety-core"
+#     trigger:
+#       - platform: state
+#         entity_id: input_select.safety_core_fire_stato  # ← adattare
+#         to: "triggered"
+#     action:
+#       - action: input_select.select_option
+#         target:
+#           entity_id: input_select.ring_keypad_alarm_state
+#         data:
+#           option: "triggered_fire"

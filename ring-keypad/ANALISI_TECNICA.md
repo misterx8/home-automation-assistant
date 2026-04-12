@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
-> Ultima revisione: 2026-04-11  
-> Versione architettura: 2.0 (multi-tastiera, parametrica)
+> Ultima revisione: 2026-04-12  
+> Versione architettura: 3.0 (protocollo Z-Wave corretto, voice feedback, LED mode, anti-rapina, water)
 
 ---
 
@@ -50,61 +50,71 @@ Le tastiere Ring Keypad V2 comunicano via zwave2mqtt su due Command Class (CC) Z
 
 ### Entry Control CC (111) — Input dalla tastiera
 
-Topic ricevuti: `zwave2mqtt/{keypad_id}/111/0/{event_type}/{data_type}`
+Topic ricevuti: `zwave2mqtt/{keypad_id}/unknownClass_111/endpoint_0/{event_type}/{data_type}`
 
 | event_type | data_type | Significato |
 |------------|-----------|-------------|
-| 2 | 2 | Tasto Enter + codice |
 | 3 | 2 | Tasto Disarm + codice |
-| 5 | 2 | Tasto Arm Away + codice |
-| 5 | 0 | Tasto Arm Away senza codice |
 | 6 | 2 | Tasto Arm Home + codice |
 | 6 | 0 | Tasto Arm Home senza codice |
-| 16 | 0 | Tasto Fire (tenuto premuto) |
-| 17 | 0 | Tasto Police (tenuto premuto) |
-| 19 | 0 | Tasto Medical (tenuto premuto) |
-| 25 | 0 | Tasto Cancel |
+| 5 | 2 | Tasto Arm Away + codice |
+| 5 | 0 | Tasto Arm Away senza codice |
+| 2 | 2 | Tasto V (Enter) + codice — solo log |
+| 25 | 2 | Tasto X (Cancel) + codice — solo log |
+| 17 | 0 | Anti-rapina Police hold 3s |
+| 19 | 0 | Medical hold 3s |
+| 16 | 0 | Fire hold 3s |
 
-Il payload è JSON: `{"value": "1234"}` per eventi con codice, `{}` per eventi senza.
+Il payload è JSON: `{"time":..., "value":"1234"}` per eventi con codice, `{"time":...}` per eventi senza.
 
-### Indicator CC (135) — Output verso la tastiera
+### Indicator CC — Output verso la tastiera
 
-Topic pubblicati: `zwave2mqtt/{keypad_id}/135/0/{indicator}/{sub_cmd}/set`
+Topic pubblicati: `zwave2mqtt/{keypad_id}/indicator/endpoint_0/{Name}/{sub_cmd}/set`
 
 | sub_cmd | Significato | Payload |
 |---------|-------------|---------|
 | 1 | On/Off indicatore | 0 (off) o 99 (on) |
-| 7 | Countdown secondi | numero intero |
-| 9 | Livello suono/LED | 0-99 |
+| 9 | Livello suono/LED | 1 (silenzioso) o 99 (con suono) |
+| timeout | Countdown formato stringa | `"{min}m{sec}s"` es. `"0m30s"` |
 
 **Indicatori disponibili:**
 
-| Indicatore | Descrizione |
-|------------|-------------|
-| `Not_armed__disarmed` | Sistema disarmato |
-| `Armed_Stay` | Armato home |
-| `Armed_Away` | Armato away |
-| `Code_not_accepted` | Codice errato (bip di errore) |
-| `Bypass_challenge` | Richiesta bypass |
-| `Exit_Delay` | Countdown uscita (sub_cmd=7) |
-| `Entry_Delay` | Countdown entrata (sub_cmd=7) |
-| `Alarming_Burglar` | Allarme intrusione |
-| `Alarming_Smoke__Fire` | Allarme fuoco |
-| `Alarming_Carbon_Monoxide` | Allarme CO |
-| `Alarming_Medical` | Allarme medico |
-| `Generic_event_sound_notification_1` | Beep generico |
-| `Generic_event_sound_notification_4` | Chime |
+| Indicatore | sub_cmd | Payload | Descrizione |
+|------------|---------|---------|-------------|
+| `Not_armed_-_disarmed` | 9 | 1/99 voice-aware | Sistema disarmato |
+| `Armed_Stay` | 9 | 1/99 voice-aware | Armato home |
+| `Armed_Away` | 9 | 1/99 voice-aware | Armato away |
+| `Code_not_accepted` | 9 | 99 fisso | Codice errato |
+| `Bypass_challenge` | 1 | 99 fisso | Richiesta bypass |
+| `Exit_Delay` | timeout | stringa `"Xm Ys"` | Countdown uscita |
+| `Entry_Delay` | timeout | stringa `"Xm Ys"` | Countdown entrata |
+| `Alarming` | 9 | 99 fisso | Allarme intrusione CON suono |
+| `Alarming_Burglar` | 9 | 1 fisso | Anti-rapina SEMPRE SILENZIOSO |
+| `Alarming_Smoke_-_Fire` | 9 | 99 fisso | Allarme fuoco |
+| `Alarming_Medical` | 9 | 99 fisso | Allarme medico |
+| `Alarming_Water_leak` | 9 | 99 fisso | Allarme perdita acqua |
+
+### LED Display Configuration
+
+Topic: `zwave2mqtt/{keypad_id}/configuration/endpoint_0/System_Security_Mode_Display/set`
+
+| Payload | Descrizione |
+|---------|-------------|
+| `0` | LED spenti |
+| `3` | Lampeggio 3s |
+| `601` | Sempre accesi |
 
 ### Status nodo
 
 - Topic: `zwave2mqtt/{keypad_id}/status`
-- Payload: **stringa semplice** `Alive` o `Dead` (non JSON)
-- ⚠️ Non usare `value_template: "{{ value_json.status }}"` nei trigger MQTT su questo topic: `value_json` fallisce silenziosamente su payload non-JSON e il trigger non scatterebbe mai.
+- Payload JSON: `{"time": <timestamp>, "value": true, "status": "Alive", "nodeId": N}`
+- Usare `value_template: "{{ value_json.status }}"` per estrarre `"Alive"` o `"Dead"`
 
 ### Batteria
 
-- Topic: `zwave2mqtt/{keypad_id}/battery/0/isLow`
-- Payload JSON: `{"value": true}` (scarica) o `{"value": false}` (carica)
+- Topic: `zwave2mqtt/{keypad_id}/battery/endpoint_0/level`
+- Payload JSON: `{"time": <timestamp>, "value": 100}` — il campo `value` è la percentuale reale (0-100)
+- Usare `value_template: "{{ value_json.value }}"` — NON il vecchio topic `battery/0/isLow` (non esiste)
 
 ---
 
@@ -117,7 +127,7 @@ Il supporto multi-tastiera si basa su **due meccanismi**:
 Le automazioni usano wildcard MQTT `+` per catturare eventi da qualsiasi tastiera:
 
 ```
-zwave2mqtt/+/111/0/3/2   ← Disarm da QUALSIASI tastiera
+zwave2mqtt/+/unknownClass_111/endpoint_0/3/2   ← Disarm da QUALSIASI tastiera
 ```
 
 Il `keypad_id` viene estratto automaticamente dal topic:
@@ -132,7 +142,7 @@ variables:
 Gli script accettano `keypad_id` come parametro e costruiscono il topic dinamicamente:
 
 ```yaml
-topic: "zwave2mqtt/{{ keypad_id }}/135/0/Not_armed__disarmed/1/set"
+topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Not_armed_-_disarmed/9/set"
 ```
 
 ### 3.3 Registro tastiere attive
@@ -140,7 +150,7 @@ topic: "zwave2mqtt/{{ keypad_id }}/135/0/Not_armed__disarmed/1/set"
 L'elenco dei topic base è in `input_text.ring_keypad_active_keypads` (CSV):
 
 ```
-tastiera_camera,tastiera_ingresso,tastiera_garage
+tastiera_allarme_camera,tastiera_ingresso,tastiera_garage
 ```
 
 Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su tutte le tastiere.
@@ -159,7 +169,8 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 
 | Entità | Valori possibili | Descrizione |
 |--------|-----------------|-------------|
-| `input_select.ring_keypad_alarm_state` | disarmed, armed_home, armed_away, arming, pending, triggered_burglar, triggered_fire, triggered_co, triggered_medical | Stato interno del keypad (unica fonte di verità per gli indicatori) |
+| `input_select.ring_keypad_alarm_state` | disarmed, armed_home, armed_away, arming, pending, triggered_burglar, triggered_rapina, triggered_fire, triggered_medical, triggered_water | Stato interno del keypad (unica fonte di verità per gli indicatori) |
+| `input_select.ring_keypad_led_mode` | Spenti, Lampeggio (3s), Sempre accesi | Controlla System_Security_Mode_Display sulla tastiera |
 
 ### `input_text`
 
@@ -187,13 +198,16 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 |--------|---------|-------------|
 | `ring_keypad_debug` | false | Modalità debug |
 | `ring_keypad_require_code_to_arm` | false | Se true, richiede PIN anche per armare |
+| `ring_keypad_voice_feedback` | true | Se on: payload 99 (LED+suono) per disarmed/armed; se off: payload 1 (solo LED) |
 
 ### Sensori MQTT (per tastiera, dichiarati in `ring_keypad_keypads.yaml`)
 
 | Entità | Tipo | Descrizione |
 |--------|------|-------------|
-| `sensor.tastiera_<id>_batteria` | sensor | Livello batteria (10% = bassa, 100% = ok) |
-| `binary_sensor.tastiera_<id>_online` | binary_sensor | Connettività Z-Wave |
+| `sensor.tastiera_<id>_batteria` | sensor | Livello batteria reale 0-100% (topic: `battery/endpoint_0/level`) |
+| `binary_sensor.tastiera_<id>_online` | binary_sensor | Connettività Z-Wave (topic: `status`, field JSON `status`) |
+
+**Tastiera attiva:** `tastiera_allarme_camera` (nodeId 5)
 
 ---
 
@@ -235,30 +249,36 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 
 ### Script di indicazione (hardware)
 
-| Script | Parametri | Azione MQTT |
+| Script | Parametri | Azione MQTT | Note |
+|--------|-----------|-------------|------|
+| `ring_keypad_send_indicator` | keypad_id, indicator, sub_cmd, value | Invia payload generico | — |
+| `ring_keypad_show_disarmed` | keypad_id | `Not_armed_-_disarmed/9` | Voice-aware |
+| `ring_keypad_show_armed_home` | keypad_id | `Armed_Stay/9` | Voice-aware |
+| `ring_keypad_show_armed_away` | keypad_id | `Armed_Away/9` | Voice-aware |
+| `ring_keypad_code_rejected` | keypad_id | `Code_not_accepted/9` payload 99 | Sempre con suono |
+| `ring_keypad_bypass_challenge` | keypad_id | `Bypass_challenge/1` payload 99 | sub_cmd 1! |
+| `ring_keypad_show_exit_delay` | keypad_id | `Exit_Delay/timeout` stringa `Xm Ys` | — |
+| `ring_keypad_show_entry_delay` | keypad_id | `Entry_Delay/timeout` stringa `Xm Ys` | — |
+| `ring_keypad_alarm_burglar` | keypad_id | `Alarming/9` payload 99 | Intrusione CON suono |
+| `ring_keypad_alarm_rapina` | keypad_id | `Alarming_Burglar/9` payload 1 | SEMPRE SILENZIOSO |
+| `ring_keypad_alarm_fire` | keypad_id | `Alarming_Smoke_-_Fire/9` payload 99 | — |
+| `ring_keypad_alarm_medical` | keypad_id | `Alarming_Medical/9` payload 99 | — |
+| `ring_keypad_alarm_water` | keypad_id | `Alarming_Water_leak/9` payload 99 | — |
+
+### Script LED
+
+| Script | Parametri | Descrizione |
 |--------|-----------|-------------|
-| `ring_keypad_send_indicator` | keypad_id, indicator, sub_cmd, value | Invia payload generico |
-| `ring_keypad_show_disarmed` | keypad_id | LED disarmed |
-| `ring_keypad_show_armed_home` | keypad_id | LED armed stay |
-| `ring_keypad_show_armed_away` | keypad_id | LED armed away |
-| `ring_keypad_code_rejected` | keypad_id | Bip errore codice |
-| `ring_keypad_bypass_challenge` | keypad_id | Richiesta bypass |
-| `ring_keypad_show_exit_delay` | keypad_id | Countdown exit delay |
-| `ring_keypad_show_entry_delay` | keypad_id | Countdown entry delay |
-| `ring_keypad_alarm_burglar` | keypad_id | LED/suono allarme intrusione |
-| `ring_keypad_alarm_fire` | keypad_id | LED/suono allarme fuoco |
-| `ring_keypad_alarm_co` | keypad_id | LED/suono allarme CO |
-| `ring_keypad_alarm_medical` | keypad_id | LED/suono allarme medico |
-| `ring_keypad_sound_beep` | keypad_id | Beep generico |
-| `ring_keypad_sound_chime` | keypad_id | Chime |
+| `ring_keypad_set_led_mode` | keypad_id | Pubblica valore LED da `ring_keypad_led_mode` su singola tastiera |
+| `ring_keypad_set_led_mode_all` | — | Itera `ring_keypad_active_keypads` e chiama `set_led_mode` |
 
 ### Script di sincronizzazione
 
 | Script | Parametri | Descrizione |
 |--------|-----------|-------------|
-| `ring_keypad_sync_state` | keypad_id | Dispatcher: invia indicatore corretto in base a `ring_keypad_alarm_state` |
+| `ring_keypad_sync_state` | keypad_id | Dispatcher: invia indicatore corretto in base a `ring_keypad_alarm_state` (10 stati) |
 | `ring_keypad_sync_all` | — | Chiama `sync_state` su tutte le tastiere in `ring_keypad_active_keypads` |
-| `ring_keypad_broadcast_alarm` | alarm_type | Invia allarme specifico a tutte le tastiere |
+| `ring_keypad_broadcast_alarm` | alarm_type | Invia allarme specifico a tutte le tastiere (burglar/rapina/fire/medical/water) |
 
 ### Script di logica
 
@@ -278,24 +298,25 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 
 | ID Automazione | Trigger MQTT | Azione |
 |----------------|-------------|--------|
-| `ring_keypad_input_disarm` | `zwave2mqtt/+/111/0/3/2` | `validate_and_disarm` |
-| `ring_keypad_input_enter` | `zwave2mqtt/+/111/0/2/2` | `validate_and_disarm` |
-| `ring_keypad_input_arm_away` | `zwave2mqtt/+/111/0/5/2` | `validate_and_arm mode=armed_away` |
-| `ring_keypad_input_arm_away_nocode` | `zwave2mqtt/+/111/0/5/0` | `do_arm` o `code_rejected` |
-| `ring_keypad_input_arm_home` | `zwave2mqtt/+/111/0/6/2` | `validate_and_arm mode=armed_home` |
-| `ring_keypad_input_arm_home_nocode` | `zwave2mqtt/+/111/0/6/0` | `do_arm` o `code_rejected` |
-| `ring_keypad_input_cancel` | `zwave2mqtt/+/111/0/25/0` | Aggiorna log |
-| `ring_keypad_input_fire` | `zwave2mqtt/+/111/0/16/0` | Stato `triggered_fire` + broadcast |
-| `ring_keypad_input_police` | `zwave2mqtt/+/111/0/17/0` | Stato `triggered_burglar` + broadcast |
-| `ring_keypad_input_medical` | `zwave2mqtt/+/111/0/19/0` | Stato `triggered_medical` + broadcast |
+| `ring_keypad_input_disarm` | `zwave2mqtt/+/unknownClass_111/endpoint_0/3/2` | `validate_and_disarm` |
+| `ring_keypad_input_arm_away` | `zwave2mqtt/+/unknownClass_111/endpoint_0/5/2` | `validate_and_arm mode=armed_away` |
+| `ring_keypad_input_arm_away_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/5/0` | `do_arm` o `code_rejected` |
+| `ring_keypad_input_arm_home` | `zwave2mqtt/+/unknownClass_111/endpoint_0/6/2` | `validate_and_arm mode=armed_home` |
+| `ring_keypad_input_arm_home_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/6/0` | `do_arm` o `code_rejected` |
+| `ring_keypad_input_enter` | `zwave2mqtt/+/unknownClass_111/endpoint_0/2/2` | Aggiorna log "Tasto V" |
+| `ring_keypad_input_cancel` | `zwave2mqtt/+/unknownClass_111/endpoint_0/25/2` | Aggiorna log "Tasto X" |
+| `ring_keypad_input_rapina` | `zwave2mqtt/+/unknownClass_111/endpoint_0/17/0` | Stato `triggered_rapina` + broadcast rapina |
+| `ring_keypad_input_medical` | `zwave2mqtt/+/unknownClass_111/endpoint_0/19/0` | Stato `triggered_medical` + broadcast |
+| `ring_keypad_input_fire` | `zwave2mqtt/+/unknownClass_111/endpoint_0/16/0` | Stato `triggered_fire` + broadcast |
 
 ### Automazioni di sistema
 
 | ID Automazione | Trigger | Azione |
 |----------------|---------|--------|
 | `ring_keypad_sync_on_state_change` | State: `ring_keypad_alarm_state` | `sync_all` |
-| `ring_keypad_restore_on_connect` | MQTT: `zwave2mqtt/+/status` = Alive | `sync_state` su tastiera tornata online |
-| `ring_keypad_sync_on_ha_start` | HA start | Delay 15s → `sync_all` |
+| `ring_keypad_restore_on_connect` | MQTT: `zwave2mqtt/+/status` = Alive | `sync_state` + `set_led_mode` su tastiera tornata online |
+| `ring_keypad_sync_on_ha_start` | HA start | Delay 15s → `sync_all` + `set_led_mode_all` |
+| `ring_keypad_sync_led_on_mode_change` | State: `ring_keypad_led_mode` | `set_led_mode_all` |
 
 ### Automazioni di integrazione (in `ring_keypad_integration.yaml`)
 
@@ -496,6 +517,18 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-02 | Delay in `do_arm` non interrompibile dall'esterno | Aperto | Nessuno (limitazione HA scripts) |
 | RK-03 | Nessuna protezione brute-force su PIN | Aperto | Implementazione futura con `counter` helper |
 | RK-04 | `ring_keypad_sync_on_state_change` si attiva anche per transizioni `→unknown` | Accettato | Il sync_all è idempotente, nessun impatto operativo |
-| RK-05 | `ring_keypad_restore_on_connect`: `value_template: "{{ value_json.status }}"` su payload stringa → trigger mai scattato | **Corretto 2026-04-11** | Rimosso `value_template` — il topic pubblica stringa semplice, non JSON |
+| RK-05 | `ring_keypad_restore_on_connect`: `value_template` rimosso per errore (il topic pubblica JSON, non stringa) — trigger mai scattato | **Corretto 2026-04-11** | Ripristinato `value_template: "{{ value_json.status }}"` |
 | RK-06 | `ring_keypad_code_rejected`: payload `"1"` non-standard per Indicator CC sub_cmd 1 | **Corretto 2026-04-11** | Payload cambiato a `"99"` (0xFF = on, secondo specifica Z-Wave) |
 | RK-07 | `ring_keypad_bypass_challenge`: payload `"1"` non-standard per Indicator CC sub_cmd 1 | **Corretto 2026-04-11** | Payload cambiato a `"99"` |
+| RK-08 | `binary_sensor.tastiera_camera_online`: mancava `value_template` → sensor sempre `off` (payload è JSON, non stringa) | **Corretto 2026-04-11** | Aggiunto `value_template: "{{ value_json.status }}"` |
+| RK-09 | Battery sensor: topic errato `battery/0/isLow` (booleano) invece di `battery/endpoint_0/level` (percentuale reale) | **Corretto 2026-04-11** | Topic e `value_template` aggiornati, ora fornisce 0-100% |
+| RK-10 | Nome nodo tastiera errato `tastiera_camera` invece di `tastiera_allarme_camera` in keypads.yaml e globals.yaml | **Corretto 2026-04-11** | Aggiornato in tutti i file |
+| RK-11 | Entity ID sensori MQTT duplicati con suffisso `_2` — zwave2mqtt MQTT discovery creava entità in conflitto con quelle YAML | **Corretto 2026-04-11** | Disabilitata discovery zwave2mqtt; aggiunti `object_id` espliciti in keypads.yaml: `tastiera_camera_allarme_batteria`, `tastiera_camera_allarme_online` |
+| RK-12 | Dashboard `plancia_controllo.yaml`: header usava `header.card` (singolo) invece di `header.cards` (lista) — errore configurazione sections view | **Corretto 2026-04-11** | Cambiato `card:` in `cards:` e rimosso `vertical-stack` wrapper non supportato nell'header |
+| RK-13 | `condition: template` con `value_template` usava block scalar `>` — template renderizzava `"True\n"` invece di `"true"` | **Corretto 2026-04-11** | Convertito a stringa inline con `| string | lower` |
+| RK-14 | Topic Entry Control CC errati: usavano `111/0/` invece del path reale `unknownClass_111/endpoint_0/` — nessun trigger MQTT funzionante | **Corretto 2026-04-12** | Tutti i topic input aggiornati al formato verificato |
+| RK-15 | Topic Indicator CC errati: usavano `135/0/` invece di `indicator/endpoint_0/` — nessun feedback hardware funzionante | **Corretto 2026-04-12** | Tutti i topic output aggiornati al formato verificato |
+| RK-16 | Exit/Entry Delay: payload era un intero in secondi (sub_cmd 7) invece della stringa `Xm Ys` richiesta dal campo `timeout` | **Corretto 2026-04-12** | Script aggiornati con calcolo `(s // 60)m(s % 60)s` |
+| RK-17 | `ring_keypad_alarm_burglar` puntava a `Alarming_Burglar` (anti-rapina silenzioso) invece di `Alarming` (intrusione con suono) | **Corretto 2026-04-12** | `alarm_burglar` → `Alarming/9` payload 99; nuovo `alarm_rapina` → `Alarming_Burglar/9` payload 1 |
+| RK-18 | Automazione `ring_keypad_input_cancel`: data_type era `0` invece di `2` (il manuale documenta il Cancel con codice come 25/2) | **Corretto 2026-04-12** | Topic aggiornato a `25/2` |
+| RK-19 | Automazione `ring_keypad_input_police`: rinominata in `ring_keypad_input_rapina`, stato cambiato da `triggered_burglar` a `triggered_rapina` | **Corretto 2026-04-12** | Distinzione semantica: burglar=intrusione esterna, rapina=minaccia con presenza |

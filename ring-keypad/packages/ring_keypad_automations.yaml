@@ -6,22 +6,24 @@
 # automaticamente dal topic ricevuto:
 #   trigger.topic.split('/')[1]
 #
-# Topic Entry Control CC (111):
-#   zwave2mqtt/+/111/0/<event_type>/<data_type>
+# ── PROTOCOLLO CORRETTO (Entry Control CC 111) ────────────────────────────
+# Topic: zwave2mqtt/+/unknownClass_111/endpoint_0/{event_type}/{data_type}
 #
-# event_type:
-#   2  = Enter (con codice)
-#   3  = Disarm (con codice)
-#   5  = Arm Away
-#   6  = Arm Stay/Home
-#   16 = Fire (hold)
-#   17 = Police (hold)
-#   19 = Medical (hold)
-#   25 = Cancel
+# event_type | data_type | Significato
+# -----------|-----------|--------------------------------------------------
+#  3         | 2         | Tasto Disarm + codice
+#  6         | 2         | Tasto Arm Home + codice
+#  6         | 0         | Tasto Arm Home senza codice
+#  5         | 2         | Tasto Arm Away + codice
+#  5         | 0         | Tasto Arm Away senza codice
+#  2         | 2         | Tasto V (Enter) + codice → solo log
+# 25         | 2         | Tasto X (Cancel) + codice → solo log
+# 17         | 0         | Tasto Police hold 3s → anti-rapina SILENZIOSO
+# 19         | 0         | Tasto Medical hold 3s
+# 16         | 0         | Tasto Fire hold 3s
 #
-# data_type:
-#   0 = nessun dato (pressione semplice)
-#   2 = codice stringa
+# Payload JSON con codice: {"time":..., "value":"1234"}
+# Payload JSON senza codice: {"time":...}  (no campo value)
 ###############################################################################
 
 automation:
@@ -33,29 +35,13 @@ automation:
     alias: "Keypad - Input: Disarm"
     trigger:
       - platform: mqtt
-        topic: "zwave2mqtt/+/111/0/3/2"
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/3/2"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
       - action: script.ring_keypad_validate_and_disarm
         data:
-          code: "{{ trigger.payload_json.value }}"
-          keypad_id: "{{ keypad_id }}"
-
-  # ════════════════════════════════════════════════════════════════════════
-  # TASTO ENTER + codice → disarm (event_type=2, data_type=2)
-  # ════════════════════════════════════════════════════════════════════════
-  - id: ring_keypad_input_enter
-    alias: "Keypad - Input: Enter (disarm)"
-    trigger:
-      - platform: mqtt
-        topic: "zwave2mqtt/+/111/0/2/2"
-    variables:
-      keypad_id: "{{ trigger.topic.split('/')[1] }}"
-    action:
-      - action: script.ring_keypad_validate_and_disarm
-        data:
-          code: "{{ trigger.payload_json.value }}"
+          code: "{{ trigger.payload_json.get('value', '') }}"
           keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
@@ -65,25 +51,27 @@ automation:
     alias: "Keypad - Input: Arm Away (con codice)"
     trigger:
       - platform: mqtt
-        topic: "zwave2mqtt/+/111/0/5/2"
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/5/2"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
       - action: script.ring_keypad_validate_and_arm
         data:
-          code: "{{ trigger.payload_json.value }}"
+          code: "{{ trigger.payload_json.get('value', '') }}"
           mode: "armed_away"
           keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
   # TASTO ARM AWAY senza codice (event_type=5, data_type=0)
-  # Se require_code_to_arm=off → arma; altrimenti → codice rifiutato
+  # Se require_code_to_arm=off → arma direttamente
+  # Se require_code_to_arm=on  → feedback codice rifiutato
+  # Mantenuto per compatibilità hardware (alcuni firmware lo emettono)
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_input_arm_away_nocode
     alias: "Keypad - Input: Arm Away (no codice)"
     trigger:
       - platform: mqtt
-        topic: "zwave2mqtt/+/111/0/5/0"
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/5/0"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
@@ -109,25 +97,27 @@ automation:
     alias: "Keypad - Input: Arm Home (con codice)"
     trigger:
       - platform: mqtt
-        topic: "zwave2mqtt/+/111/0/6/2"
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/6/2"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
       - action: script.ring_keypad_validate_and_arm
         data:
-          code: "{{ trigger.payload_json.value }}"
+          code: "{{ trigger.payload_json.get('value', '') }}"
           mode: "armed_home"
           keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
   # TASTO ARM HOME senza codice (event_type=6, data_type=0)
-  # Se require_code_to_arm=off → arma; altrimenti → codice rifiutato
+  # Se require_code_to_arm=off → arma direttamente
+  # Se require_code_to_arm=on  → feedback codice rifiutato
+  # Mantenuto per compatibilità hardware (alcuni firmware lo emettono)
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_input_arm_home_nocode
     alias: "Keypad - Input: Arm Home (no codice)"
     trigger:
       - platform: mqtt
-        topic: "zwave2mqtt/+/111/0/6/0"
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/6/0"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
@@ -147,13 +137,37 @@ automation:
               keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
-  # TASTO CANCEL (event_type=25, data_type=0)
+  # TASTO V (Enter) + codice (event_type=2, data_type=2)
+  # Solo tracciamento log. Nessuna azione di armo/disarmo.
+  # ════════════════════════════════════════════════════════════════════════
+  - id: ring_keypad_input_enter
+    alias: "Keypad - Input: Tasto V (Enter)"
+    trigger:
+      - platform: mqtt
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/2/2"
+    variables:
+      keypad_id: "{{ trigger.topic.split('/')[1] }}"
+    action:
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_last_event
+        data:
+          value: "Tasto V - codice inserito"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_last_keypad
+        data:
+          value: "{{ keypad_id }}"
+
+  # ════════════════════════════════════════════════════════════════════════
+  # TASTO X (Cancel) + codice (event_type=25, data_type=2)
+  # Solo tracciamento log. Nessuna azione di armo/disarmo.
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_input_cancel
-    alias: "Keypad - Input: Cancel"
+    alias: "Keypad - Input: Tasto X (Cancel)"
     trigger:
       - platform: mqtt
-        topic: "zwave2mqtt/+/111/0/25/0"
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/25/2"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
@@ -161,28 +175,22 @@ automation:
         target:
           entity_id: input_text.ring_keypad_last_event
         data:
-          value: "Cancel premuto"
+          value: "Tasto X - annullamento"
       - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_keypad
         data:
           value: "{{ keypad_id }}"
-      # Decommentare per permettere cancel senza PIN durante pending:
-      # - condition: state
-      #   entity_id: input_select.ring_keypad_alarm_state
-      #   state: "pending"
-      # - action: script.ring_keypad_do_disarm
-      #   data:
-      #     keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
-  # TASTO FIRE (event_type=16, data_type=0) - hold fino a luci
+  # TASTO POLICE / ANTI-RAPINA (event_type=17, data_type=0) - hold 3s
+  # → stato triggered_rapina → broadcast SILENZIOSO (Alarming_Burglar payload 1)
   # ════════════════════════════════════════════════════════════════════════
-  - id: ring_keypad_input_fire
-    alias: "Keypad - Input: Fire"
+  - id: ring_keypad_input_rapina
+    alias: "Keypad - Input: Anti-Rapina (Police hold 3s)"
     trigger:
       - platform: mqtt
-        topic: "zwave2mqtt/+/111/0/16/0"
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/17/0"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
@@ -190,59 +198,31 @@ automation:
         target:
           entity_id: input_select.ring_keypad_alarm_state
         data:
-          option: "triggered_fire"
+          option: "triggered_rapina"
       - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_event
         data:
-          value: "FIRE alarm dalla tastiera {{ keypad_id }}"
+          value: "ANTI-RAPINA dalla tastiera {{ keypad_id }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_keypad
         data:
           value: "{{ keypad_id }}"
+      # broadcast diretto: non passa da sync_all (che userebbe lo stato, già corretto)
+      # ma chiama broadcast_alarm per garantire il feedback immediato su tutte le tastiere
       - action: script.ring_keypad_broadcast_alarm
         data:
-          alarm_type: "fire"
+          alarm_type: "rapina"
 
   # ════════════════════════════════════════════════════════════════════════
-  # TASTO POLICE (event_type=17, data_type=0) - hold fino a luci
-  # ════════════════════════════════════════════════════════════════════════
-  - id: ring_keypad_input_police
-    alias: "Keypad - Input: Police"
-    trigger:
-      - platform: mqtt
-        topic: "zwave2mqtt/+/111/0/17/0"
-    variables:
-      keypad_id: "{{ trigger.topic.split('/')[1] }}"
-    action:
-      - action: input_select.select_option
-        target:
-          entity_id: input_select.ring_keypad_alarm_state
-        data:
-          option: "triggered_burglar"
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.ring_keypad_last_event
-        data:
-          value: "POLICE alarm dalla tastiera {{ keypad_id }}"
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.ring_keypad_last_keypad
-        data:
-          value: "{{ keypad_id }}"
-      - action: script.ring_keypad_broadcast_alarm
-        data:
-          alarm_type: "burglar"
-
-  # ════════════════════════════════════════════════════════════════════════
-  # TASTO MEDICAL (event_type=19, data_type=0) - hold fino a luci
+  # TASTO MEDICAL (event_type=19, data_type=0) - hold 3s
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_input_medical
-    alias: "Keypad - Input: Medical"
+    alias: "Keypad - Input: Medical (hold 3s)"
     trigger:
       - platform: mqtt
-        topic: "zwave2mqtt/+/111/0/19/0"
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/19/0"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
@@ -255,7 +235,7 @@ automation:
         target:
           entity_id: input_text.ring_keypad_last_event
         data:
-          value: "MEDICAL alarm dalla tastiera {{ keypad_id }}"
+          value: "MEDICAL dalla tastiera {{ keypad_id }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_keypad
@@ -266,8 +246,41 @@ automation:
           alarm_type: "medical"
 
   # ════════════════════════════════════════════════════════════════════════
+  # TASTO FIRE (event_type=16, data_type=0) - hold 3s
+  # ════════════════════════════════════════════════════════════════════════
+  - id: ring_keypad_input_fire
+    alias: "Keypad - Input: Fire (hold 3s)"
+    trigger:
+      - platform: mqtt
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/16/0"
+    variables:
+      keypad_id: "{{ trigger.topic.split('/')[1] }}"
+    action:
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.ring_keypad_alarm_state
+        data:
+          option: "triggered_fire"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_last_event
+        data:
+          value: "FIRE dalla tastiera {{ keypad_id }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_last_keypad
+        data:
+          value: "{{ keypad_id }}"
+      - action: script.ring_keypad_broadcast_alarm
+        data:
+          alarm_type: "fire"
+
+  # ════════════════════════════════════════════════════════════════════════
   # SYNC INDICATORI AL CAMBIO DI STATO
-  # Quando ring_keypad_alarm_state cambia, aggiorna tutte le tastiere
+  # Quando ring_keypad_alarm_state cambia, aggiorna tutte le tastiere.
+  # Questo gestisce automaticamente i casi: disarmed, armed_home, armed_away,
+  # arming, pending (ma NON i triggered: quelli usano broadcast_alarm diretto
+  # per garantire il feedback immediato, poi sync_all li rinforza).
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_sync_on_state_change
     alias: "Keypad - Sync indicatori da cambio stato"
@@ -278,36 +291,40 @@ automation:
       - action: script.ring_keypad_sync_all
 
   # ════════════════════════════════════════════════════════════════════════
-  # RIPRISTINO INDICATORI QUANDO UNA TASTIERA TORNA ONLINE
-  # zwave2mqtt pubblica JSON: {"status":"Alive"} → serve value_template.
+  # RIPRISTINO INDICATORI E LED QUANDO UNA TASTIERA TORNA ONLINE
+  # zwave2mqtt pubblica JSON: {"status":"Alive", "nodeId":N, ...}
+  # value_template estrae il campo "status" per confrontarlo con payload.
   # Condizione: risponde solo se il nodo è nella lista tastiere attive.
+  # Dopo il delay: sync stato + imposta modalità LED.
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_restore_on_connect
     alias: "Keypad - Ripristina indicatori quando torna online"
     trigger:
       - platform: mqtt
         topic: "zwave2mqtt/+/status"
-        # zwave2mqtt pubblica stringa semplice "Alive"/"Dead", non JSON.
-        # Non usare value_template qui (value_json fallirebbe silenziosamente
-        # e il trigger non scatterebbe mai).
+        # Payload JSON: {"time":..., "value":true, "status":"Alive", "nodeId":N}
+        value_template: "{{ value_json.status }}"
         payload: "Alive"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     condition:
       # Reagisce solo se il nodo è una tastiera registrata
       - condition: template
-        value_template: >
-          {{ keypad_id in (states('input_text.ring_keypad_active_keypads')
-             .split(',') | map('trim') | list) }}
+        value_template: "{{ keypad_id in (states('input_text.ring_keypad_active_keypads').split(',') | map('trim') | list) }}"
     action:
+      # Breve attesa per permettere alla tastiera di completare l'inizializzazione
       - delay:
           seconds: 3
       - action: script.ring_keypad_sync_state
         data:
           keypad_id: "{{ keypad_id }}"
+      - action: script.ring_keypad_set_led_mode
+        data:
+          keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
   # SYNC ALL AL RIAVVIO DI HOME ASSISTANT
+  # Delay 15s per attendere che MQTT e zwave2mqtt siano completamente pronti
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_sync_on_ha_start
     alias: "Keypad - Sync all al riavvio HA"
@@ -318,3 +335,17 @@ automation:
       - delay:
           seconds: 15
       - action: script.ring_keypad_sync_all
+      - action: script.ring_keypad_set_led_mode_all
+
+  # ════════════════════════════════════════════════════════════════════════
+  # SYNC LED QUANDO CAMBIA LA MODALITÀ LED (NUOVO)
+  # Quando l'utente modifica ring_keypad_led_mode dalla UI,
+  # aggiorna immediatamente tutte le tastiere attive.
+  # ════════════════════════════════════════════════════════════════════════
+  - id: ring_keypad_sync_led_on_mode_change
+    alias: "Keypad - Sync LED da cambio modalità"
+    trigger:
+      - platform: state
+        entity_id: input_select.ring_keypad_led_mode
+    action:
+      - action: script.ring_keypad_set_led_mode_all

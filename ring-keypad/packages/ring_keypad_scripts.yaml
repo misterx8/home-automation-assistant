@@ -3,24 +3,41 @@
 #
 # Tutti gli script che interagiscono con l'hardware accettano `keypad_id`
 # come campo obbligatorio (topic base del nodo zwave2mqtt).
-# Il topic MQTT viene costruito dinamicamente:
-#   zwave2mqtt/{keypad_id}/135/0/{indicator}/{sub_cmd}/set
 #
-# SCHEMA INDICATOR CC (135):
-#   sub_cmd 1 = on/off       (payload: 0 o 99)
-#   sub_cmd 7 = timeout sec  (payload: secondi)
-#   sub_cmd 9 = level        (payload: 0-99)
+# ── PROTOCOLLO CORRETTO ────────────────────────────────────────────────────
+# Indicator CC:
+#   zwave2mqtt/{keypad_id}/indicator/endpoint_0/{Name}/{sub_cmd}/set
+#   sub_cmd 1  = on/off indicatore (payload: 0 o 99)
+#   sub_cmd 9  = level suono/LED  (payload: 1=silenzioso, 99=con suono)
+#   sub_cmd timeout = delay stringa formato "{min}m{sec}s"
+#
+# LED (System Security Mode Display):
+#   zwave2mqtt/{keypad_id}/configuration/endpoint_0/System_Security_Mode_Display/set
+#   payload: 0=spenti, 3=lampeggio 3s, 601=sempre accesi
+#
+# ── VOICE FEEDBACK ─────────────────────────────────────────────────────────
+# I payload sub_cmd 9 VOICE-AWARE usano:
+#   99 se input_boolean.ring_keypad_voice_feedback = on  (LED + suono)
+#    1 se input_boolean.ring_keypad_voice_feedback = off (solo LED)
+#
+# ECCEZIONI (sempre fissi, non voice-aware):
+#   ring_keypad_code_rejected  → sempre 99 (il feedback di errore è fondamentale)
+#   ring_keypad_bypass_challenge → sempre 99
+#   ring_keypad_alarm_rapina   → sempre 1  (anti-rapina DEVE essere silenzioso)
+#   ring_keypad_alarm_burglar  → sempre 99 (allarme intrusione DEVE suonare)
+#   ring_keypad_alarm_fire/medical/water → sempre 99
 #
 # SCRIPT PRINCIPALI:
 #   ring_keypad_sync_state    → dispatcher per singola tastiera
 #   ring_keypad_sync_all      → broadcast sync a tutte le tastiere attive
+#   ring_keypad_set_led_mode_all → imposta LED su tutte le tastiere
 #   ring_keypad_broadcast_alarm → allarme a tutte le tastiere attive
 ###############################################################################
 
 script:
 
   # ══════════════════════════════════════════════════════════════════════════
-  # INDICATORE GENERICO
+  # INDICATORE GENERICO (accetta qualsiasi combinatore indicator/sub_cmd)
   # ══════════════════════════════════════════════════════════════════════════
 
   ring_keypad_send_indicator:
@@ -28,13 +45,13 @@ script:
     description: "Invia un comando Indicator CC a una tastiera specifica"
     fields:
       keypad_id:
-        description: "Topic base della tastiera (es. tastiera_camera)"
+        description: "Topic base della tastiera (es. tastiera_allarme_camera)"
         required: true
       indicator:
-        description: "Nome indicatore (es. Not_armed__disarmed)"
+        description: "Nome indicatore (es. Not_armed_-_disarmed)"
         required: true
       sub_cmd:
-        description: "Sub-command (1=on/off, 7=timeout, 9=level)"
+        description: "Sub-command (1=on/off, 9=level, timeout=delay stringa)"
         required: true
       value:
         description: "Valore payload"
@@ -42,15 +59,16 @@ script:
     sequence:
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/{{ indicator }}/{{ sub_cmd }}/set"
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/{{ indicator }}/{{ sub_cmd }}/set"
           payload: "{{ value }}"
 
   # ══════════════════════════════════════════════════════════════════════════
-  # STATI MODALITÀ
+  # STATI MODALITÀ (sub_cmd 9, VOICE-AWARE)
   # ══════════════════════════════════════════════════════════════════════════
 
   ring_keypad_show_disarmed:
     alias: "Keypad → Disarmed"
+    description: "Indica stato disarmato (voice-aware: 99=suono+LED, 1=solo LED)"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -58,11 +76,12 @@ script:
     sequence:
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Not_armed__disarmed/1/set"
-          payload: "99"
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Not_armed_-_disarmed/9/set"
+          payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
 
   ring_keypad_show_armed_home:
     alias: "Keypad → Armed Home"
+    description: "Indica stato armato casa (voice-aware)"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -70,11 +89,12 @@ script:
     sequence:
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Armed_Stay/1/set"
-          payload: "99"
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Armed_Stay/9/set"
+          payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
 
   ring_keypad_show_armed_away:
     alias: "Keypad → Armed Away"
+    description: "Indica stato armato fuori (voice-aware)"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -82,8 +102,8 @@ script:
     sequence:
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Armed_Away/1/set"
-          payload: "99"
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Armed_Away/9/set"
+          payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
 
   # ══════════════════════════════════════════════════════════════════════════
   # FEEDBACK CODICE
@@ -91,6 +111,7 @@ script:
 
   ring_keypad_code_rejected:
     alias: "Keypad → Codice non accettato"
+    description: "Bip di errore codice — SEMPRE con suono (payload 99 fisso)"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -98,12 +119,12 @@ script:
     sequence:
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Code_not_accepted/1/set"
-          # sub_cmd 1 = on/off: valore "on" secondo specifica Z-Wave Indicator CC = 99 (0xFF)
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Code_not_accepted/9/set"
           payload: "99"
 
   ring_keypad_bypass_challenge:
     alias: "Keypad → Bypass richiesto"
+    description: "Richiesta bypass — sub_cmd 1! (non 9) — SEMPRE con suono"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -111,12 +132,13 @@ script:
     sequence:
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Bypass_challenge/1/set"
-          # sub_cmd 1 = on/off: valore "on" secondo specifica Z-Wave Indicator CC = 99 (0xFF)
-          payload: "99"
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Bypass_challenge/1/set"
+          # sub_cmd 1 = on/off: 255 = on (conforme Z-Wave Indicator CC)
+          payload: "255"
 
   # ══════════════════════════════════════════════════════════════════════════
-  # DELAY CON COUNTDOWN
+  # DELAY CON COUNTDOWN (formato stringa "{min}m{sec}s")
+  # Il topic usa sub_cmd "timeout" e il payload è una stringa es. "0m30s"
   # ══════════════════════════════════════════════════════════════════════════
 
   ring_keypad_show_exit_delay:
@@ -127,10 +149,12 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
+      - variables:
+          s: "{{ states('input_number.ring_keypad_exit_delay') | int }}"
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Exit_Delay/7/set"
-          payload: "{{ states('input_number.ring_keypad_exit_delay') | int }}"
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Exit_Delay/timeout/set"
+          payload: "{{ (s // 60) }}m{{ (s % 60) }}s"
 
   ring_keypad_show_entry_delay:
     alias: "Keypad → Entry Delay"
@@ -140,17 +164,20 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
+      - variables:
+          s: "{{ states('input_number.ring_keypad_entry_delay') | int }}"
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Entry_Delay/7/set"
-          payload: "{{ states('input_number.ring_keypad_entry_delay') | int }}"
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Entry_Delay/timeout/set"
+          payload: "{{ (s // 60) }}m{{ (s % 60) }}s"
 
   # ══════════════════════════════════════════════════════════════════════════
   # ALLARMI
   # ══════════════════════════════════════════════════════════════════════════
 
   ring_keypad_alarm_burglar:
-    alias: "Keypad → Allarme Burglar"
+    alias: "Keypad → Allarme Intrusione"
+    description: "Allarme burglar generico CON suono (Alarming, payload 99 fisso)"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -158,8 +185,24 @@ script:
     sequence:
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Burglar/9/set"
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming/9/set"
           payload: "99"
+
+  ring_keypad_alarm_rapina:
+    alias: "Keypad → Allarme Anti-Rapina"
+    description: >
+      Anti-rapina (tasto Police tenuto 3s) — usa Alarming_Burglar SEMPRE SILENZIOSO.
+      payload 1 fisso (non voice-aware): il silenzio è requisito di sicurezza.
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - action: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming_Burglar/9/set"
+          # SEMPRE 1: l'anti-rapina deve essere silenzioso per non allertare l'aggressore
+          payload: "1"
 
   ring_keypad_alarm_fire:
     alias: "Keypad → Allarme Fuoco"
@@ -170,23 +213,11 @@ script:
     sequence:
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Smoke__Fire/9/set"
-          payload: "99"
-
-  ring_keypad_alarm_co:
-    alias: "Keypad → Allarme CO"
-    fields:
-      keypad_id:
-        description: "Topic base della tastiera"
-        required: true
-    sequence:
-      - action: mqtt.publish
-        data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Carbon_Monoxide/9/set"
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming_Smoke_-_Fire/9/set"
           payload: "99"
 
   ring_keypad_alarm_medical:
-    alias: "Keypad → Allarme Medical"
+    alias: "Keypad → Allarme Medico"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -194,40 +225,65 @@ script:
     sequence:
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Alarming_Medical/9/set"
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming_Medical/9/set"
+          payload: "99"
+
+  ring_keypad_alarm_water:
+    alias: "Keypad → Allarme Perdita Acqua"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - action: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming_Water_leak/9/set"
           payload: "99"
 
   # ══════════════════════════════════════════════════════════════════════════
-  # SUONI NOTIFICA
+  # LED MODALITÀ DISPLAY
+  # Legge input_select.ring_keypad_led_mode e pubblica il valore corrispondente:
+  #   "Spenti"         → 0
+  #   "Lampeggio (3s)" → 3
+  #   "Sempre accesi"  → 601
   # ══════════════════════════════════════════════════════════════════════════
 
-  ring_keypad_sound_beep:
-    alias: "Keypad → Beep"
+  ring_keypad_set_led_mode:
+    alias: "Keypad → Imposta modalità LED (singola tastiera)"
+    description: "Legge ring_keypad_led_mode e pubblica la config LED sulla tastiera"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
         required: true
     sequence:
+      - variables:
+          led_val: "{{ {'Spenti': '0', 'Lampeggio (3s)': '3', 'Sempre accesi': '601'}.get(states('input_select.ring_keypad_led_mode'), '601') }}"
       - action: mqtt.publish
         data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Generic_event_sound_notification_1/9/set"
-          payload: "50"
+          topic: "zwave2mqtt/{{ keypad_id }}/configuration/endpoint_0/System_Security_Mode_Display/set"
+          payload: "{{ led_val }}"
 
-  ring_keypad_sound_chime:
-    alias: "Keypad → Chime"
-    fields:
-      keypad_id:
-        description: "Topic base della tastiera"
-        required: true
+  ring_keypad_set_led_mode_all:
+    alias: "Keypad → Imposta modalità LED (tutte le tastiere)"
+    description: "Itera ring_keypad_active_keypads e chiama set_led_mode su ognuna"
     sequence:
-      - action: mqtt.publish
-        data:
-          topic: "zwave2mqtt/{{ keypad_id }}/135/0/Generic_event_sound_notification_4/9/set"
-          payload: "50"
+      - repeat:
+          for_each: >
+            {{ states('input_text.ring_keypad_active_keypads')
+               .split(',')
+               | map('trim')
+               | select('ne', '')
+               | list }}
+          sequence:
+            - action: script.ring_keypad_set_led_mode
+              data:
+                keypad_id: "{{ repeat.item }}"
 
   # ══════════════════════════════════════════════════════════════════════════
   # SYNC STATO → SINGOLA TASTIERA (dispatcher)
-  # Legge input_select.ring_keypad_alarm_state e invia l'indicatore corretto
+  # Legge input_select.ring_keypad_alarm_state e invia l'indicatore corretto.
+  # Include tutti gli stati: disarmed, armed_home, armed_away, arming, pending,
+  # triggered_burglar, triggered_rapina, triggered_fire, triggered_medical, triggered_water
   # ══════════════════════════════════════════════════════════════════════════
 
   ring_keypad_sync_state:
@@ -247,6 +303,7 @@ script:
               - action: script.ring_keypad_show_disarmed
                 data:
                   keypad_id: "{{ keypad_id }}"
+
           - conditions:
               - condition: state
                 entity_id: input_select.ring_keypad_alarm_state
@@ -255,6 +312,7 @@ script:
               - action: script.ring_keypad_show_armed_home
                 data:
                   keypad_id: "{{ keypad_id }}"
+
           - conditions:
               - condition: state
                 entity_id: input_select.ring_keypad_alarm_state
@@ -263,6 +321,7 @@ script:
               - action: script.ring_keypad_show_armed_away
                 data:
                   keypad_id: "{{ keypad_id }}"
+
           - conditions:
               - condition: state
                 entity_id: input_select.ring_keypad_alarm_state
@@ -271,6 +330,7 @@ script:
               - action: script.ring_keypad_show_exit_delay
                 data:
                   keypad_id: "{{ keypad_id }}"
+
           - conditions:
               - condition: state
                 entity_id: input_select.ring_keypad_alarm_state
@@ -279,6 +339,7 @@ script:
               - action: script.ring_keypad_show_entry_delay
                 data:
                   keypad_id: "{{ keypad_id }}"
+
           - conditions:
               - condition: state
                 entity_id: input_select.ring_keypad_alarm_state
@@ -287,6 +348,17 @@ script:
               - action: script.ring_keypad_alarm_burglar
                 data:
                   keypad_id: "{{ keypad_id }}"
+
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "triggered_rapina"
+            sequence:
+              # Anti-rapina: sempre silenzioso
+              - action: script.ring_keypad_alarm_rapina
+                data:
+                  keypad_id: "{{ keypad_id }}"
+
           - conditions:
               - condition: state
                 entity_id: input_select.ring_keypad_alarm_state
@@ -295,20 +367,22 @@ script:
               - action: script.ring_keypad_alarm_fire
                 data:
                   keypad_id: "{{ keypad_id }}"
-          - conditions:
-              - condition: state
-                entity_id: input_select.ring_keypad_alarm_state
-                state: "triggered_co"
-            sequence:
-              - action: script.ring_keypad_alarm_co
-                data:
-                  keypad_id: "{{ keypad_id }}"
+
           - conditions:
               - condition: state
                 entity_id: input_select.ring_keypad_alarm_state
                 state: "triggered_medical"
             sequence:
               - action: script.ring_keypad_alarm_medical
+                data:
+                  keypad_id: "{{ keypad_id }}"
+
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "triggered_water"
+            sequence:
+              - action: script.ring_keypad_alarm_water
                 data:
                   keypad_id: "{{ keypad_id }}"
 
@@ -335,6 +409,7 @@ script:
 
   # ══════════════════════════════════════════════════════════════════════════
   # BROADCAST ALLARME A TUTTE LE TASTIERE
+  # alarm_type: burglar | rapina | fire | medical | water
   # ══════════════════════════════════════════════════════════════════════════
 
   ring_keypad_broadcast_alarm:
@@ -342,7 +417,7 @@ script:
     description: "Invia un tipo di allarme a tutte le tastiere attive"
     fields:
       alarm_type:
-        description: "Tipo allarme: burglar | fire | co | medical"
+        description: "Tipo allarme: burglar | rapina | fire | medical | water"
         required: true
     sequence:
       - repeat:
@@ -361,6 +436,15 @@ script:
                     - action: script.ring_keypad_alarm_burglar
                       data:
                         keypad_id: "{{ repeat.item }}"
+
+                - conditions:
+                    - condition: template
+                      value_template: "{{ alarm_type == 'rapina' }}"
+                  sequence:
+                    - action: script.ring_keypad_alarm_rapina
+                      data:
+                        keypad_id: "{{ repeat.item }}"
+
                 - conditions:
                     - condition: template
                       value_template: "{{ alarm_type == 'fire' }}"
@@ -368,18 +452,20 @@ script:
                     - action: script.ring_keypad_alarm_fire
                       data:
                         keypad_id: "{{ repeat.item }}"
-                - conditions:
-                    - condition: template
-                      value_template: "{{ alarm_type == 'co' }}"
-                  sequence:
-                    - action: script.ring_keypad_alarm_co
-                      data:
-                        keypad_id: "{{ repeat.item }}"
+
                 - conditions:
                     - condition: template
                       value_template: "{{ alarm_type == 'medical' }}"
                   sequence:
                     - action: script.ring_keypad_alarm_medical
+                      data:
+                        keypad_id: "{{ repeat.item }}"
+
+                - conditions:
+                    - condition: template
+                      value_template: "{{ alarm_type == 'water' }}"
+                  sequence:
+                    - action: script.ring_keypad_alarm_water
                       data:
                         keypad_id: "{{ repeat.item }}"
 
@@ -399,48 +485,44 @@ script:
       - choose:
           - conditions:
               - condition: template
-                value_template: >
-                  {{ states('input_text.ring_keypad_pin_master') | length >= 4
-                     and code == states('input_text.ring_keypad_pin_master') }}
+                value_template: "{{ states('input_text.ring_keypad_pin_master') | length >= 4 and code == states('input_text.ring_keypad_pin_master') }}"
             sequence:
               - action: input_text.set_value
                 target:
                   entity_id: input_text.ring_keypad_last_user
                 data:
                   value: "{{ states('input_text.ring_keypad_name_master') }}"
+
           - conditions:
               - condition: template
-                value_template: >
-                  {{ states('input_text.ring_keypad_pin_user1') | length >= 4
-                     and code == states('input_text.ring_keypad_pin_user1') }}
+                value_template: "{{ states('input_text.ring_keypad_pin_user1') | length >= 4 and code == states('input_text.ring_keypad_pin_user1') }}"
             sequence:
               - action: input_text.set_value
                 target:
                   entity_id: input_text.ring_keypad_last_user
                 data:
                   value: "{{ states('input_text.ring_keypad_name_user1') }}"
+
           - conditions:
               - condition: template
-                value_template: >
-                  {{ states('input_text.ring_keypad_pin_user2') | length >= 4
-                     and code == states('input_text.ring_keypad_pin_user2') }}
+                value_template: "{{ states('input_text.ring_keypad_pin_user2') | length >= 4 and code == states('input_text.ring_keypad_pin_user2') }}"
             sequence:
               - action: input_text.set_value
                 target:
                   entity_id: input_text.ring_keypad_last_user
                 data:
                   value: "{{ states('input_text.ring_keypad_name_user2') }}"
+
           - conditions:
               - condition: template
-                value_template: >
-                  {{ states('input_text.ring_keypad_pin_user3') | length >= 4
-                     and code == states('input_text.ring_keypad_pin_user3') }}
+                value_template: "{{ states('input_text.ring_keypad_pin_user3') | length >= 4 and code == states('input_text.ring_keypad_pin_user3') }}"
             sequence:
               - action: input_text.set_value
                 target:
                   entity_id: input_text.ring_keypad_last_user
                 data:
                   value: "{{ states('input_text.ring_keypad_name_user3') }}"
+
         default:
           - action: input_text.set_value
             target:
@@ -570,11 +652,15 @@ script:
 
   # ══════════════════════════════════════════════════════════════════════════
   # ARMO EFFETTIVO (con exit delay)
-  # Imposta arming → attende exit_delay → imposta stato finale
+  # Imposta arming → sync automatico via ring_keypad_sync_on_state_change
+  # → attende exit_delay → imposta stato finale → sync automatico
   # ══════════════════════════════════════════════════════════════════════════
 
   ring_keypad_do_arm:
     alias: "Keypad - Esegui armo"
+    # mode single: previene esecuzioni concorrenti durante l'exit delay
+    mode: single
+    max_exceeded: silent
     fields:
       mode:
         description: "armed_home o armed_away"
