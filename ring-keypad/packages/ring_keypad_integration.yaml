@@ -188,6 +188,8 @@ automation:
       solo se allarme-core non è già in arming o armed).
       Anti-loop: verifica stato+profilo prima di inviare il comando.
       mode queued: garantisce che un disarmed immediato dopo arming non venga scartato.
+      Debug mode: quando ring_keypad_debug è ON la propagazione è bloccata.
+      La direzione inversa (allarme-core → keypad) non passa da questa automazione.
     mode: queued
     max: 5
     trigger:
@@ -198,6 +200,12 @@ automation:
           - arming       # NUOVO: avvia arm_allarme_core (normale) per calcolo bypass
           - armed_home
           - armed_away
+    condition:
+      # Debug mode: blocca propagazione keypad → allarme-core
+      # La direzione inversa (allarme-core → keypad) non passa da questa automazione.
+      - condition: state
+        entity_id: input_boolean.ring_keypad_debug
+        state: "off"
     action:
       - choose:
           - conditions:
@@ -555,6 +563,10 @@ automation:
         entity_id: input_select.ring_keypad_alarm_state
         to: "triggered_fire"
     condition:
+      # Debug mode: blocca propagazione keypad → safety-core
+      - condition: state
+        entity_id: input_boolean.ring_keypad_debug
+        state: "off"
       # Anti-loop: invia solo se safety-core non è già triggered
       - condition: template
         value_template: "{{ states('input_select.safety_core_stato') != 'triggered' }}"

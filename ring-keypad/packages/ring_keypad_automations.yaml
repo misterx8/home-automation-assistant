@@ -279,7 +279,7 @@ automation:
   # SYNC INDICATORI AL CAMBIO DI STATO
   # Quando ring_keypad_alarm_state cambia, aggiorna tutte le tastiere.
   # Questo gestisce automaticamente i casi: disarmed, armed_home, armed_away,
-  # arming, pending (ma NON i triggered: quelli usano broadcast_alarm diretto
+  # arming (ma NON i triggered: quelli usano broadcast_alarm diretto
   # per garantire il feedback immediato, poi sync_all li rinforza).
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_sync_on_state_change

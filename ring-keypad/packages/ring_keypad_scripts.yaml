@@ -159,22 +159,6 @@ script:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Exit_Delay/timeout/set"
           payload: '"{{ s // 60 }}m{{ s % 60 }}s"'
 
-  ring_keypad_show_entry_delay:
-    alias: "Keypad → Entry Delay"
-    description: >
-      Mostra countdown entry delay (legge input_number.ring_keypad_entry_delay).
-      Payload formato stringa "XmYs" richiesto da zwave2mqtt per il campo timeout.
-    fields:
-      keypad_id:
-        description: "Topic base della tastiera"
-        required: true
-    sequence:
-      - variables:
-          s: "{{ states('input_number.ring_keypad_entry_delay') | int(30) }}"
-      - action: mqtt.publish
-        data:
-          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Entry_Delay/timeout/set"
-          payload: '"{{ s // 60 }}m{{ s % 60 }}s"'
 
   # ══════════════════════════════════════════════════════════════════════════
   # ALLARMI
@@ -290,7 +274,7 @@ script:
   # ══════════════════════════════════════════════════════════════════════════
   # SYNC STATO → SINGOLA TASTIERA (dispatcher)
   # Legge input_select.ring_keypad_alarm_state e invia l'indicatore corretto.
-  # Include tutti gli stati: disarmed, armed_home, armed_away, arming, pending,
+  # Include tutti gli stati: disarmed, armed_home, armed_away, arming,
   # triggered_burglar, triggered_rapina, triggered_fire, triggered_medical, triggered_water
   # ══════════════════════════════════════════════════════════════════════════
 
@@ -339,14 +323,6 @@ script:
                 data:
                   keypad_id: "{{ keypad_id }}"
 
-          - conditions:
-              - condition: state
-                entity_id: input_select.ring_keypad_alarm_state
-                state: "pending"
-            sequence:
-              - action: script.ring_keypad_show_entry_delay
-                data:
-                  keypad_id: "{{ keypad_id }}"
 
           - conditions:
               - condition: state

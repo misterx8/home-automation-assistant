@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
 > Ultima revisione: 2026-04-13  
-> Versione architettura: 3.3 (fix disarmo durante exit delay: mode queued su ring_keypad_command_to_allarme_core)
+> Versione architettura: 3.5 (rimozione entry_delay e stato pending; debug mode guard; exit_delay read-only)
 
 ---
 
@@ -321,10 +321,15 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 
 ### Automazioni di integrazione (in `ring_keypad_integration.yaml`)
 
-| ID Automazione | Trigger | Azione |
-|----------------|---------|--------|
-| `ring_keypad_sync_from_allarme_core` | State: `allarme_core_stato` | Aggiorna `ring_keypad_alarm_state` |
-| `ring_keypad_command_to_allarme_core` | State: `ring_keypad_alarm_state` → disarmed/armed_* | Chiama script arm/disarm allarme-core |
+| ID Automazione | Trigger | Condizione | Azione |
+|----------------|---------|------------|--------|
+| `ring_keypad_sync_from_allarme_core` | State: `allarme_core_stato` o `allarme_core_profilo` | stato==armed per trigger profilo | Aggiorna `ring_keypad_alarm_state` con mappatura profilo-aware |
+| `ring_keypad_command_to_allarme_core` | State: `ring_keypad_alarm_state` → disarmed/arming/armed_* | **debug OFF** + anti-loop stato/profilo | Imposta profilo + chiama arm/disarm allarme-core |
+| `ring_keypad_sync_exit_delay` | State: `allarme_core_arming_delay` + HA start | — | Copia valore in `ring_keypad_exit_delay` |
+| `ring_keypad_sync_from_safety_core` | State: `safety_core_stato` | — | Aggiorna `ring_keypad_alarm_state` (fire/water/reset) |
+| `ring_keypad_command_to_safety_core` | State: `ring_keypad_alarm_state` → triggered_fire | **debug OFF** + safety_core non già triggered | Imposta safety_core triggered + log manuale |
+
+> **Debug mode (`input_boolean.ring_keypad_debug = on`):** le automazioni `ring_keypad_command_to_allarme_core` e `ring_keypad_command_to_safety_core` non propagano nulla verso i sistemi core. Le automazioni inverse (`sync_from_allarme_core`, `sync_from_safety_core`, `sync_exit_delay`) continuano a funzionare normalmente: la tastiera fisica riceve comunque i LED/suoni di feedback.
 
 ---
 
@@ -607,3 +612,5 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-30 | Disarmo durante exit delay non efficace: `ring_keypad_do_disarm` non fermava `ring_keypad_do_arm` → il delay continuava in background, al termine sovrascriveva lo stato con `armed_home/away` e ri-armava allarme-core | **Corretto 2026-04-13** | Aggiunto `script.turn_off ring_keypad_do_arm` come primo passo di `ring_keypad_do_disarm` |
 | RK-32 | Exit/Entry Delay countdown non partiva dalla tastiera: payload MQTT pubblicato senza virgolette doppie (`1m0s`) invece del formato JSON stringa richiesto da zwave2mqtt (`"1m0s"`) | **Corretto 2026-04-13** | Payload cambiato a `'"{{ s // 60 }}m{{ s % 60 }}s"'` (singole quotes YAML per includere le doppie nel valore raw) in `ring_keypad_show_exit_delay` e `ring_keypad_show_entry_delay` |
 | RK-31 | Disarmo durante exit delay non disarmava allarme-core: catena di 3 bug sovrapposti. (a) `mode: single`: trigger `disarmed` scartato. (b) Anti-loop `allarme_core_stato != 'disarmed'`: race condition se arm_allarme_core non aggiornava ancora stato. (c) `action: script.arm_allarme_core` bloccante: il caso `arming` aspettava il completamento di arm_allarme_core (10s); quando terminava allarme-core era già `armed`, sync_from_allarme_core impostava ring_keypad_alarm_state=armed_home, il caso `armed_home` in coda ri-armava allarme-core svuotando il disarmo. | **Corretto 2026-04-13** | (a) `mode: queued` su ring_keypad_command_to_allarme_core; (b) anti-loop basato su `trigger.from_state.state`; (c) tutti i casi arm_allarme_core cambiati a `script.turn_on` (fire-and-forget): il caso `disarmed` parte immediatamente mentre arm_allarme_core è nel delay e disarm_allarme_core lo ferma prima del completamento |
+| RK-33 | Debug mode non bloccava la propagazione keypad→core: con `input_boolean.ring_keypad_debug = on`, i comandi da tastiera (arm/disarm/fire) venivano comunque inviati ad allarme-core e safety-core — impossibile testare la tastiera senza modificare lo stato del sistema | **Corretto 2026-04-13** | Aggiunta `condition: state ring_keypad_debug off` come prima condizione in `ring_keypad_command_to_allarme_core` e `ring_keypad_command_to_safety_core`. Le automazioni inverse (sync_from_*) non sono coinvolte: la tastiera continua a ricevere LED/suoni normalmente |
+| RK-34 | `ring_keypad_exit_delay` editabile dalla dashboard: il tile in `plancia_controllo.yaml` aveva `features: numeric-input` e il popup "Configurazione Avanzata" includeva il campo nel form Timing — ma il valore è read-only (sincronizzato automaticamente da `allarme_core_arming_delay`) | **Corretto 2026-04-13** | Rimosso `features: numeric-input` dal tile (nome aggiornato a "Ritardo Uscita (da allarme-core)", stile opacizzato); rimosso da popup Configurazione Avanzata sezione Timing con commento esplicativo |

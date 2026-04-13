@@ -28,7 +28,6 @@ input_select:
       - armed_home         # Armato in modalità casa
       - armed_away         # Armato in modalità fuori
       - arming             # In fase di uscita (exit delay in corso)
-      - pending            # In fase di entrata (entry delay in corso)
       - triggered_burglar  # Allarme intrusione (CON suono)
       - triggered_rapina   # Anti-rapina (SEMPRE SILENZIOSO - Alarming_Burglar payload 1)
       - triggered_fire     # Allarme fuoco
@@ -137,14 +136,6 @@ input_number:
     unit_of_measurement: "s"
     icon: mdi:timer-outline
 
-  ring_keypad_entry_delay:
-    name: "Keypad - Entry Delay (sec)"
-    min: 5
-    max: 120
-    step: 5
-    initial: 30
-    unit_of_measurement: "s"
-    icon: mdi:timer-outline
 
 input_boolean:
 
