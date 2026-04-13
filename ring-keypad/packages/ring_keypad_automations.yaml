@@ -315,13 +315,11 @@ automation:
       # Breve attesa per permettere alla tastiera di completare l'inizializzazione
       - delay:
           seconds: 3
-      - action: script.ring_keypad_sync_state
-        data:
-          keypad_id: "{{ keypad_id }}"
-      - action: script.ring_keypad_set_led_mode
-        data:
-          keypad_id: "{{ keypad_id }}"
       - action: script.ring_keypad_set_siren_volume
+        data:
+          keypad_id: "{{ keypad_id }}"
+      # sync_state gestisce internamente il LED (set_led_mode + eventuale override sera)
+      - action: script.ring_keypad_sync_state
         data:
           keypad_id: "{{ keypad_id }}"
 
@@ -337,9 +335,9 @@ automation:
     action:
       - delay:
           seconds: 15
-      - action: script.ring_keypad_sync_all
-      - action: script.ring_keypad_set_led_mode_all
       - action: script.ring_keypad_set_siren_volume_all
+      # sync_all → sync_state gestisce internamente il LED per ogni tastiera
+      - action: script.ring_keypad_sync_all
 
   # ════════════════════════════════════════════════════════════════════════
   # SYNC LED QUANDO CAMBIA LA MODALITÀ LED (NUOVO)
@@ -351,6 +349,12 @@ automation:
     trigger:
       - platform: state
         entity_id: input_select.ring_keypad_led_mode
+    condition:
+      # Non applicare mentre lo stato è armed_sera: il fast blink verrebbe
+      # sovrascritto dalla preferenza utente. Il LED corretto viene ripristinato
+      # al prossimo cambio di stato (sync_state chiama set_led_mode all'inizio).
+      - condition: template
+        value_template: "{{ states('input_select.ring_keypad_alarm_state') != 'armed_sera' }}"
     action:
       - action: script.ring_keypad_set_led_mode_all
 

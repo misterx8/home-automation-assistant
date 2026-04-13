@@ -15,7 +15,7 @@
 #   armed + profilo notte  → armed_home  (LED Armed Stay)
 #   armed + profilo giorno → armed_away  (LED Armed Away)
 #   armed + profilo tutti  → armed_away  (LED Armed Away)
-#   armed + profilo sera   → disarmed    (tastiera non mostra stato armato)
+#   armed + profilo sera   → armed_sera  (Armed Stay silenzioso + LED fast blink 1s)
 #   triggered              → triggered_burglar
 #
 # ── MAPPATURA STATI ring_keypad → allarme-core ────────────────────────────
@@ -148,7 +148,8 @@ automation:
                 data:
                   option: "armed_away"
 
-          # armed + profilo sera → tastiera non mostra stato armato (sera è modalità automatica)
+          # armed + profilo sera → armed_sera: Armed Stay silenzioso + LED fast blink (1s)
+          # Distinto da notte (LED steady) e da disarmed (nessun LED armato).
           - conditions:
               - condition: template
                 value_template: "{{ stato == 'armed' and profilo == 'sera' }}"
@@ -161,7 +162,7 @@ automation:
                 target:
                   entity_id: input_select.ring_keypad_alarm_state
                 data:
-                  option: "disarmed"
+                  option: "armed_sera"
 
           - conditions:
               - condition: template
@@ -544,7 +545,7 @@ automation:
                         target:
                           entity_id: input_select.ring_keypad_alarm_state
                         data:
-                          option: "disarmed"
+                          option: "armed_sera"
                   - conditions:
                       - condition: template
                         value_template: "{{ stato_ac == 'triggered' }}"

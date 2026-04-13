@@ -105,6 +105,29 @@ script:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Armed_Away/9/set"
           payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
 
+  ring_keypad_show_armed_sera:
+    alias: "Keypad → Armed Sera"
+    description: >
+      Indica stato armato profilo sera: Armed Stay SILENZIOSO (payload 1 fisso)
+      + fast blink LED (System_Security_Mode_Display=1, ~1 lampeggio/s).
+      Bypassa ring_keypad_set_led_mode per non sovrascrivere la preferenza utente:
+      il ripristino avviene automaticamente quando sync_state transita ad altro stato.
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      # Armed Stay silenzioso: LED acceso, nessuna conferma sonora
+      - action: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Armed_Stay/9/set"
+          payload: "1"
+      # Fast blink 1s — pubblicato direttamente, bypassa ring_keypad_led_mode
+      - action: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/configuration/endpoint_0/System_Security_Mode_Display/set"
+          payload: "1"
+
   # ══════════════════════════════════════════════════════════════════════════
   # FEEDBACK CODICE
   # ══════════════════════════════════════════════════════════════════════════
@@ -286,6 +309,13 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
+      # Ripristina LED secondo la preferenza utente (ring_keypad_led_mode) prima
+      # di applicare l'indicatore. Per armed_sera il case successivo sovrascriverà
+      # con fast blink (System_Security_Mode_Display=1), garantendo che la preferenza
+      # utente non venga mai sovrascritta in modo permanente.
+      - action: script.ring_keypad_set_led_mode
+        data:
+          keypad_id: "{{ keypad_id }}"
       - choose:
           - conditions:
               - condition: state
@@ -311,6 +341,16 @@ script:
                 state: "armed_away"
             sequence:
               - action: script.ring_keypad_show_armed_away
+                data:
+                  keypad_id: "{{ keypad_id }}"
+
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "armed_sera"
+            sequence:
+              # Armed Stay silenzioso + fast blink LED (sovrascrive il set_led_mode iniziale)
+              - action: script.ring_keypad_show_armed_sera
                 data:
                   keypad_id: "{{ keypad_id }}"
 
