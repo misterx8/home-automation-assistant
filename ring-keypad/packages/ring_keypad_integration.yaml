@@ -187,6 +187,9 @@ automation:
       armed_home/armed_away → arm_allarme_core (safety fallback,
       solo se allarme-core non è già in arming o armed).
       Anti-loop: verifica stato+profilo prima di inviare il comando.
+      mode queued: garantisce che un disarmed immediato dopo arming non venga scartato.
+    mode: queued
+    max: 5
     trigger:
       - platform: state
         entity_id: input_select.ring_keypad_alarm_state
@@ -200,9 +203,14 @@ automation:
           - conditions:
               - condition: template
                 value_template: "{{ trigger.to_state.state == 'disarmed' }}"
-              # Anti-loop: invia solo se allarme-core non è già disarmed
+              # Anti-loop: invia disarmo se allarme-core non è già disarmed
+              # OPPURE se il keypad proveniva da uno stato attivo (arming, armed_home/away).
+              # Questo gestisce la race condition in cui arm_allarme_core non ha ancora
+              # aggiornato allarme_core_stato quando l'utente disarma durante l'exit delay.
               - condition: template
-                value_template: "{{ states('input_select.allarme_core_stato') != 'disarmed' }}"
+                value_template: >
+                  {{ trigger.from_state.state not in ['disarmed', 'unknown', 'unavailable'] or
+                     states('input_select.allarme_core_stato') != 'disarmed' }}
             sequence:
               - action: script.disarm_allarme_core
 
@@ -240,8 +248,13 @@ automation:
                           entity_id: input_select.allarme_core_profilo
                         data:
                           option: "giorno"
-              # Armo normale: allarme-core gestisce il proprio delay e calcola i bypass
-              - action: script.arm_allarme_core
+              # Armo normale: fire-and-forget (script.turn_on) per non bloccare la coda.
+              # Se l'utente disarma subito dopo, il caso 'disarmed' parte immediatamente
+              # mentre arm_allarme_core è ancora nel suo delay → disarm_allarme_core
+              # lo ferma prima che completi, evitando il re-armo.
+              - action: script.turn_on
+                target:
+                  entity_id: script.arm_allarme_core
 
           - conditions:
               - condition: template
@@ -259,8 +272,10 @@ automation:
                   entity_id: input_select.allarme_core_profilo
                 data:
                   option: "notte"
-              # Safety fallback: armo normale (arming già avvenuto via caso 'arming')
-              - action: script.arm_allarme_core
+              # Safety fallback: fire-and-forget per non bloccare la coda
+              - action: script.turn_on
+                target:
+                  entity_id: script.arm_allarme_core
 
           - conditions:
               - condition: template
@@ -278,8 +293,10 @@ automation:
                   entity_id: input_select.allarme_core_profilo
                 data:
                   option: "giorno"
-              # Safety fallback: armo normale (arming già avvenuto via caso 'arming')
-              - action: script.arm_allarme_core
+              # Safety fallback: fire-and-forget per non bloccare la coda
+              - action: script.turn_on
+                target:
+                  entity_id: script.arm_allarme_core
 
   # ── SYNC EXIT DELAY: ring_keypad_exit_delay ← allarme_core_arming_delay ──
   # Mantiene ring_keypad_exit_delay sempre uguale ad allarme_core_arming_delay.

@@ -157,7 +157,7 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Exit_Delay/timeout/set"
-          payload: "{{ s // 60 }}m{{ s % 60 }}s"
+          payload: '"{{ s // 60 }}m{{ s % 60 }}s"'
 
   ring_keypad_show_entry_delay:
     alias: "Keypad → Entry Delay"
@@ -174,7 +174,7 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Entry_Delay/timeout/set"
-          payload: "{{ s // 60 }}m{{ s % 60 }}s"
+          payload: '"{{ s // 60 }}m{{ s % 60 }}s"'
 
   # ══════════════════════════════════════════════════════════════════════════
   # ALLARMI
