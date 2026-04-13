@@ -71,6 +71,15 @@ input_text:
     name: "Keypad - Ultima tastiera usata"
     max: 64
 
+  # ── MODO ARMING TARGET ─────────────────────────────────────────────────────
+  # Memorizza il target mode (armed_home/armed_away) all'avvio dell'arming.
+  # Usato dall'integrazione per impostare il profilo corretto su allarme-core
+  # prima di chiamare arm_allarme_core, garantendo il calcolo bypass sensori.
+  ring_keypad_arming_target_mode:
+    name: "Keypad - Modo arming target"
+    max: 16
+    icon: mdi:shield-arrow-up
+
   # ── PIN UTENTI (mode:password = nascosti in UI, non serve secrets.yaml) ────
   ring_keypad_pin_master:
     name: "Keypad PIN - Master"

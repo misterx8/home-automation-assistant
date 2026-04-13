@@ -47,24 +47,6 @@ script:
         data:
           msg: "🚨 PANICO manuale attivato da UI"
 
-  arm_allarme_core_immediate:
-    alias: "Allarme Core - Arma immediatamente (senza delay)"
-    mode: single
-    description: >
-      Imposta direttamente lo stato armed senza fase di arming.
-      Usato dalla tastiera Ring Keypad quando il countdown exit delay
-      è già stato gestito visivamente dalla tastiera stessa.
-    sequence:
-      # Stoppa arm_allarme_core se ancora in esecuzione (sicurezza)
-      - service: script.turn_off
-        target:
-          entity_id: script.arm_allarme_core
-      - service: input_select.select_option
-        target:
-          entity_id: input_select.allarme_core_stato
-        data:
-          option: armed
-
   disarm_allarme_core:
     sequence:
       # FIX AC-BUG-06: stoppa arm_allarme_core prima di impostare disarmed.

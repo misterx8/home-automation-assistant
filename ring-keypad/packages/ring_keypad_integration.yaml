@@ -20,15 +20,21 @@
 #
 # ── MAPPATURA STATI ring_keypad → allarme-core ────────────────────────────
 #   disarmed   → script.disarm_allarme_core
-#   armed_home → profilo notte  + script.arm_allarme_core_immediate
-#   armed_away → profilo giorno + script.arm_allarme_core_immediate
+#   arming     → profilo target + script.arm_allarme_core (calcola bypass sensori)
+#   armed_home → profilo notte  + script.arm_allarme_core (safety fallback)
+#   armed_away → profilo giorno + script.arm_allarme_core (safety fallback)
 #
 # ── GESTIONE DOPPIO DELAY ─────────────────────────────────────────────────
-#   Quando si arma da tastiera, ring_keypad_do_arm gestisce già il countdown
-#   visivo (exit_delay). Il bridge usa arm_allarme_core_IMMEDIATE che imposta
-#   direttamente armed senza un secondo delay in allarme-core.
+#   Quando si arma da tastiera, ring_keypad_do_arm gestisce il countdown
+#   visivo (exit_delay) e chiama arm_allarme_core all'INIZIO della fase
+#   arming: allarme-core entra in arming, calcola i bypass dei sensori
+#   aperti, poi arma. Il suo arming_delay è sincronizzato con
+#   ring_keypad_exit_delay → i due sistemi armano in parallelo senza
+#   doppio delay.
+#   armed_home/away chiamano arm_allarme_core solo se allarme-core non è
+#   già in arming o armed (safety fallback per sincronizzazioni anomale).
 #   Quando si arma da allarme-core (dashboard), allarme-core gestisce il suo
-#   delay e ring_keypad_exit_delay è sincronizzato al suo valore.
+#   delay e ring_keypad lo segue via ring_keypad_sync_from_allarme_core.
 #
 # ── SYNC EXIT DELAY ────────────────────────────────────────────────────────
 #   ring_keypad_exit_delay è mantenuto sempre uguale ad allarme_core_arming_delay
@@ -101,9 +107,17 @@ automation:
                   option: "arming"
 
           # armed + profilo notte → LED Armed Stay (in casa)
+          # Guardia anti-race: non sovrascrivere il countdown se ring_keypad_do_arm
+          # è ancora in esecuzione (armo da tastiera — il countdown deve completare
+          # per tutta la durata del delay). Se ring_keypad_do_arm NON è in esecuzione
+          # (armo da dashboard), il sync può procedere normalmente.
           - conditions:
               - condition: template
                 value_template: "{{ stato == 'armed' and profilo == 'notte' }}"
+              - condition: template
+                value_template: >
+                  {{ states('input_select.ring_keypad_alarm_state') != 'arming' or
+                     not is_state('script.ring_keypad_do_arm', 'on') }}
             sequence:
               - action: input_select.select_option
                 target:
@@ -115,6 +129,10 @@ automation:
           - conditions:
               - condition: template
                 value_template: "{{ stato == 'armed' and profilo in ['giorno', 'tutti'] }}"
+              - condition: template
+                value_template: >
+                  {{ states('input_select.ring_keypad_alarm_state') != 'arming' or
+                     not is_state('script.ring_keypad_do_arm', 'on') }}
             sequence:
               - action: input_select.select_option
                 target:
@@ -126,6 +144,10 @@ automation:
           - conditions:
               - condition: template
                 value_template: "{{ stato == 'armed' and profilo == 'sera' }}"
+              - condition: template
+                value_template: >
+                  {{ states('input_select.ring_keypad_alarm_state') != 'arming' or
+                     not is_state('script.ring_keypad_do_arm', 'on') }}
             sequence:
               - action: input_select.select_option
                 target:
@@ -145,7 +167,8 @@ automation:
 
   # ── SYNC OUT: ring_keypad → allarme-core ──────────────────────────────────
   # Quando il keypad cambia stato (per comando da tastiera), invia al core
-  # con il profilo corretto e usa arm_allarme_core_immediate (senza double delay).
+  # con il profilo corretto. arm_allarme_core è chiamato all'inizio (arming)
+  # così allarme-core calcola i bypass; armed_home/away sono safety fallback.
   #
   # MAPPATURA PROFILO:
   #   armed_home → profilo notte  (allarme in casa, zone notte)
@@ -158,14 +181,18 @@ automation:
   - id: ring_keypad_command_to_allarme_core
     alias: "Keypad - Comandi verso allarme-core"
     description: >
-      Quando ring_keypad_alarm_state passa a disarmed/armed_home/armed_away,
-      imposta il profilo corretto e chiama arm_allarme_core_immediate.
+      Quando ring_keypad_alarm_state passa a disarmed/arming/armed_home/armed_away,
+      invia il comando corretto ad allarme-core con il profilo appropriato.
+      arming → arm_allarme_core normale (calcola bypass sensori aperti).
+      armed_home/armed_away → arm_allarme_core (safety fallback,
+      solo se allarme-core non è già in arming o armed).
       Anti-loop: verifica stato+profilo prima di inviare il comando.
     trigger:
       - platform: state
         entity_id: input_select.ring_keypad_alarm_state
         to:
           - disarmed
+          - arming       # NUOVO: avvia arm_allarme_core (normale) per calcolo bypass
           - armed_home
           - armed_away
     action:
@@ -179,14 +206,52 @@ automation:
             sequence:
               - action: script.disarm_allarme_core
 
+          # ── ARMING (avvia armo normale su allarme-core) ──────────────────────
+          # Chiamato all'inizio dell'arming dalla tastiera.
+          # Usa arm_allarme_core (normale, non immediate) così allarme-core
+          # entra in arming, calcola i bypass dei sensori aperti, poi arma.
+          # Anti-loop: invia solo se allarme-core non è già in arming o armed.
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'arming' }}"
+              - condition: template
+                value_template: >
+                  {{ states('input_select.allarme_core_stato') not in ['arming', 'armed'] }}
+            sequence:
+              - variables:
+                  target_mode: "{{ states('input_text.ring_keypad_arming_target_mode') }}"
+              # Imposta profilo corretto prima di armare
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ target_mode == 'armed_home' }}"
+                    sequence:
+                      - action: input_select.select_option
+                        target:
+                          entity_id: input_select.allarme_core_profilo
+                        data:
+                          option: "notte"
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ target_mode == 'armed_away' }}"
+                    sequence:
+                      - action: input_select.select_option
+                        target:
+                          entity_id: input_select.allarme_core_profilo
+                        data:
+                          option: "giorno"
+              # Armo normale: allarme-core gestisce il proprio delay e calcola i bypass
+              - action: script.arm_allarme_core
+
           - conditions:
               - condition: template
                 value_template: "{{ trigger.to_state.state == 'armed_home' }}"
-              # Anti-loop: invia solo se allarme-core non è già armed con profilo notte
+              # Anti-loop: invia solo se allarme-core non è già armed+notte O già in arming
               - condition: template
                 value_template: >
-                  {{ states('input_select.allarme_core_stato') != 'armed' or
-                     states('input_select.allarme_core_profilo') != 'notte' }}
+                  {{ states('input_select.allarme_core_stato') != 'arming' and
+                     (states('input_select.allarme_core_stato') != 'armed' or
+                      states('input_select.allarme_core_profilo') != 'notte') }}
             sequence:
               # Imposta profilo notte (in casa) prima di armare
               - action: input_select.select_option
@@ -194,18 +259,18 @@ automation:
                   entity_id: input_select.allarme_core_profilo
                 data:
                   option: "notte"
-              # Arma immediatamente: il countdown è già stato gestito dalla tastiera
-              - action: script.arm_allarme_core_immediate
+              # Safety fallback: armo normale (arming già avvenuto via caso 'arming')
+              - action: script.arm_allarme_core
 
           - conditions:
               - condition: template
                 value_template: "{{ trigger.to_state.state == 'armed_away' }}"
-              # Anti-loop: invia solo se allarme-core non è già armed con profilo giorno o tutti
-              # (tutti mappa su armed_away come giorno — entrambi coprono "fuori casa")
+              # Anti-loop: invia solo se allarme-core non è già armed+giorno/tutti O già in arming
               - condition: template
                 value_template: >
-                  {{ states('input_select.allarme_core_stato') != 'armed' or
-                     states('input_select.allarme_core_profilo') not in ['giorno', 'tutti'] }}
+                  {{ states('input_select.allarme_core_stato') != 'arming' and
+                     (states('input_select.allarme_core_stato') != 'armed' or
+                      states('input_select.allarme_core_profilo') not in ['giorno', 'tutti']) }}
             sequence:
               # Imposta profilo giorno (fuori casa) prima di armare
               - action: input_select.select_option
@@ -213,8 +278,8 @@ automation:
                   entity_id: input_select.allarme_core_profilo
                 data:
                   option: "giorno"
-              # Arma immediatamente: il countdown è già stato gestito dalla tastiera
-              - action: script.arm_allarme_core_immediate
+              # Safety fallback: armo normale (arming già avvenuto via caso 'arming')
+              - action: script.arm_allarme_core
 
   # ── SYNC EXIT DELAY: ring_keypad_exit_delay ← allarme_core_arming_delay ──
   # Mantiene ring_keypad_exit_delay sempre uguale ad allarme_core_arming_delay.

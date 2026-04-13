@@ -642,6 +642,12 @@ script:
         description: "Topic base della tastiera (per log)"
         required: true
     sequence:
+      # FIX RK-30: ferma ring_keypad_do_arm se ancora in esecuzione (exit delay in corso).
+      # Senza questo, il delay del do_arm continua in background e al termine
+      # sovrascrive lo stato con "armed_home/away", ri-armando allarme-core.
+      - action: script.turn_off
+        target:
+          entity_id: script.ring_keypad_do_arm
       - action: input_select.select_option
         target:
           entity_id: input_select.ring_keypad_alarm_state
@@ -677,6 +683,14 @@ script:
         description: "Topic base della tastiera (per log)"
         required: true
     sequence:
+      # Salva il target mode prima di entrare in arming: serve all'integrazione
+      # per impostare il profilo corretto su allarme-core e avviare arm_allarme_core
+      # (normale, non immediate) così il bypass sensori aperti viene calcolato.
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_arming_target_mode
+        data:
+          value: "{{ mode }}"
       - action: input_select.select_option
         target:
           entity_id: input_select.ring_keypad_alarm_state
@@ -692,9 +706,15 @@ script:
           entity_id: input_text.ring_keypad_last_keypad
         data:
           value: "{{ keypad_id }}"
-      # Attende exit delay, poi imposta stato armato finale
+      # Invia Exit_Delay countdown direttamente sulla tastiera che ha avviato l'armo.
+      # Chiamata diretta (non via sync_all) per garantire che il countdown parta
+      # immediatamente e indipendentemente da race condition nel sync chain.
+      - action: script.ring_keypad_show_exit_delay
+        data:
+          keypad_id: "{{ keypad_id }}"
+      # Attende exit delay (default 30s se il valore fosse unknown)
       - delay:
-          seconds: "{{ states('input_number.ring_keypad_exit_delay') | int }}"
+          seconds: "{{ states('input_number.ring_keypad_exit_delay') | int(30) }}"
       - action: input_select.select_option
         target:
           entity_id: input_select.ring_keypad_alarm_state

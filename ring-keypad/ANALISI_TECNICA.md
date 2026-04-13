@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
 > Ultima revisione: 2026-04-13  
-> Versione architettura: 3.1 (profilo-aware bidirectional sync, fix double delay, fix timeout payload JSON)
+> Versione architettura: 3.2 (fix bypass sensori: arm_allarme_core normale all'arming, ring_keypad_arming_target_mode)
 
 ---
 
@@ -180,6 +180,7 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 | `ring_keypad_last_user` | Ultimo utente che ha agito | Log |
 | `ring_keypad_last_event` | Descrizione ultimo evento | Log |
 | `ring_keypad_last_keypad` | Topic base dell'ultima tastiera usata | Log |
+| `ring_keypad_arming_target_mode` | Target mode (armed_home/armed_away) salvato all'inizio dell'arming | Usato dall'integration per impostare profilo allarme-core e chiamare arm_allarme_core (normale) con calcolo bypass |
 | `ring_keypad_pin_master` | PIN Master | mode: password |
 | `ring_keypad_pin_user1..3` | PIN Utenti 1-3 | mode: password |
 | `ring_keypad_name_master` | Nome Master | Per log |
@@ -429,20 +430,20 @@ allarme-core cambia stato
 | `armed` | `sera` | `disarmed` | Nessun LED (modalità automatica) |
 | `triggered` | qualsiasi | `triggered_burglar` | Alarming |
 
-Il trigger su `allarme_core_profilo` è condizionato a `stato == 'armed'` per evitare flickering durante la sequenza di armo dalla tastiera (set-profilo → arm_immediate).
+Il trigger su `allarme_core_profilo` è condizionato a `stato == 'armed'` per evitare flickering durante la sequenza di armo dalla tastiera.
 
 **Comandi dal keypad verso allarme-core:**
 
-| `ring_keypad_alarm_state` | Profilo impostato | Script chiamato |
-|---------------------------|-------------------|-----------------|
-| `disarmed` | — | `script.disarm_allarme_core` |
-| `armed_home` | `notte` | `script.arm_allarme_core_immediate` |
-| `armed_away` | `giorno` | `script.arm_allarme_core_immediate` |
+| `ring_keypad_alarm_state` | Profilo impostato | Script chiamato | Note |
+|---------------------------|-------------------|-----------------|------|
+| `disarmed` | — | `script.disarm_allarme_core` | — |
+| `arming` | da `ring_keypad_arming_target_mode` | `script.arm_allarme_core` | Calcola bypass sensori aperti |
+| `armed_home` | `notte` | `script.arm_allarme_core` | Safety fallback (anti-loop se già arming) |
+| `armed_away` | `giorno` | `script.arm_allarme_core` | Safety fallback (anti-loop se già arming) |
 
-**Anti-loop per `armed_home`:** invia solo se `stato != 'armed' OR profilo != 'notte'`  
-**Anti-loop per `armed_away`:** invia solo se `stato != 'armed' OR profilo != 'giorno'`
-
-**Script `arm_allarme_core_immediate`** (in `allarme_core.yaml`): imposta direttamente `armed` senza delay. Evita il doppio countdown (keypad già gestisce il suo exit_delay visivo).
+**Anti-loop per `arming`:** invia solo se `allarme_core_stato not in ['arming', 'armed']`  
+**Anti-loop per `armed_home`:** invia solo se `stato != 'arming' AND (stato != 'armed' OR profilo != 'notte')`  
+**Anti-loop per `armed_away`:** invia solo se `stato != 'arming' AND (stato != 'armed' OR profilo not in ['giorno','tutti'])`
 
 **Sync exit delay:** `ring_keypad_exit_delay` è mantenuto uguale ad `allarme_core_arming_delay` dall'automazione `ring_keypad_sync_exit_delay`. Unica sorgente di verità: `allarme_core_arming_delay`.
 
@@ -451,7 +452,7 @@ Il trigger su `allarme_core_profilo` è condizionato a `stato == 'armed'` per ev
 | ID Automazione | Trigger | Azione |
 |----------------|---------|--------|
 | `ring_keypad_sync_from_allarme_core` | State: `allarme_core_stato` o `allarme_core_profilo` (se armed) | Aggiorna `ring_keypad_alarm_state` con mappatura profilo-aware |
-| `ring_keypad_command_to_allarme_core` | State: `ring_keypad_alarm_state` → disarmed/armed_* | Imposta profilo + chiama arm_immediate / disarm_allarme_core |
+| `ring_keypad_command_to_allarme_core` | State: `ring_keypad_alarm_state` → disarmed/arming/armed_* | Imposta profilo + chiama arm_allarme_core (arming) o disarm_allarme_core |
 | `ring_keypad_sync_exit_delay` | State: `allarme_core_arming_delay` + HA start | Copia valore in `ring_keypad_exit_delay` |
 
 ### Integrazione safety-core (attiva, sezione 3)
@@ -553,14 +554,14 @@ Il wildcard + estrazione `keypad_id` dal topic riduce a 10 automazioni indipende
 | `tutti` | Inserimento fuori casa completo | Armed Away |
 | `sera` | Profilo serale automatico (non selezionabile da tastiera) | Nessun LED |
 
-Quando si arma da tastiera: il profilo viene impostato dall'integration prima di chiamare arm_immediate.  
+Quando si arma da tastiera: il profilo viene impostato dall'integration nel caso `arming`, prima di chiamare `arm_allarme_core`.  
 Quando si arma da allarme-core: il profilo è già impostato, la tastiera lo legge e mostra il LED corretto.
 
-### Gestione doppio delay (fix)
+### Gestione doppio delay e bypass sensori
 
-**Problema precedente:** armare da tastiera causava due countdown in sequenza (exit_delay tastiera + arming_delay allarme-core) e un flickering dello stato.
+**I due sistemi armano in parallelo:** quando la tastiera entra in `arming`, `ring_keypad_command_to_allarme_core` chiama subito `arm_allarme_core` (normale). allarme-core entra nel proprio stato `arming`, calcola i bypass dei sensori aperti, poi arma. Il countdown visivo della tastiera (`ring_keypad_exit_delay`) è sincronizzato con `allarme_core_arming_delay` → i due sistemi raggiungono `armed` contemporaneamente senza doppio delay.
 
-**Soluzione:** `ring_keypad_command_to_allarme_core` usa `arm_allarme_core_immediate` invece di `arm_allarme_core`. Il countdown visivo è gestito esclusivamente da `ring_keypad_do_arm` (lato tastiera). Allarme-core va direttamente a `armed`.
+**Safety fallback:** se ring_keypad raggiunge `armed_home`/`armed_away` e allarme-core è ancora `disarmed` (scenario anomalo), i rispettivi casi dell'integration chiamano `arm_allarme_core` come fallback.
 
 **Sync delay:** `ring_keypad_exit_delay` = `allarme_core_arming_delay` (tenuti in sync dall'automazione `ring_keypad_sync_exit_delay`).
 
@@ -593,7 +594,7 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-17 | `ring_keypad_alarm_burglar` puntava a `Alarming_Burglar` (anti-rapina silenzioso) invece di `Alarming` (intrusione con suono) | **Corretto 2026-04-12** | `alarm_burglar` → `Alarming/9` payload 99; nuovo `alarm_rapina` → `Alarming_Burglar/9` payload 1 |
 | RK-18 | Automazione `ring_keypad_input_cancel`: data_type era `0` invece di `2` (il manuale documenta il Cancel con codice come 25/2) | **Corretto 2026-04-12** | Topic aggiornato a `25/2` |
 | RK-19 | Automazione `ring_keypad_input_police`: rinominata in `ring_keypad_input_rapina`, stato cambiato da `triggered_burglar` a `triggered_rapina` | **Corretto 2026-04-12** | Distinzione semantica: burglar=intrusione esterna, rapina=minaccia con presenza |
-| RK-20 | Doppio countdown all'armo da tastiera: `ring_keypad_do_arm` (exit_delay) + `arm_allarme_core` (arming_delay) causavano due delay in sequenza e flickering del LED | **Corretto 2026-04-13** | Integration usa `arm_allarme_core_immediate` (arm senza delay); tastiera gestisce solo il countdown visivo |
+| RK-20 | Doppio countdown all'armo da tastiera: `ring_keypad_do_arm` (exit_delay) + `arm_allarme_core` (arming_delay) causavano due delay in sequenza e flickering del LED | **Corretto 2026-04-13** | Integration chiama `arm_allarme_core` all'inizio della fase `arming` (non alla fine); i due sistemi armano in parallelo con delay sincronizzato → nessun doppio countdown |
 | RK-21 | `ring_keypad_sync_from_allarme_core`: stato `armed` sempre mappato a `armed_away` indipendentemente dal profilo — tastiera non distingueva casa/fuori | **Corretto 2026-04-13** | Mappatura profilo-aware: notte→armed_home, giorno/tutti→armed_away, sera→disarmed |
 | RK-22 | `ring_keypad_sync_from_allarme_core`: non reagiva ai cambi di `allarme_core_profilo` mentre armato — cambio profilo da UI non aggiornava LED tastiera | **Corretto 2026-04-13** | Aggiunto trigger su `allarme_core_profilo` con condizione `stato==armed` |
 | RK-23 | `ring_keypad_exit_delay` e `allarme_core_arming_delay` erano indipendenti — countdown tastiera poteva divergere dal delay allarme-core | **Corretto 2026-04-13** | Aggiunta automazione `ring_keypad_sync_exit_delay` che mantiene i due valori sincronizzati |
@@ -601,3 +602,6 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-25 | `ring_keypad_sync_from_allarme_core` senza `mode:` — trigger doppio (stato+profilo) in rapida successione poteva scartare esecuzioni | **Corretto 2026-04-13** | Aggiunto `mode: queued, max: 5` |
 | RK-26 | `| float` e `| int` senza default — se input_number in stato `unknown` al boot, valore diventava 0 | **Corretto 2026-04-13** | Aggiunti default: `| float(20)` nel sync delay, `| int(30)` negli script exit/entry delay (payload stringa `XmYs` confermato corretto) |
 | RK-27 | Sezione 3 integration: safety-core non integrato — allarmi fumo/gas/carbonio/acqua non mostrati su tastiera; tasto Fire non triggerava safety-core | **Corretto 2026-04-13** | Attivata sezione 3: `ring_keypad_sync_from_safety_core` + `ring_keypad_command_to_safety_core` |
+| RK-28 | Bypass sensori aperti non calcolato all'armo da tastiera: l'integration chiamava `arm_allarme_core_immediate` saltando lo stato `arming` di allarme-core — il calcolo bypass avviene durante `arming` → sensori aperti scattavano immediatamente | **Corretto 2026-04-13** | `ring_keypad_do_arm` salva `ring_keypad_arming_target_mode` prima di entrare in `arming`; `ring_keypad_command_to_allarme_core` intercetta `arming` e chiama `arm_allarme_core` (normale); `arm_allarme_core_immediate` eliminato da allarme-core; anti-loop `armed_home`/`armed_away` aggiornato con `!= 'arming'` |
+| RK-29 | Exit delay countdown non partiva da tastiera: `ring_keypad_do_arm` usava `\| int` senza default nel delay (0s se unknown) e il countdown dipendeva da race condition nel sync chain; inoltre `ring_keypad_sync_from_allarme_core` poteva sovrascrivere il countdown con LED "armed" se `arm_allarme_core` completava prima del delay di `ring_keypad_do_arm` | **Corretto 2026-04-13** | `ring_keypad_do_arm` chiama `ring_keypad_show_exit_delay` direttamente prima del delay (indipendente da sync chain) e usa `\| int(30)` come default; `ring_keypad_sync_from_allarme_core` blocca l'aggiornamento verso armed_home/away se ring_keypad è ancora in `arming` e `ring_keypad_do_arm` è in esecuzione |
+| RK-30 | Disarmo durante exit delay non efficace: `ring_keypad_do_disarm` non fermava `ring_keypad_do_arm` → il delay continuava in background, al termine sovrascriveva lo stato con `armed_home/away` e ri-armava allarme-core | **Corretto 2026-04-13** | Aggiunto `script.turn_off ring_keypad_do_arm` come primo passo di `ring_keypad_do_disarm` |
