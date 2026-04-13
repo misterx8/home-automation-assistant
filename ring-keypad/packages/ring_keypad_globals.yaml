@@ -136,6 +136,14 @@ input_number:
     unit_of_measurement: "s"
     icon: mdi:timer-outline
 
+  ring_keypad_siren_volume:
+    name: "Keypad - Volume Sirena (1-10)"
+    min: 1
+    max: 10
+    step: 1
+    initial: 5
+    icon: mdi:volume-high
+
 
 input_boolean:
 

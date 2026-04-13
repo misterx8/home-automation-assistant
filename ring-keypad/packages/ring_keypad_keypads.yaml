@@ -34,8 +34,14 @@ mqtt:
       icon: mdi:battery
 
     # ── TEMPLATE NUOVA TASTIERA - BATTERIA (decommentare e modificare) ─────
+    # IMPORTANTE: object_id deve seguire il pattern "<topic_base>_batteria"
+    # per garantire entity ID prevedibili ed evitare conflitti con zwave2mqtt
+    # discovery (bug RK-11). L'entity ID risultante sarà:
+    #   sensor.<topic_base>_batteria   (es. sensor.tastiera_ingresso_batteria)
+    #
     # - name: "Tastiera Ingresso - Batteria"
     #   unique_id: ring_keypad_tastiera_ingresso_battery
+    #   object_id: tastiera_ingresso_batteria          # ← obbligatorio
     #   state_topic: "zwave2mqtt/tastiera_ingresso/battery/endpoint_0/level"
     #   value_template: "{{ value_json.value }}"
     #   device_class: battery
@@ -44,6 +50,7 @@ mqtt:
 
     # - name: "Tastiera Garage - Batteria"
     #   unique_id: ring_keypad_tastiera_garage_battery
+    #   object_id: tastiera_garage_batteria            # ← obbligatorio
     #   state_topic: "zwave2mqtt/tastiera_garage/battery/endpoint_0/level"
     #   value_template: "{{ value_json.value }}"
     #   device_class: battery
@@ -65,8 +72,14 @@ mqtt:
       icon: mdi:keyboard
 
     # ── TEMPLATE NUOVA TASTIERA - ONLINE (decommentare e modificare) ───────
+    # IMPORTANTE: object_id deve seguire il pattern "<topic_base>_online"
+    # per garantire entity ID prevedibili ed evitare conflitti con zwave2mqtt
+    # discovery (bug RK-11). L'entity ID risultante sarà:
+    #   binary_sensor.<topic_base>_online  (es. binary_sensor.tastiera_ingresso_online)
+    #
     # - name: "Tastiera Ingresso - Online"
     #   unique_id: ring_keypad_tastiera_ingresso_online
+    #   object_id: tastiera_ingresso_online            # ← obbligatorio
     #   state_topic: "zwave2mqtt/tastiera_ingresso/status"
     #   value_template: "{{ value_json.status }}"
     #   payload_on: "Alive"
@@ -76,6 +89,7 @@ mqtt:
 
     # - name: "Tastiera Garage - Online"
     #   unique_id: ring_keypad_tastiera_garage_online
+    #   object_id: tastiera_garage_online              # ← obbligatorio
     #   state_topic: "zwave2mqtt/tastiera_garage/status"
     #   value_template: "{{ value_json.status }}"
     #   payload_on: "Alive"

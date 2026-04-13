@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
 > Ultima revisione: 2026-04-13  
-> Versione architettura: 3.5 (rimozione entry_delay e stato pending; debug mode guard; exit_delay read-only)
+> Versione architettura: 3.6 (volume sirena hardware; BUG-01 fix payload fisso 99 per allarmi vitali; BUG-02 fix stop do_arm al disarmo esterno)
 
 ---
 
@@ -157,9 +157,26 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 
 ### 3.4 Aggiungere una seconda tastiera
 
-1. Aggiungere il suo topic base a `input_text.ring_keypad_active_keypads` dalla UI HA
-2. Decommentare e adattare il blocco sensore in `ring_keypad_keypads.yaml`  
-3. **Nessun'altra modifica necessaria**: le automazioni con wildcard e gli script parametrici gestiscono tutto automaticamente
+1. **UI HA** — Aggiungere il topic base a `input_text.ring_keypad_active_keypads` separato da virgola  
+   (es. `tastiera_allarme_camera,tastiera_ingresso`)
+
+2. **`ring_keypad_keypads.yaml`** — Decommentare e adattare il blocco template per la nuova tastiera.  
+   **Obbligatorio**: impostare `object_id` seguendo il pattern `<topic_base>_batteria` / `<topic_base>_online`  
+   per evitare conflitti con la discovery zwave2mqtt (bug RK-11).  
+   Esempio:
+   ```yaml
+   object_id: tastiera_ingresso_batteria   # → sensor.tastiera_ingresso_batteria
+   object_id: tastiera_ingresso_online     # → binary_sensor.tastiera_ingresso_online
+   ```
+
+3. **`plancia_controllo.yaml`** — Decommentare e adattare il blocco template nella sezione "Stato Hardware"  
+   sostituendo `<topic_base>` con il topic base reale.
+
+4. **Riavviare HA** per registrare i nuovi sensori MQTT.
+
+5. **Nessuna altra modifica necessaria**: le automazioni con wildcard, tutti gli script `_all`  
+   (`sync_all`, `broadcast_alarm`, `set_led_mode_all`, `set_siren_volume_all`) e  
+   `restore_on_connect` gestiscono tutto automaticamente in base alla lista `ring_keypad_active_keypads`.
 
 ---
 
@@ -169,7 +186,7 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 
 | Entità | Valori possibili | Descrizione |
 |--------|-----------------|-------------|
-| `input_select.ring_keypad_alarm_state` | disarmed, armed_home, armed_away, arming, pending, triggered_burglar, triggered_rapina, triggered_fire, triggered_medical, triggered_water | Stato interno del keypad (unica fonte di verità per gli indicatori) |
+| `input_select.ring_keypad_alarm_state` | disarmed, armed_home, armed_away, arming, triggered_burglar, triggered_rapina, triggered_fire, triggered_medical, triggered_water | Stato interno del keypad (unica fonte di verità per gli indicatori) |
 | `input_select.ring_keypad_led_mode` | Spenti, Lampeggio (3s), Sempre accesi | Controlla System_Security_Mode_Display sulla tastiera |
 
 ### `input_text`
@@ -191,7 +208,7 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 | Entità | Default | Descrizione |
 |--------|---------|-------------|
 | `ring_keypad_exit_delay` | 30s | Countdown uscita (arming → armed) |
-| `ring_keypad_entry_delay` | 30s | Countdown entrata (pending → triggered o disarm) |
+| `ring_keypad_siren_volume` | 5 | Volume sirena hardware (1-10), sincronizzato via `Siren_Volume` configuration CC |
 
 ### `input_boolean`
 
@@ -259,7 +276,6 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 | `ring_keypad_code_rejected` | keypad_id | `Code_not_accepted/9` payload 99 | Sempre con suono |
 | `ring_keypad_bypass_challenge` | keypad_id | `Bypass_challenge/1` payload 99 | sub_cmd 1! |
 | `ring_keypad_show_exit_delay` | keypad_id | `Exit_Delay/timeout` stringa `Xm Ys` | — |
-| `ring_keypad_show_entry_delay` | keypad_id | `Entry_Delay/timeout` stringa `Xm Ys` | — |
 | `ring_keypad_alarm_burglar` | keypad_id | `Alarming/9` payload 99 | Intrusione CON suono |
 | `ring_keypad_alarm_rapina` | keypad_id | `Alarming_Burglar/9` payload 1 | SEMPRE SILENZIOSO |
 | `ring_keypad_alarm_fire` | keypad_id | `Alarming_Smoke_-_Fire/9` payload 99 | — |
@@ -272,6 +288,13 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 |--------|-----------|-------------|
 | `ring_keypad_set_led_mode` | keypad_id | Pubblica valore LED da `ring_keypad_led_mode` su singola tastiera |
 | `ring_keypad_set_led_mode_all` | — | Itera `ring_keypad_active_keypads` e chiama `set_led_mode` |
+
+### Script volume sirena
+
+| Script | Parametri | Descrizione |
+|--------|-----------|-------------|
+| `ring_keypad_set_siren_volume` | keypad_id | Pubblica `ring_keypad_siren_volume` su `configuration/endpoint_0/Siren_Volume/set` per una tastiera |
+| `ring_keypad_set_siren_volume_all` | — | Itera `ring_keypad_active_keypads` e chiama `set_siren_volume` |
 
 ### Script di sincronizzazione
 
@@ -315,9 +338,10 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 | ID Automazione | Trigger | Azione |
 |----------------|---------|--------|
 | `ring_keypad_sync_on_state_change` | State: `ring_keypad_alarm_state` | `sync_all` |
-| `ring_keypad_restore_on_connect` | MQTT: `zwave2mqtt/+/status` = Alive | `sync_state` + `set_led_mode` su tastiera tornata online |
-| `ring_keypad_sync_on_ha_start` | HA start | Delay 15s → `sync_all` + `set_led_mode_all` |
+| `ring_keypad_restore_on_connect` | MQTT: `zwave2mqtt/+/status` = Alive | `sync_state` + `set_led_mode` + `set_siren_volume` su tastiera tornata online |
+| `ring_keypad_sync_on_ha_start` | HA start | Delay 15s → `sync_all` + `set_led_mode_all` + `set_siren_volume_all` |
 | `ring_keypad_sync_led_on_mode_change` | State: `ring_keypad_led_mode` | `set_led_mode_all` |
+| `ring_keypad_sync_siren_volume_on_change` | State: `ring_keypad_siren_volume` | `set_siren_volume_all` |
 
 ### Automazioni di integrazione (in `ring_keypad_integration.yaml`)
 
@@ -354,11 +378,13 @@ Script: ring_keypad_validate_and_arm (code, mode="armed_away", keypad_id)
     │            ↓ (sync automatico via ring_keypad_sync_on_state_change)
     │        ring_keypad_sync_all → show_exit_delay su tutte le tastiere
     │            ↓ (delay exit_delay secondi)
+    │        ring_keypad_alarm_state = "arming"
+    │            ↓ (via ring_keypad_command_to_allarme_core, IMMEDIATAMENTE)
+    │        script.arm_allarme_core chiamato subito (calcola bypass sensori aperti)
+    │            ↓ (delay exit_delay secondi in parallelo tra keypad e allarme-core)
     │        ring_keypad_alarm_state = "armed_away"
     │            ↓ (sync automatico)
     │        ring_keypad_sync_all → show_armed_away su tutte le tastiere
-    │            ↓ (via ring_keypad_command_to_allarme_core)
-    │        script.arm_allarme_core
     │
     └─ NO → ring_keypad_code_rejected (tastiera sorgente)
              aggiorna ring_keypad_last_event
@@ -522,9 +548,19 @@ Decommentare la sezione 2 e commentare la sezione 1.
 
 ### Aggiungere una nuova tastiera
 
-1. Aggiungere il topic base a `ring_keypad_active_keypads` separato da virgola
-2. In `ring_keypad_keypads.yaml`: decommentare e adattare il blocco sensore template
-3. Nessun'altra modifica necessaria
+1. **UI HA**: aggiungere il topic base a `ring_keypad_active_keypads` separato da virgola  
+   (es. `tastiera_allarme_camera,tastiera_ingresso`)
+
+2. **`ring_keypad_keypads.yaml`**: decommentare e adattare il blocco template.  
+   **Obbligatorio**: includere `object_id` con pattern `<topic_base>_batteria` / `<topic_base>_online`.  
+   Senza `object_id` HA genera entity ID auto che possono collidere con zwave2mqtt discovery (RK-11).
+
+3. **`plancia_controllo.yaml`**: decommentare e adattare il blocco template nella sezione "Stato Hardware",  
+   sostituendo `<topic_base>` con il topic base reale.
+
+4. **Riavviare HA** per registrare i sensori MQTT.
+
+5. **Nessuna modifica a script, automazioni o integrazione**: tutto gestito automaticamente.
 
 ### Trovare il topic base di una tastiera
 
@@ -614,3 +650,6 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-31 | Disarmo durante exit delay non disarmava allarme-core: catena di 3 bug sovrapposti. (a) `mode: single`: trigger `disarmed` scartato. (b) Anti-loop `allarme_core_stato != 'disarmed'`: race condition se arm_allarme_core non aggiornava ancora stato. (c) `action: script.arm_allarme_core` bloccante: il caso `arming` aspettava il completamento di arm_allarme_core (10s); quando terminava allarme-core era già `armed`, sync_from_allarme_core impostava ring_keypad_alarm_state=armed_home, il caso `armed_home` in coda ri-armava allarme-core svuotando il disarmo. | **Corretto 2026-04-13** | (a) `mode: queued` su ring_keypad_command_to_allarme_core; (b) anti-loop basato su `trigger.from_state.state`; (c) tutti i casi arm_allarme_core cambiati a `script.turn_on` (fire-and-forget): il caso `disarmed` parte immediatamente mentre arm_allarme_core è nel delay e disarm_allarme_core lo ferma prima del completamento |
 | RK-33 | Debug mode non bloccava la propagazione keypad→core: con `input_boolean.ring_keypad_debug = on`, i comandi da tastiera (arm/disarm/fire) venivano comunque inviati ad allarme-core e safety-core — impossibile testare la tastiera senza modificare lo stato del sistema | **Corretto 2026-04-13** | Aggiunta `condition: state ring_keypad_debug off` come prima condizione in `ring_keypad_command_to_allarme_core` e `ring_keypad_command_to_safety_core`. Le automazioni inverse (sync_from_*) non sono coinvolte: la tastiera continua a ricevere LED/suoni normalmente |
 | RK-34 | `ring_keypad_exit_delay` editabile dalla dashboard: il tile in `plancia_controllo.yaml` aveva `features: numeric-input` e il popup "Configurazione Avanzata" includeva il campo nel form Timing — ma il valore è read-only (sincronizzato automaticamente da `allarme_core_arming_delay`) | **Corretto 2026-04-13** | Rimosso `features: numeric-input` dal tile (nome aggiornato a "Ritardo Uscita (da allarme-core)", stile opacizzato); rimosso da popup Configurazione Avanzata sezione Timing con commento esplicativo |
+| RK-35 | `ring_keypad_alarm_burglar/fire/medical/water`: payload voice-aware (`99` se voice_feedback=on, `1` se off) — allarmi di sicurezza vitale potevano risultare silenziosi se voice_feedback era disabilitato | **Corretto 2026-04-13** | Payload fisso a `"99"` per tutti e quattro gli script; `ring_keypad_voice_feedback` rimane attivo solo per gli stati operativi normali (disarmed/armed_home/armed_away) |
+| RK-36 | `ring_keypad_sync_from_allarme_core` ramo `disarmed`: `ring_keypad_do_arm` non veniva fermato al disarmo da dashboard/esterno — il delay dell'exit delay continuava in background e al termine sovrascriveva lo stato con `armed_home/away`, ri-armando allarme-core | **Corretto 2026-04-13** | Aggiunto `script.turn_off ring_keypad_do_arm` come primo passo del ramo `disarmed` in `ring_keypad_sync_from_allarme_core`; copre il caso "disarmo da dashboard/esterno" che `ring_keypad_do_disarm` non gestisce (viene chiamato solo da tastiera) |
+| RK-37 | Template blocchi per nuove tastiere in `ring_keypad_keypads.yaml` mancavano di `object_id` — aggiungendo una seconda tastiera, HA avrebbe generato entity ID auto dal nome, potenzialmente in conflitto con zwave2mqtt discovery (stessa causa di RK-11) | **Corretto 2026-04-13** | Aggiunti `object_id` con pattern `<topic_base>_batteria` / `<topic_base>_online` nei template commentati; aggiornate sezioni 3.4 e 10 della documentazione; aggiunto template pronto nella dashboard sezione "Stato Hardware" |

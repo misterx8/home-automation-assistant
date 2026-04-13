@@ -90,6 +90,14 @@ automation:
               - condition: template
                 value_template: "{{ stato == 'disarmed' }}"
             sequence:
+              # BUG-02 fix: ferma ring_keypad_do_arm se in esecuzione (exit delay).
+              # Senza questo, il delay del do_arm continua in background e al termine
+              # sovrascrive lo stato con "armed_home/away", ri-armando allarme-core.
+              # Copre il caso "disarmo da dashboard/esterno" che ring_keypad_do_disarm
+              # non gestisce (do_disarm viene chiamato solo da tastiera).
+              - action: script.turn_off
+                target:
+                  entity_id: script.ring_keypad_do_arm
               - action: input_select.select_option
                 target:
                   entity_id: input_select.ring_keypad_alarm_state

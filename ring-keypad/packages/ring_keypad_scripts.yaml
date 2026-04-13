@@ -23,9 +23,9 @@
 # ECCEZIONI (sempre fissi, non voice-aware):
 #   ring_keypad_code_rejected  → sempre 99 (il feedback di errore è fondamentale)
 #   ring_keypad_bypass_challenge → sempre 99
-#   ring_keypad_alarm_rapina   → sempre 1  (anti-rapina DEVE essere silenzioso)
-#   ring_keypad_alarm_burglar  → sempre 99 (allarme intrusione DEVE suonare)
-#   ring_keypad_alarm_fire/medical/water → sempre 99
+#   ring_keypad_alarm_rapina       → sempre 1  (anti-rapina DEVE essere silenzioso)
+#   ring_keypad_alarm_burglar      → sempre 99 (allarme intrusione DEVE suonare)
+#   ring_keypad_alarm_fire/medical/water → sempre 99 (sicurezza vitale)
 #
 # SCRIPT PRINCIPALI:
 #   ring_keypad_sync_state    → dispatcher per singola tastiera
@@ -166,7 +166,7 @@ script:
 
   ring_keypad_alarm_burglar:
     alias: "Keypad → Allarme Intrusione"
-    description: "Allarme intrusione (Alarming) — voice-aware"
+    description: "Allarme intrusione (Alarming) — SEMPRE con suono (payload 99 fisso)"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -175,7 +175,7 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming/9/set"
-          payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
+          payload: "99"
 
   ring_keypad_alarm_rapina:
     alias: "Keypad → Allarme Anti-Rapina"
@@ -195,7 +195,7 @@ script:
 
   ring_keypad_alarm_fire:
     alias: "Keypad → Allarme Fuoco"
-    description: "Allarme fuoco/fumo — voice-aware"
+    description: "Allarme fuoco/fumo — SEMPRE con suono (payload 99 fisso)"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -204,11 +204,11 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming_Smoke_-_Fire/9/set"
-          payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
+          payload: "99"
 
   ring_keypad_alarm_medical:
     alias: "Keypad → Allarme Medico"
-    description: "Allarme medico — voice-aware"
+    description: "Allarme medico — SEMPRE con suono (payload 99 fisso)"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -217,11 +217,11 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming_Medical/9/set"
-          payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
+          payload: "99"
 
   ring_keypad_alarm_water:
     alias: "Keypad → Allarme Perdita Acqua"
-    description: "Allarme perdita acqua — voice-aware"
+    description: "Allarme perdita acqua — SEMPRE con suono (payload 99 fisso)"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -230,7 +230,7 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming_Water_leak/9/set"
-          payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
+          payload: "99"
 
   # ══════════════════════════════════════════════════════════════════════════
   # LED MODALITÀ DISPLAY
@@ -696,3 +696,38 @@ script:
           entity_id: input_select.ring_keypad_alarm_state
         data:
           option: "{{ mode }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # VOLUME SIRENA
+  # topic: zwave2mqtt/{keypad_id}/configuration/endpoint_0/Siren_Volume/set
+  # payload: intero 1-10
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_set_siren_volume:
+    alias: "Keypad → Imposta volume sirena (singola tastiera)"
+    description: "Pubblica il volume sirena (1-10) da ring_keypad_siren_volume su una tastiera"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - action: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/configuration/endpoint_0/Siren_Volume/set"
+          payload: "{{ states('input_number.ring_keypad_siren_volume') | int(5) }}"
+
+  ring_keypad_set_siren_volume_all:
+    alias: "Keypad → Imposta volume sirena (tutte le tastiere)"
+    description: "Itera ring_keypad_active_keypads e chiama set_siren_volume su ognuna"
+    sequence:
+      - repeat:
+          for_each: >
+            {{ states('input_text.ring_keypad_active_keypads')
+               .split(',')
+               | map('trim')
+               | select('ne', '')
+               | list }}
+          sequence:
+            - action: script.ring_keypad_set_siren_volume
+              data:
+                keypad_id: "{{ repeat.item }}"

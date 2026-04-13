@@ -309,7 +309,7 @@ sections:
         vertical: false
         features_position: bottom
         grid_options:
-          columns: 6
+          columns: 12
           rows: 1
         card_mod:
           style: |
@@ -319,12 +319,59 @@ sections:
               padding-left: 12px;
               opacity: 0.75;
             }
+      - type: tile
+        entity: input_number.ring_keypad_siren_volume
+        name: Volume Sirena (1-10)
+        vertical: false
+        features_position: bottom
+        features:
+          - type: numeric-input
+            style: buttons
+        grid_options:
+          columns: 6
+          rows: 2
+        card_mod:
+          style: >
+            {% set vol = states('input_number.ring_keypad_siren_volume') |
+            int(5) %} {% if vol <= 3 %}
+              {% set color = '#4a90d9' %}
+            {% elif vol <= 7 %}
+              {% set color = '#f0a500' %}
+            {% else %}
+              {% set color = 'red' %}
+            {% endif %} ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ color }};
+              padding-left: 12px;
+            }
+      - type: button
+        name: Sync Forzato
+        icon: mdi:sync
+        grid_options:
+          columns: 6
+          rows: 1
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          target:
+            entity_id: script.ring_keypad_sync_all
+        hold_action:
+          action: perform-action
+          perform_action: script.turn_on
+          target:
+            entity_id: script.ring_keypad_set_siren_volume_all
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px #4a90d9;
+            }
       - type: button
         name: Configurazione Avanzata
         icon: mdi:account-key
         grid_options:
-          columns: 9
-          rows: 1
+          columns: 6
+          rows: 2
         tap_action:
           action: perform-action
           perform_action: browser_mod.popup
@@ -371,8 +418,8 @@ sections:
         name: Debug
         icon: mdi:bug-check
         grid_options:
-          columns: 3
-          rows: 1
+          columns: 6
+          rows: 2
         tap_action:
           action: perform-action
           perform_action: browser_mod.popup
@@ -434,7 +481,7 @@ sections:
           if ev not in ['','unknown','unavailable'] else 'grey' }}
         grid_options:
           columns: 12
-          rows: 1
+          rows: 2
         tap_action:
           action: none
       - type: tile
@@ -465,23 +512,6 @@ sections:
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px #555;
-              padding-left: 12px;
-            }
-      - type: tile
-        entity: input_text.ring_keypad_last_event
-        name: Ultimo Evento
-        vertical: false
-        features_position: bottom
-        grid_options:
-          columns: 4
-          rows: 1
-        card_mod:
-          style: >
-            {% set ev = states('input_text.ring_keypad_last_event') %} {% set
-            color = 'orange' if ev not in ['','unknown','unavailable'] else
-            '#555' %} ha-card {
-              border-radius: 30px;
-              box-shadow: 0 0 0 2px {{ color }};
               padding-left: 12px;
             }
 badges: []

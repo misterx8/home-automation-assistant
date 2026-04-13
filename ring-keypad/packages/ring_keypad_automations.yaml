@@ -321,6 +321,9 @@ automation:
       - action: script.ring_keypad_set_led_mode
         data:
           keypad_id: "{{ keypad_id }}"
+      - action: script.ring_keypad_set_siren_volume
+        data:
+          keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
   # SYNC ALL AL RIAVVIO DI HOME ASSISTANT
@@ -336,6 +339,7 @@ automation:
           seconds: 15
       - action: script.ring_keypad_sync_all
       - action: script.ring_keypad_set_led_mode_all
+      - action: script.ring_keypad_set_siren_volume_all
 
   # ════════════════════════════════════════════════════════════════════════
   # SYNC LED QUANDO CAMBIA LA MODALITÀ LED (NUOVO)
@@ -349,3 +353,16 @@ automation:
         entity_id: input_select.ring_keypad_led_mode
     action:
       - action: script.ring_keypad_set_led_mode_all
+
+  # ════════════════════════════════════════════════════════════════════════
+  # SYNC VOLUME SIRENA QUANDO CAMBIA L'IMPOSTAZIONE
+  # Quando l'utente modifica ring_keypad_siren_volume dalla UI,
+  # aggiorna immediatamente tutte le tastiere attive.
+  # ════════════════════════════════════════════════════════════════════════
+  - id: ring_keypad_sync_siren_volume_on_change
+    alias: "Keypad - Sync volume sirena da cambio impostazione"
+    trigger:
+      - platform: state
+        entity_id: input_number.ring_keypad_siren_volume
+    action:
+      - action: script.ring_keypad_set_siren_volume_all
