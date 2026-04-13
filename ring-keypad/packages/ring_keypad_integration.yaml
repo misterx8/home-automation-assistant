@@ -9,19 +9,34 @@
 #   [ATTIVO]    allarme-core  (sezione 1)
 #   [TEMPLATE]  alarm_control_panel generico / Alarmo (sezione 2, commentata)
 #
-# ── MAPPATURA STATI allarme-core → ring_keypad ────────────────────────────
-#   allarme-core: disarmed | arming | armed | triggered
-#   ring_keypad:  disarmed | arming | armed_away | triggered_burglar
+# ── MAPPATURA STATI allarme-core → ring_keypad (profilo-aware) ─────────────
+#   disarmed               → disarmed
+#   arming                 → arming
+#   armed + profilo notte  → armed_home  (LED Armed Stay)
+#   armed + profilo giorno → armed_away  (LED Armed Away)
+#   armed + profilo tutti  → armed_away  (LED Armed Away)
+#   armed + profilo sera   → disarmed    (tastiera non mostra stato armato)
+#   triggered              → triggered_burglar
 #
 # ── MAPPATURA STATI ring_keypad → allarme-core ────────────────────────────
 #   disarmed   → script.disarm_allarme_core
-#   armed_home → script.arm_allarme_core  (allarme-core non distingue home/away)
-#   armed_away → script.arm_allarme_core
+#   armed_home → profilo notte  + script.arm_allarme_core_immediate
+#   armed_away → profilo giorno + script.arm_allarme_core_immediate
+#
+# ── GESTIONE DOPPIO DELAY ─────────────────────────────────────────────────
+#   Quando si arma da tastiera, ring_keypad_do_arm gestisce già il countdown
+#   visivo (exit_delay). Il bridge usa arm_allarme_core_IMMEDIATE che imposta
+#   direttamente armed senza un secondo delay in allarme-core.
+#   Quando si arma da allarme-core (dashboard), allarme-core gestisce il suo
+#   delay e ring_keypad_exit_delay è sincronizzato al suo valore.
+#
+# ── SYNC EXIT DELAY ────────────────────────────────────────────────────────
+#   ring_keypad_exit_delay è mantenuto sempre uguale ad allarme_core_arming_delay
+#   tramite l'automazione ring_keypad_sync_exit_delay.
 #
 # NOTA: triggered_rapina, triggered_water, triggered_medical, triggered_fire
 #   sono generati direttamente dai tasti fisici della tastiera.
 #   Non vengono propagati verso allarme-core (logica separata).
-#   Per integrare safety-core (perdita acqua), decommentare la sezione 3.
 ###############################################################################
 
 automation:
@@ -31,21 +46,43 @@ automation:
   # ══════════════════════════════════════════════════════════════════════════
 
   # ── SYNC IN: allarme-core → ring_keypad ───────────────────────────────────
-  # Quando lo stato di allarme-core cambia, aggiorna ring_keypad_alarm_state
+  # Quando lo stato o il profilo di allarme-core cambia, aggiorna ring_keypad_alarm_state.
+  #
+  # TRIGGER DOPPIO:
+  #   - allarme_core_stato: reagisce sempre
+  #   - allarme_core_profilo: reagisce SOLO se stato == 'armed'
+  #     (evita flickering durante la sequenza set-profilo → arm_immediate)
   - id: ring_keypad_sync_from_allarme_core
     alias: "Keypad - Sync da allarme-core"
     description: >
-      Aggiorna lo stato del keypad quando cambia input_select.allarme_core_stato.
-      Mappatura: disarmed→disarmed, arming→arming,
-      armed→armed_away, triggered→triggered_burglar.
+      Aggiorna lo stato del keypad quando cambia allarme_core_stato o allarme_core_profilo.
+      Mappatura profilo-aware per lo stato 'armed':
+        notte→armed_home | giorno/tutti→armed_away | sera→disarmed.
+      Il trigger su allarme_core_profilo è attivo solo quando stato==armed,
+      per evitare flickering durante la sequenza di armo dalla tastiera.
+    # mode queued: gestisce correttamente trigger ravvicinati stato+profilo
+    # (es. profilo cambia subito prima che allarme-core raggiunga armed)
+    mode: queued
+    max: 5
     trigger:
       - platform: state
         entity_id: input_select.allarme_core_stato
+      - platform: state
+        entity_id: input_select.allarme_core_profilo
+    condition:
+      # Reagi sempre al cambio di stato; reagi al cambio profilo solo se armato
+      - condition: template
+        value_template: >
+          {{ trigger.entity_id == 'input_select.allarme_core_stato' or
+             states('input_select.allarme_core_stato') == 'armed' }}
     action:
+      - variables:
+          stato: "{{ states('input_select.allarme_core_stato') }}"
+          profilo: "{{ states('input_select.allarme_core_profilo') }}"
       - choose:
           - conditions:
               - condition: template
-                value_template: "{{ trigger.to_state.state == 'disarmed' }}"
+                value_template: "{{ stato == 'disarmed' }}"
             sequence:
               - action: input_select.select_option
                 target:
@@ -55,7 +92,7 @@ automation:
 
           - conditions:
               - condition: template
-                value_template: "{{ trigger.to_state.state == 'arming' }}"
+                value_template: "{{ stato == 'arming' }}"
             sequence:
               - action: input_select.select_option
                 target:
@@ -63,20 +100,42 @@ automation:
                 data:
                   option: "arming"
 
+          # armed + profilo notte → LED Armed Stay (in casa)
           - conditions:
               - condition: template
-                value_template: "{{ trigger.to_state.state == 'armed' }}"
+                value_template: "{{ stato == 'armed' and profilo == 'notte' }}"
             sequence:
               - action: input_select.select_option
                 target:
                   entity_id: input_select.ring_keypad_alarm_state
                 data:
-                  # allarme-core ha un solo stato "armed" → armed_away sul keypad
+                  option: "armed_home"
+
+          # armed + profilo giorno o tutti → LED Armed Away (fuori casa)
+          - conditions:
+              - condition: template
+                value_template: "{{ stato == 'armed' and profilo in ['giorno', 'tutti'] }}"
+            sequence:
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.ring_keypad_alarm_state
+                data:
                   option: "armed_away"
+
+          # armed + profilo sera → tastiera non mostra stato armato (sera è modalità automatica)
+          - conditions:
+              - condition: template
+                value_template: "{{ stato == 'armed' and profilo == 'sera' }}"
+            sequence:
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.ring_keypad_alarm_state
+                data:
+                  option: "disarmed"
 
           - conditions:
               - condition: template
-                value_template: "{{ trigger.to_state.state == 'triggered' }}"
+                value_template: "{{ stato == 'triggered' }}"
             sequence:
               - action: input_select.select_option
                 target:
@@ -85,15 +144,23 @@ automation:
                   option: "triggered_burglar"
 
   # ── SYNC OUT: ring_keypad → allarme-core ──────────────────────────────────
-  # Quando il keypad cambia stato (per comando da tastiera), invia al core.
-  # ANTI-LOOP: prima di inviare il comando verifica che allarme-core non
-  # sia già nello stato corrispondente (evita ring_keypad ↔ allarme-core loop).
+  # Quando il keypad cambia stato (per comando da tastiera), invia al core
+  # con il profilo corretto e usa arm_allarme_core_immediate (senza double delay).
+  #
+  # MAPPATURA PROFILO:
+  #   armed_home → profilo notte  (allarme in casa, zone notte)
+  #   armed_away → profilo giorno (allarme fuori casa, zone giorno)
+  #
+  # ANTI-LOOP:
+  #   Per disarmed: invia solo se allarme-core non è già disarmed.
+  #   Per armed_home: invia solo se allarme-core non è già armed+notte.
+  #   Per armed_away: invia solo se allarme-core non è già armed+giorno.
   - id: ring_keypad_command_to_allarme_core
     alias: "Keypad - Comandi verso allarme-core"
     description: >
       Quando ring_keypad_alarm_state passa a disarmed/armed_home/armed_away,
-      richiama gli script di allarme-core solo se lo stato di allarme-core
-      è già diverso (prevenzione loop bidirezionale).
+      imposta il profilo corretto e chiama arm_allarme_core_immediate.
+      Anti-loop: verifica stato+profilo prima di inviare il comando.
     trigger:
       - platform: state
         entity_id: input_select.ring_keypad_alarm_state
@@ -114,13 +181,63 @@ automation:
 
           - conditions:
               - condition: template
-                value_template: "{{ trigger.to_state.state in ['armed_home', 'armed_away'] }}"
-              # Anti-loop: invia solo se allarme-core non è già armed
+                value_template: "{{ trigger.to_state.state == 'armed_home' }}"
+              # Anti-loop: invia solo se allarme-core non è già armed con profilo notte
               - condition: template
-                value_template: "{{ states('input_select.allarme_core_stato') != 'armed' }}"
+                value_template: >
+                  {{ states('input_select.allarme_core_stato') != 'armed' or
+                     states('input_select.allarme_core_profilo') != 'notte' }}
             sequence:
-              # allarme-core non distingue home/away: usa arm generico
-              - action: script.arm_allarme_core
+              # Imposta profilo notte (in casa) prima di armare
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.allarme_core_profilo
+                data:
+                  option: "notte"
+              # Arma immediatamente: il countdown è già stato gestito dalla tastiera
+              - action: script.arm_allarme_core_immediate
+
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'armed_away' }}"
+              # Anti-loop: invia solo se allarme-core non è già armed con profilo giorno o tutti
+              # (tutti mappa su armed_away come giorno — entrambi coprono "fuori casa")
+              - condition: template
+                value_template: >
+                  {{ states('input_select.allarme_core_stato') != 'armed' or
+                     states('input_select.allarme_core_profilo') not in ['giorno', 'tutti'] }}
+            sequence:
+              # Imposta profilo giorno (fuori casa) prima di armare
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.allarme_core_profilo
+                data:
+                  option: "giorno"
+              # Arma immediatamente: il countdown è già stato gestito dalla tastiera
+              - action: script.arm_allarme_core_immediate
+
+  # ── SYNC EXIT DELAY: ring_keypad_exit_delay ← allarme_core_arming_delay ──
+  # Mantiene ring_keypad_exit_delay sempre uguale ad allarme_core_arming_delay.
+  # In questo modo il countdown visivo della tastiera corrisponde esattamente
+  # al delay configurato in allarme-core (unica sorgente di verità).
+  # Si sincronizza anche all'avvio di HA per garantire coerenza dopo riavvio.
+  - id: ring_keypad_sync_exit_delay
+    alias: "Keypad - Sincronizza exit delay con allarme-core"
+    description: >
+      Copia allarme_core_arming_delay in ring_keypad_exit_delay ad ogni modifica
+      e all'avvio di HA. Garantisce che il countdown sulla tastiera corrisponda
+      al tempo di inserimento configurato in allarme-core.
+    trigger:
+      - platform: state
+        entity_id: input_number.allarme_core_arming_delay
+      - platform: homeassistant
+        event: start
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.ring_keypad_exit_delay
+        data:
+          value: "{{ states('input_number.allarme_core_arming_delay') | float(20) }}"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SEZIONE 2: INTEGRAZIONE CON alarm_control_panel GENERICO (es. Alarmo)
@@ -216,35 +333,161 @@ automation:
 #                   entity_id: alarm_control_panel.alarmo_principale  # ← sostituire
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SEZIONE 3: INTEGRAZIONE CON SAFETY-CORE (perdita acqua)
-# Da abilitare quando safety-core sarà integrato con il keypad.
-# Decommentare e adattare l'entity_id del sensore/stato safety-core.
+# SEZIONE 3: INTEGRAZIONE CON SAFETY-CORE [ATTIVA]
+#
+# ── MAPPATURA safety-core → ring_keypad ──────────────────────────────────────
+#   triggered + categoria fumo/gas/carbonio → triggered_fire  (LED Smoke-Fire)
+#   triggered + categoria acqua             → triggered_water (LED Water Leak)
+#   ok (dopo reset manuale)                 → re-sync da allarme-core
+#     (se allarme-core è armato torna armato, se disarmato torna disarmato)
+#
+# ── MAPPATURA ring_keypad → safety-core ──────────────────────────────────────
+#   triggered_fire (da tasto Fire fisico tastiera, hold 3s)
+#     → safety_core_stato = triggered, ultima_categoria = fumo
+#     → log "🔥 Allarme fuoco manuale da tastiera Ring Keypad"
+#   Anti-loop: invia solo se safety_core_stato != 'triggered'
+#
+# NOTA: il tasto Fire su Ring Keypad V2 (hold 3s) genera topic 16/0.
+#   ring_keypad_input_fire (automations.yaml) imposta già triggered_fire
+#   e fa broadcast LED. Questa sezione aggiunge l'invio verso safety-core.
 # ══════════════════════════════════════════════════════════════════════════════
 
-# automation:
-#
-#   - id: ring_keypad_sync_from_safety_core_water
-#     alias: "Keypad - Sync allarme acqua da safety-core"
-#     trigger:
-#       - platform: state
-#         entity_id: input_select.safety_core_water_stato  # ← adattare
-#         to: "triggered"
-#     action:
-#       - action: input_select.select_option
-#         target:
-#           entity_id: input_select.ring_keypad_alarm_state
-#         data:
-#           option: "triggered_water"
-#
-#   - id: ring_keypad_sync_from_safety_core_fire
-#     alias: "Keypad - Sync allarme fuoco da safety-core"
-#     trigger:
-#       - platform: state
-#         entity_id: input_select.safety_core_fire_stato  # ← adattare
-#         to: "triggered"
-#     action:
-#       - action: input_select.select_option
-#         target:
-#           entity_id: input_select.ring_keypad_alarm_state
-#         data:
-#           option: "triggered_fire"
+  # ── SYNC IN: safety-core → ring_keypad ───────────────────────────────────
+  - id: ring_keypad_sync_from_safety_core
+    alias: "Keypad - Sync da safety-core"
+    description: >
+      Aggiorna il keypad quando safety-core entra in triggered o torna ok.
+      fumo/gas/carbonio → triggered_fire | acqua → triggered_water.
+      Al reset (ok) ripristina lo stato corrente di allarme-core sulla tastiera.
+    trigger:
+      - platform: state
+        entity_id: input_select.safety_core_stato
+    action:
+      - variables:
+          stato_safety: "{{ trigger.to_state.state }}"
+          categoria: "{{ states('input_select.safety_core_ultima_categoria') }}"
+          stato_ac: "{{ states('input_select.allarme_core_stato') }}"
+          profilo_ac: "{{ states('input_select.allarme_core_profilo') }}"
+      - choose:
+          # Fumo, gas o monossido → LED Alarming Smoke-Fire
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ stato_safety == 'triggered' and
+                     categoria in ['fumo', 'gas', 'carbonio'] }}
+            sequence:
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.ring_keypad_alarm_state
+                data:
+                  option: "triggered_fire"
+
+          # Acqua → LED Alarming Water Leak
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ stato_safety == 'triggered' and categoria == 'acqua' }}
+            sequence:
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.ring_keypad_alarm_state
+                data:
+                  option: "triggered_water"
+
+          # Reset safety-core (ok) → ripristina stato allarme-core sulla tastiera
+          - conditions:
+              - condition: template
+                value_template: "{{ stato_safety == 'ok' }}"
+            sequence:
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ stato_ac == 'disarmed' }}"
+                    sequence:
+                      - action: input_select.select_option
+                        target:
+                          entity_id: input_select.ring_keypad_alarm_state
+                        data:
+                          option: "disarmed"
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ stato_ac == 'arming' }}"
+                    sequence:
+                      - action: input_select.select_option
+                        target:
+                          entity_id: input_select.ring_keypad_alarm_state
+                        data:
+                          option: "arming"
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ stato_ac == 'armed' and profilo_ac == 'notte' }}"
+                    sequence:
+                      - action: input_select.select_option
+                        target:
+                          entity_id: input_select.ring_keypad_alarm_state
+                        data:
+                          option: "armed_home"
+                  - conditions:
+                      - condition: template
+                        value_template: >
+                          {{ stato_ac == 'armed' and profilo_ac in ['giorno', 'tutti'] }}
+                    sequence:
+                      - action: input_select.select_option
+                        target:
+                          entity_id: input_select.ring_keypad_alarm_state
+                        data:
+                          option: "armed_away"
+                  - conditions:
+                      - condition: template
+                        value_template: >
+                          {{ stato_ac == 'armed' and profilo_ac == 'sera' }}
+                    sequence:
+                      - action: input_select.select_option
+                        target:
+                          entity_id: input_select.ring_keypad_alarm_state
+                        data:
+                          option: "disarmed"
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ stato_ac == 'triggered' }}"
+                    sequence:
+                      - action: input_select.select_option
+                        target:
+                          entity_id: input_select.ring_keypad_alarm_state
+                        data:
+                          option: "triggered_burglar"
+
+  # ── SYNC OUT: ring_keypad tasto Fire → safety-core ───────────────────────
+  # Il tasto Fire (hold 3s) imposta già triggered_fire sul keypad tramite
+  # ring_keypad_input_fire (automations.yaml). Questa automazione intercetta
+  # quel cambio stato e propaga il triggered verso safety-core.
+  # Solo il log distingue lo scatto manuale da tastiera rispetto ai sensori fisici.
+  - id: ring_keypad_command_to_safety_core
+    alias: "Keypad - Allarme fuoco manuale verso safety-core"
+    description: >
+      Quando il tasto Fire (hold 3s) porta il keypad a triggered_fire,
+      imposta safety-core in triggered con categoria fumo e logga lo scatto
+      come manuale. Anti-loop: invia solo se safety-core non è già triggered.
+    trigger:
+      - platform: state
+        entity_id: input_select.ring_keypad_alarm_state
+        to: "triggered_fire"
+    condition:
+      # Anti-loop: invia solo se safety-core non è già triggered
+      - condition: template
+        value_template: "{{ states('input_select.safety_core_stato') != 'triggered' }}"
+    action:
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.safety_core_stato
+        data:
+          option: "triggered"
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.safety_core_ultima_categoria
+        data:
+          option: "fumo"
+      # Log che distingue lo scatto manuale da tastiera da quello automatico dei sensori
+      - action: script.safety_core_logbook_emit
+        data:
+          msg: "🔥 Allarme fuoco manuale da tastiera Ring Keypad"

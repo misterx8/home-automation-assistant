@@ -133,8 +133,8 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Bypass_challenge/1/set"
-          # sub_cmd 1 = on/off: 255 = on (conforme Z-Wave Indicator CC)
-          payload: "255"
+          # payload 99 come da manuale del dispositivo
+          payload: "99"
 
   # ══════════════════════════════════════════════════════════════════════════
   # DELAY CON COUNTDOWN (formato stringa "{min}m{sec}s")
@@ -143,33 +143,38 @@ script:
 
   ring_keypad_show_exit_delay:
     alias: "Keypad → Exit Delay"
-    description: "Mostra countdown exit delay (legge input_number.ring_keypad_exit_delay)"
+    description: >
+      Mostra countdown exit delay (legge input_number.ring_keypad_exit_delay).
+      Payload formato stringa "XmYs" richiesto da zwave2mqtt per il campo timeout
+      dell'Indicator CC (es. "0m30s", "1m30s").
     fields:
       keypad_id:
         description: "Topic base della tastiera"
         required: true
     sequence:
       - variables:
-          s: "{{ states('input_number.ring_keypad_exit_delay') | int }}"
+          s: "{{ states('input_number.ring_keypad_exit_delay') | int(30) }}"
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Exit_Delay/timeout/set"
-          payload: "{{ (s // 60) }}m{{ (s % 60) }}s"
+          payload: "{{ s // 60 }}m{{ s % 60 }}s"
 
   ring_keypad_show_entry_delay:
     alias: "Keypad → Entry Delay"
-    description: "Mostra countdown entry delay (legge input_number.ring_keypad_entry_delay)"
+    description: >
+      Mostra countdown entry delay (legge input_number.ring_keypad_entry_delay).
+      Payload formato stringa "XmYs" richiesto da zwave2mqtt per il campo timeout.
     fields:
       keypad_id:
         description: "Topic base della tastiera"
         required: true
     sequence:
       - variables:
-          s: "{{ states('input_number.ring_keypad_entry_delay') | int }}"
+          s: "{{ states('input_number.ring_keypad_entry_delay') | int(30) }}"
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Entry_Delay/timeout/set"
-          payload: "{{ (s // 60) }}m{{ (s % 60) }}s"
+          payload: "{{ s // 60 }}m{{ s % 60 }}s"
 
   # ══════════════════════════════════════════════════════════════════════════
   # ALLARMI
@@ -177,7 +182,7 @@ script:
 
   ring_keypad_alarm_burglar:
     alias: "Keypad → Allarme Intrusione"
-    description: "Allarme burglar generico CON suono (Alarming, payload 99 fisso)"
+    description: "Allarme intrusione (Alarming) — voice-aware"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -186,7 +191,7 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming/9/set"
-          payload: "99"
+          payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
 
   ring_keypad_alarm_rapina:
     alias: "Keypad → Allarme Anti-Rapina"
@@ -206,6 +211,7 @@ script:
 
   ring_keypad_alarm_fire:
     alias: "Keypad → Allarme Fuoco"
+    description: "Allarme fuoco/fumo — voice-aware"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -214,10 +220,11 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming_Smoke_-_Fire/9/set"
-          payload: "99"
+          payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
 
   ring_keypad_alarm_medical:
     alias: "Keypad → Allarme Medico"
+    description: "Allarme medico — voice-aware"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -226,10 +233,11 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming_Medical/9/set"
-          payload: "99"
+          payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
 
   ring_keypad_alarm_water:
     alias: "Keypad → Allarme Perdita Acqua"
+    description: "Allarme perdita acqua — voice-aware"
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -238,7 +246,7 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming_Water_leak/9/set"
-          payload: "99"
+          payload: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
 
   # ══════════════════════════════════════════════════════════════════════════
   # LED MODALITÀ DISPLAY

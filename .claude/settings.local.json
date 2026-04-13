@@ -28,7 +28,8 @@
       "WebFetch(domain:kadenthomp36.github.io)",
       "WebFetch(domain:community.home-assistant.io)",
       "WebFetch(domain:devices.zwave-js.io)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.home-assistant.io)"
     ]
   }
 }

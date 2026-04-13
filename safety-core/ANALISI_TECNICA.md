@@ -1,6 +1,6 @@
 # Safety Core — Analisi Tecnica Dettagliata
 
-> Ultimo aggiornamento: 2026-04-09
+> Ultimo aggiornamento: 2026-04-13
 > Aggiornare questo file dopo ogni modifica al progetto.
 
 ---
@@ -337,6 +337,27 @@ Badge ::after:
 **Elettrovalvole:**
 - `switch.eth_rly16_board1_relay_1` — Elettrovalvola GAS
 - `switch.eth_rly16_board2_relay_3` — Elettrovalvola Acqua
+
+---
+
+## 15b. INTEGRAZIONE CON RING KEYPAD
+
+Safety-core è integrato con il Ring Keypad V2 tramite `ring-keypad/packages/ring_keypad_integration.yaml` (sezione 3).
+
+**safety-core → tastiera:**
+
+| Stato + Categoria | LED tastiera |
+|-------------------|--------------|
+| `triggered` + `fumo` / `gas` / `carbonio` | Alarming Smoke-Fire |
+| `triggered` + `acqua` | Alarming Water Leak |
+| `ok` (dopo reset manuale) | Ripristino LED allarme-core corrente |
+
+**tastiera → safety-core (tasto Fire hold 3s):**
+
+- Imposta `safety_core_stato = triggered` e `safety_core_ultima_categoria = fumo`
+- Lo scatto è registrato nei log di safety-core come: `"🔥 Allarme fuoco manuale da tastiera Ring Keypad"`
+- Distinguibile dallo scatto automatico dei sensori fisici solo tramite il log
+- Anti-loop attivo: non invia se safety-core è già in triggered
 
 ---
 
