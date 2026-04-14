@@ -344,6 +344,31 @@ sections:
               box-shadow: 0 0 0 2px {{ color }};
               padding-left: 12px;
             }
+      - type: tile
+        entity: input_number.ring_keypad_bypass_timeout
+        name: Timeout Bypass (sec)
+        vertical: false
+        features_position: bottom
+        features:
+          - type: numeric-input
+            style: buttons
+        grid_options:
+          columns: 6
+          rows: 2
+        card_mod:
+          style: >
+            {% set t = states('input_number.ring_keypad_bypass_timeout') |
+            int(30) %} {% if t <= 30 %}
+              {% set color = '#4a90d9' %}
+            {% elif t <= 60 %}
+              {% set color = '#f0a500' %}
+            {% else %}
+              {% set color = '#9b59b6' %}
+            {% endif %} ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ color }};
+              padding-left: 12px;
+            }
       - type: button
         name: Sync Forzato
         icon: mdi:sync

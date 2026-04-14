@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
 > Ultima revisione: 2026-04-14  
-> Versione architettura: 3.8 (tasto V arma profilo sera: `ring_keypad_input_enter` → `validate_and_arm mode=armed_sera`; `ring_keypad_command_to_allarme_core` esteso con trigger e case `armed_sera`)
+> Versione architettura: 4.3 (RK-51: guard bypass in tutte le automazioni ARM HOME/AWAY ora aggiorna `last_event` con "Bypass attivo - premere V per confermare")
 
 ---
 
@@ -200,6 +200,8 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 | `ring_keypad_last_event` | Descrizione ultimo evento | Log |
 | `ring_keypad_last_keypad` | Topic base dell'ultima tastiera usata | Log |
 | `ring_keypad_arming_target_mode` | Target mode (armed_home/armed_away) salvato all'inizio dell'arming | Usato dall'integration per impostare profilo allarme-core e chiamare arm_allarme_core (normale) con calcolo bypass |
+| `ring_keypad_bypass_mode` | Mode (armed_home/armed_away/armed_sera) del bypass pendente | Impostato da `arm_or_challenge`; resettato da `bypass_cancel` |
+| `ring_keypad_bypass_keypad` | Topic base della tastiera che ha avviato il bypass | Impostato da `arm_or_challenge`; resettato da `bypass_cancel` |
 | `ring_keypad_pin_master` | PIN Master | mode: password |
 | `ring_keypad_pin_user1..3` | PIN Utenti 1-3 | mode: password |
 | `ring_keypad_name_master` | Nome Master | Per log |
@@ -209,6 +211,7 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 
 | Entità | Default | Descrizione |
 |--------|---------|-------------|
+| `ring_keypad_bypass_timeout` | slider 15-120s | Timeout conferma bypass: dopo quanti secondi il `Bypass_challenge` scade e il LED viene ripristinato |
 | `ring_keypad_exit_delay` | 30s | Countdown uscita (arming → armed) |
 | `ring_keypad_siren_volume` | 5 | Volume sirena hardware (1-10), sincronizzato via `Siren_Volume` configuration CC |
 
@@ -218,6 +221,7 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 |--------|---------|-------------|
 | `ring_keypad_debug` | false | Modalità debug |
 | `ring_keypad_require_code_to_arm` | false | Se true, richiede PIN anche per armare |
+| `ring_keypad_bypass_pending` | false | Flag attivo durante l'attesa di conferma bypass (sensori aperti) |
 | `ring_keypad_voice_feedback` | true | Se on: payload 99 (LED+suono) per disarmed/armed; se off: payload 1 (solo LED) |
 
 ### Sensori MQTT (per tastiera, dichiarati in `ring_keypad_keypads.yaml`)
@@ -313,8 +317,12 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 |--------|-----------|-------------|
 | `ring_keypad_resolve_user` | code | Identifica l'utente dal PIN, aggiorna `ring_keypad_last_user` |
 | `ring_keypad_validate_and_disarm` | code, keypad_id | Valida PIN → disarma o rifiuta |
-| `ring_keypad_validate_and_arm` | code, mode, keypad_id | Valida PIN → arma o rifiuta |
-| `ring_keypad_do_disarm` | keypad_id | Imposta stato `disarmed` + log |
+| `ring_keypad_validate_and_arm` | code, mode, keypad_id | **Puro PIN→arm**: PIN valido → `resolve_user` + `arm_or_challenge`; PIN errato → `code_rejected`. Nessuna logica bypass (gestita a monte nelle automazioni) |
+| `ring_keypad_arm_or_challenge` | mode, keypad_id | Controlla sensori aperti nelle zone del profilo target: se pulito → `do_arm`; se ci sono sensori → attiva `bypass_pending` + `bypass_challenge` + avvia `bypass_timeout_script` |
+| `ring_keypad_bypass_confirm` | keypad_id | `stored_mode` ← `bypass_mode`; `turn_off do_arm`; `bypass_cancel`; `do_arm(stored_mode)` — nessuna verifica PIN, il tasto V è sufficiente |
+| `ring_keypad_bypass_cancel` | — | Resetta `bypass_pending`, `bypass_mode`, `bypass_keypad`; ferma il timer `bypass_timeout_script` |
+| `ring_keypad_bypass_timeout_script` | — | `mode: restart` — allo scadere di `ring_keypad_bypass_timeout` secondi: **prima** inline-reset bypass (turn_off pending + clear mode/keypad), **poi** `sync_state` (ordine critico: evita race condition RK-45); non chiama `bypass_cancel` per evitare `turn_off` su se stesso |
+| `ring_keypad_do_disarm` | keypad_id | **Prima** chiama `bypass_cancel`; poi ferma `do_arm` (RK-30); imposta stato `disarmed` + log |
 | `ring_keypad_do_arm` | mode, keypad_id | Imposta `arming` → delay exit → imposta `mode` + log |
 
 ---
@@ -326,13 +334,13 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 | ID Automazione | Trigger MQTT | Azione |
 |----------------|-------------|--------|
 | `ring_keypad_input_disarm` | `zwave2mqtt/+/unknownClass_111/endpoint_0/3/2` | `validate_and_disarm` |
-| `ring_keypad_input_arm_away` | `zwave2mqtt/+/unknownClass_111/endpoint_0/5/2` | `validate_and_arm mode=armed_away` |
-| `ring_keypad_input_arm_away_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/5/0` | `do_arm` o `code_rejected` |
-| `ring_keypad_input_arm_home` | `zwave2mqtt/+/unknownClass_111/endpoint_0/6/2` | `validate_and_arm mode=armed_home` |
-| `ring_keypad_input_arm_home_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/6/0` | `do_arm` o `code_rejected` |
-| `ring_keypad_input_enter` | `zwave2mqtt/+/unknownClass_111/endpoint_0/2/2` | `validate_and_arm mode=armed_sera` |
-| `ring_keypad_input_enter_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/2/0` | `do_arm mode=armed_sera` o `code_rejected` |
-| `ring_keypad_input_cancel` | `zwave2mqtt/+/unknownClass_111/endpoint_0/25/2` | Aggiorna log "Tasto X" |
+| `ring_keypad_input_arm_away` | `zwave2mqtt/+/unknownClass_111/endpoint_0/5/2` | Se bypass_pending → `code_rejected`; altrimenti `validate_and_arm mode=armed_away` |
+| `ring_keypad_input_arm_away_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/5/0` | Se bypass_pending → `code_rejected`; se `require_code=off` → `arm_or_challenge`; altrimenti `code_rejected` |
+| `ring_keypad_input_arm_home` | `zwave2mqtt/+/unknownClass_111/endpoint_0/6/2` | Se bypass_pending → `code_rejected`; altrimenti `validate_and_arm mode=armed_home` |
+| `ring_keypad_input_arm_home_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/6/0` | Se bypass_pending → `code_rejected`; se `require_code=off` → `arm_or_challenge`; altrimenti `code_rejected` |
+| `ring_keypad_input_enter` | `zwave2mqtt/+/unknownClass_111/endpoint_0/2/2` | Se bypass_pending → `bypass_confirm`; altrimenti `validate_and_arm mode=armed_sera` |
+| `ring_keypad_input_enter_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/2/0` | Se bypass_pending → `bypass_confirm`; se `require_code=off` → `arm_or_challenge`; altrimenti `code_rejected` |
+| `ring_keypad_input_cancel` | `zwave2mqtt/+/unknownClass_111/endpoint_0/25/2` | Se `bypass_pending=on` per questa tastiera → `bypass_cancel` + `sync_state` (annulla bypass attivo); altrimenti solo log "Tasto X" |
 | `ring_keypad_input_rapina` | `zwave2mqtt/+/unknownClass_111/endpoint_0/17/0` | Stato `triggered_rapina` + broadcast rapina |
 | `ring_keypad_input_medical` | `zwave2mqtt/+/unknownClass_111/endpoint_0/19/0` | Stato `triggered_medical` + broadcast |
 | `ring_keypad_input_fire` | `zwave2mqtt/+/unknownClass_111/endpoint_0/16/0` | Stato `triggered_fire` + broadcast |
@@ -376,19 +384,48 @@ Script: ring_keypad_validate_and_arm (code, mode="armed_away", keypad_id)
     ↓
     [PIN valido?]
     ├─ SI → ring_keypad_resolve_user (aggiorna last_user)
-    │        ring_keypad_do_arm (mode, keypad_id)
+    │        ring_keypad_arm_or_challenge (mode, keypad_id)
     │            ↓
-    │        ring_keypad_alarm_state = "arming"
-    │            ↓ (sync automatico via ring_keypad_sync_on_state_change)
-    │        ring_keypad_sync_all → show_exit_delay su tutte le tastiere
-    │            ↓ (delay exit_delay secondi)
-    │        ring_keypad_alarm_state = "arming"
-    │            ↓ (via ring_keypad_command_to_allarme_core, IMMEDIATAMENTE)
-    │        script.arm_allarme_core chiamato subito (calcola bypass sensori aperti)
-    │            ↓ (delay exit_delay secondi in parallelo tra keypad e allarme-core)
-    │        ring_keypad_alarm_state = "armed_away"
-    │            ↓ (sync automatico)
-    │        ring_keypad_sync_all → show_armed_away su tutte le tastiere
+    │        [Sensori aperti nelle zone del profilo?]
+    │        ├─ NO → ring_keypad_do_arm (mode, keypad_id)
+    │        │            ↓
+    │        │        ring_keypad_alarm_state = "arming"
+    │        │            ↓ (sync automatico via ring_keypad_sync_on_state_change)
+    │        │        ring_keypad_sync_all → show_exit_delay su tutte le tastiere
+    │        │            ↓ (delay exit_delay secondi)
+    │        │        ring_keypad_alarm_state = "arming"
+    │        │            ↓ (via ring_keypad_command_to_allarme_core, IMMEDIATAMENTE)
+    │        │        script.arm_allarme_core chiamato subito (calcola bypass sensori aperti)
+    │        │            ↓ (delay exit_delay secondi in parallelo tra keypad e allarme-core)
+    │        │        ring_keypad_alarm_state = "armed_away"
+    │        │            ↓ (sync automatico)
+    │        │        ring_keypad_sync_all → show_armed_away su tutte le tastiere
+    │        │
+    │        └─ SI → bypass_pending = on; bypass_mode = mode; bypass_keypad = keypad_id
+    │                 ring_keypad_bypass_challenge (Bypass_challenge/1 payload 99)
+    │                 ring_keypad_bypass_timeout_script (avviato fire-and-forget)
+    │                     ↓
+    │                 [Utente preme tasto V — con o senza PIN]
+    │                     ↓
+    │                 Intercettato PRIMA di validate_and_arm in entrambe le automazioni
+    │                     ↓
+    │                 ring_keypad_bypass_confirm(keypad_id)
+    │                     ↓
+    │                 stored_mode ← bypass_mode; turn_off do_arm; bypass_cancel; do_arm(stored_mode)
+    │
+    │                 [Utente preme tasto ARM HOME/AWAY + PIN durante bypass attivo]
+    │                     ↓
+    │                 validate_and_arm CASO 2a (bypass_pending=on, stessa tastiera, mode≠armed_sera)
+    │                     ↓
+    │                 code_rejected + log "Bypass attivo - usare tasto V + PIN per confermare"
+    │
+    │                 [Utente preme tasto X durante bypass attivo]
+    │                     ↓
+    │                 ring_keypad_input_cancel → bypass_cancel + sync_state (LED ripristinato)
+    │
+    │                 [Timeout scade]
+    │                     ↓
+    │                 bypass_timeout_script: inline-reset bypass → sync_state (LED ripristinato)
     │
     └─ NO → ring_keypad_code_rejected (tastiera sorgente)
              aggiorna ring_keypad_last_event
@@ -592,12 +629,12 @@ Il wildcard + estrazione `keypad_id` dal topic riduce a 10 automazioni indipende
 
 `allarme_core_profilo` è la sorgente di verità per la distinzione casa/fuori-casa:
 
-| Profilo | Significato | LED tastiera |
-|---------|-------------|--------------|
-| `notte` | Inserimento in casa (perimetrale + notte) | Armed Stay |
-| `giorno` | Inserimento fuori casa (tutti i sensori) | Armed Away |
-| `tutti` | Inserimento fuori casa completo | Armed Away |
-| `sera` | Profilo serale automatico (non selezionabile da tastiera) | Nessun LED |
+| Profilo | Significato | Tasto tastiera | LED tastiera |
+|---------|-------------|----------------|--------------|
+| `notte` | Inserimento in casa (perimetrale + notte) | ARM HOME (6/2 o 6/0) | Armed Stay |
+| `giorno` | Inserimento fuori casa (tutti i sensori) | ARM AWAY (5/2 o 5/0) | Armed Away |
+| `tutti` | Inserimento fuori casa completo | — (da allarme-core) | Armed Away |
+| `sera` | Profilo serale (silenzioso, perimetrale leggero) | V/Enter (2/2 o 2/0) | Armed Stay silenzioso + fast blink LED (~1s) |
 
 Quando si arma da tastiera: il profilo viene impostato dall'integration nel caso `arming`, prima di chiamare `arm_allarme_core`.  
 Quando si arma da allarme-core: il profilo è già impostato, la tastiera lo legge e mostra il LED corretto.
@@ -661,3 +698,13 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-39 | `ring_keypad_sync_led_on_mode_change`: cambio preferenza LED sovrascriveva il fast blink di `armed_sera` — rimpiazzava il blink con il valore salvato dall'utente | **Corretto 2026-04-14** | Aggiunta condizione: l'automazione si blocca se `ring_keypad_alarm_state == 'armed_sera'`; il LED corretto viene ripristinato automaticamente al prossimo cambio di stato tramite `sync_state` |
 | RK-40 | Sequenza `ring_keypad_restore_on_connect` e `ring_keypad_sync_on_ha_start`: chiamavano `sync_state` e poi separatamente `set_led_mode` — `set_led_mode` poteva sovrascrivere il fast blink di `armed_sera` impostato da `sync_state` | **Corretto 2026-04-14** | `sync_state` ora chiama `set_led_mode` internamente come primo passo prima di applicare l'indicatore; rimossa la chiamata separata a `set_led_mode` nelle due automazioni |
 | RK-41 | Tasto V (Enter) non attivava il profilo sera — `ring_keypad_input_enter` aggiornava solo il log senza armare; non esisteva percorso per armare con profilo sera dalla tastiera fisica | **Corretto 2026-04-14** | `ring_keypad_input_enter` sostituito con chiamata a `validate_and_arm mode=armed_sera`; `ring_keypad_command_to_allarme_core` esteso con `armed_sera` nel trigger `to:`, caso `armed_sera→profilo sera` nel blocco `arming` e nuovo case safety fallback per `armed_sera` |
+| RK-42 | Nessuna verifica sensori aperti prima dell'armo da tastiera: il sistema armava immediatamente anche con porte/finestre aperte nelle zone del profilo target — sensori escludevano zone per il tempo di esclusione, ma l'utente non aveva visibilità della situazione | **Corretto 2026-04-14** | Nuovo script `ring_keypad_arm_or_challenge`: controlla `binary_sensor.allarme_core_*` con `state=on` e `attributes.abilitato=true` nelle zone del profilo target; se tutto ok → `do_arm`; se sensori aperti → `bypass_pending=on` + `bypass_challenge` + timer `bypass_timeout_script`. Conferma bypass: il successivo `validate_and_arm` con stessa tastiera+mode+PIN valido chiama `bypass_cancel` + `do_arm`. PIN sempre obbligatorio per la conferma bypass. `validate_and_arm` ristrutturato a 2 casi. |
+| RK-43 | Tasti ARM nocode (5/0, 6/0, 2/0) bypassavano il check sensori: chiamavano `do_arm` direttamente senza passare da `arm_or_challenge` — con `require_code_to_arm=off` il bypass poteva partire anche se c'erano sensori aperti, e non era possibile confermare il bypass senza PIN | **Corretto 2026-04-14** | Le 3 automazioni nocode (`arm_away_nocode`, `arm_home_nocode`, `enter_nocode`) ora chiamano `arm_or_challenge` invece di `do_arm`. Aggiunta guardia: se `bypass_pending=on` per quella tastiera → `code_rejected` (la conferma bypass richiede sempre PIN, quindi senza codice è impossibile). |
+| RK-44 | `bypass_pending` non veniva resettato al disarmo da dashboard/esterno: se l'utente disarmava da allarme-core mentre un bypass era in attesa, il flag rimaneva `on` — al successivo tentativo di armo il sistema entrava nel CASO 1 di `validate_and_arm` con dati inconsistenti | **Corretto 2026-04-14** | Aggiunto `script.ring_keypad_bypass_cancel` nel ramo `disarmed` di `ring_keypad_sync_from_allarme_core`, subito dopo `turn_off ring_keypad_do_arm`. |
+| RK-45 | **CRITICO** — `ring_keypad_bypass_timeout_script` race condition: al timeout chiamava `sync_state` prima di resettare `bypass_pending` — se l'utente premeva un tasto durante l'esecuzione di `sync_state`, `validate_and_arm` trovava ancora `bypass_pending=on` e interpretava l'azione come conferma bypass (CASO 1), armando con il vecchio `bypass_mode` anche se l'utente aveva intenzionato un armo normale | **Corretto 2026-04-14** | Ordine invertito nel timeout script: inline-reset (`turn_off bypass_pending` + clear `bypass_mode` + clear `bypass_keypad`) eseguito **prima** di chiamare `sync_state`; in questo modo `bypass_pending=off` è garantito prima che eventuali input possano essere processati |
+| RK-46 | **CRITICO** — `validate_and_arm` con bypass_pending attivo + tasto diverso da V: premere ARM HOME/AWAY + PIN valido durante un bypass in corso chiamava `arm_or_challenge` → generava un secondo challenge sovrapposto al primo, con `bypass_mode` sovrascritto e timer riavviato — il sistema perdeva il contesto del bypass originale | **Corretto 2026-04-14** | Ristrutturato `validate_and_arm` da 2 a **3 casi**: CASO 2a (bypass_pending=on + stessa tastiera + mode≠`armed_sera`) → `code_rejected` + log "Bypass attivo - usare tasto V + PIN per confermare"; il secondo `arm_or_challenge` non viene mai chiamato. La conferma bypass è sempre e solo via tasto V. |
+| RK-47 | **CRITICO** — `ring_keypad_do_arm` ha `mode: single, max_exceeded: silent`: se al momento della conferma bypass `do_arm` era ancora in esecuzione (residuo di una chiamata precedente), la nuova chiamata di `do_arm` da conferma bypass veniva scartata silenziosamente — sistema restava in `disarmed` senza alcun feedback | **Corretto 2026-04-14** | Aggiunto `script.turn_off ring_keypad_do_arm` come passo esplicito in `validate_and_arm` CASO 1, prima di `bypass_cancel` e della nuova chiamata a `do_arm`; garantisce che l'armo post-bypass parta sempre da zero |
+| RK-48 | **MEDIO** — Commento in `ring_keypad_integration.yaml` descriveva il trigger `armed_sera` come `sera→disarmed` (legacy dall'implementazione precedente dove V faceva solo log) — documentazione interna ingannevole | **Corretto 2026-04-14** | Commento corretto in `sera→armed_sera` nel blocco automazione `ring_keypad_command_to_allarme_core` |
+| RK-49 | **MEDIO** — `ring_keypad_sync_from_safety_core` rami triggered (fuoco/acqua): non fermavano `ring_keypad_do_arm` — se un allarme safety scattava durante l'exit delay, `do_arm` completava il countdown e impostava `armed_home`/`armed_away` sovrascrivendo `triggered_fire`/`triggered_water`; allarme-core veniva poi ri-armato, mascherando l'allarme attivo | **Corretto 2026-04-14** | Aggiunto `script.turn_off ring_keypad_do_arm` come primo passo in entrambi i rami triggered di `ring_keypad_sync_from_safety_core` (fuoco e acqua) |
+| RK-51 | **MINOR** — Guard bypass in ARM HOME/AWAY (con e senza codice): `code_rejected` inviato correttamente ma `ring_keypad_last_event` non aggiornato — beep di rifiuto senza traccia nel log | **Corretto 2026-04-14** | Aggiunto `input_text.set_value ring_keypad_last_event = "Bypass attivo - premere V per confermare"` in tutti e quattro i branch bypass: `ring_keypad_input_arm_away` (5/2), `ring_keypad_input_arm_home` (6/2), `ring_keypad_input_arm_away_nocode` (5/0), `ring_keypad_input_arm_home_nocode` (6/0) |
+| RK-50 | **UX/Refactor** — Logica bypass accoppiata a `validate_and_arm`: CASO 1/2a/2b rendevano lo script complesso e il PIN era richiesto anche quando non necessario. Il bypass non appartiene alla validazione PIN. | **Corretto 2026-04-14** | Nuovo script `ring_keypad_bypass_confirm`: unica responsabilità, conferma bypass senza PIN. `validate_and_arm` semplificato a puro PIN→arm. Le automazioni V (2/2 e 2/0) intercettano il bypass prima, chiamano `bypass_confirm`. Le automazioni ARM HOME/AWAY (5/2, 6/2) aggiungono guard bypass→`code_rejected` prima di `validate_and_arm`. |

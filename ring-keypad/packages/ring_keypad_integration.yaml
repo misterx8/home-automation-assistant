@@ -63,7 +63,7 @@ automation:
     description: >
       Aggiorna lo stato del keypad quando cambia allarme_core_stato o allarme_core_profilo.
       Mappatura profilo-aware per lo stato 'armed':
-        notte→armed_home | giorno/tutti→armed_away | sera→disarmed.
+        notte→armed_home | giorno/tutti→armed_away | sera→armed_sera.
       Il trigger su allarme_core_profilo è attivo solo quando stato==armed,
       per evitare flickering durante la sequenza di armo dalla tastiera.
     # mode queued: gestisce correttamente trigger ravvicinati stato+profilo
@@ -98,6 +98,7 @@ automation:
               - action: script.turn_off
                 target:
                   entity_id: script.ring_keypad_do_arm
+              - action: script.ring_keypad_bypass_cancel
               - action: input_select.select_option
                 target:
                   entity_id: input_select.ring_keypad_alarm_state
@@ -506,6 +507,12 @@ automation:
                   {{ stato_safety == 'triggered' and
                      categoria in ['fumo', 'gas', 'carbonio'] }}
             sequence:
+              # FIX RK-45: ferma do_arm se in esecuzione (exit delay in corso).
+              # Senza questo, al termine del delay do_arm imposta armed_home/away/sera
+              # sovrascrivendo il triggered_fire nel bel mezzo di un allarme safety.
+              - action: script.turn_off
+                target:
+                  entity_id: script.ring_keypad_do_arm
               - action: input_select.select_option
                 target:
                   entity_id: input_select.ring_keypad_alarm_state
@@ -518,6 +525,10 @@ automation:
                 value_template: >
                   {{ stato_safety == 'triggered' and categoria == 'acqua' }}
             sequence:
+              # FIX RK-45 (acqua): stesso fix, ferma do_arm prima di impostare triggered_water
+              - action: script.turn_off
+                target:
+                  entity_id: script.ring_keypad_do_arm
               - action: input_select.select_option
                 target:
                   entity_id: input_select.ring_keypad_alarm_state

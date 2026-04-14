@@ -555,6 +555,163 @@ script:
               value: "sconosciuto"
 
   # ══════════════════════════════════════════════════════════════════════════
+  # ARM OR CHALLENGE — controlla sensori aperti prima di armare
+  # Se il profilo target ha sensori aperti: Bypass_challenge + bypass_pending.
+  # Se tutto ok: do_arm direttamente.
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_arm_or_challenge:
+    alias: "Keypad - Arma o richiedi bypass"
+    fields:
+      mode:
+        description: "armed_home, armed_away o armed_sera"
+        required: true
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - if:
+          - condition: template
+            value_template: >
+              {% set zone_map = {
+                'armed_home': ['notte'],
+                'armed_away': ['giorno'],
+                'armed_sera': ['sera']
+              } %}
+              {% set target_zones = zone_map.get(mode, []) %}
+              {% set ns = namespace(found=false) %}
+              {% for sensor in states.binary_sensor
+                 | selectattr('entity_id', 'search', 'binary_sensor.allarme_core_')
+                 | rejectattr('entity_id', 'search', '_attivo|_filtrati|_zone_valida|_aperto|_anomalia|_profilo|_dati_pronti|_zona_')
+                 | selectattr('state', 'eq', 'on')
+                 | selectattr('attributes.abilitato', 'in', [true, 'true', 'on'])
+                 | selectattr('attributes.zone', 'defined') %}
+                {% if sensor.attributes.zone | select('in', target_zones) | list | length > 0 %}
+                  {% set ns.found = true %}
+                {% endif %}
+              {% endfor %}
+              {{ not ns.found }}
+        then:
+          # Nessun sensore aperto → arma normalmente
+          - action: script.ring_keypad_do_arm
+            data:
+              mode: "{{ mode }}"
+              keypad_id: "{{ keypad_id }}"
+        else:
+          # Sensori aperti → richiedi conferma bypass
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.ring_keypad_bypass_pending
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.ring_keypad_bypass_mode
+            data:
+              value: "{{ mode }}"
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.ring_keypad_bypass_keypad
+            data:
+              value: "{{ keypad_id }}"
+          - action: script.ring_keypad_bypass_challenge
+            data:
+              keypad_id: "{{ keypad_id }}"
+          # Fire-and-forget: avvia timer timeout bypass (mode:restart lo resetta se già attivo)
+          - action: script.turn_on
+            target:
+              entity_id: script.ring_keypad_bypass_timeout_script
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # BYPASS CONFIRM — conferma sensori aperti e arma con il profilo originale
+  # Chiamato dalle automazioni tasto V (2/2 e 2/0) quando bypass_pending=on.
+  # Nessuna verifica PIN: il tasto V è sufficiente.
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_bypass_confirm:
+    alias: "Keypad - Conferma bypass sensori aperti"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - variables:
+          stored_mode: "{{ states('input_text.ring_keypad_bypass_mode') }}"
+      # Ferma do_arm se in esecuzione (evita scarto silenzioso per mode:single)
+      - action: script.turn_off
+        target:
+          entity_id: script.ring_keypad_do_arm
+      - action: script.ring_keypad_bypass_cancel
+      # Arma con il profilo originale salvato al momento del challenge
+      - action: script.ring_keypad_do_arm
+        data:
+          mode: "{{ stored_mode }}"
+          keypad_id: "{{ keypad_id }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # BYPASS CANCEL — resetta bypass_pending e ferma il timer
+  # Chiamato da: do_disarm, sync_from_allarme_core (disarmed), bypass_confirm,
+  #              automazione tasto X
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_bypass_cancel:
+    alias: "Keypad - Cancella bypass pendente"
+    sequence:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ring_keypad_bypass_pending
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_bypass_mode
+        data:
+          value: ""
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_bypass_keypad
+        data:
+          value: ""
+      - action: script.turn_off
+        target:
+          entity_id: script.ring_keypad_bypass_timeout_script
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # BYPASS TIMEOUT — allo scadere cancella bypass e ripristina LED tastiera
+  # mode: restart → chiamarlo di nuovo resetta il timer
+  # NON chiama bypass_cancel (evita turn_off su se stesso); inline il reset.
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_bypass_timeout_script:
+    alias: "Keypad - Timer timeout bypass"
+    mode: restart
+    sequence:
+      - delay:
+          seconds: "{{ states('input_number.ring_keypad_bypass_timeout') | int(30) }}"
+      - if:
+          - condition: state
+            entity_id: input_boolean.ring_keypad_bypass_pending
+            state: "on"
+        then:
+          - variables:
+              kp: "{{ states('input_text.ring_keypad_bypass_keypad') }}"
+          # Reset PRIMA di sync_state: evita che pressioni concorrenti trovino bypass_pending=on
+          # durante il sync. kp è già catturato nella variabile locale.
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.ring_keypad_bypass_pending
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.ring_keypad_bypass_mode
+            data:
+              value: ""
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.ring_keypad_bypass_keypad
+            data:
+              value: ""
+          # Ripristina LED corretto sulla tastiera (dopo il reset del flag)
+          - action: script.ring_keypad_sync_state
+            data:
+              keypad_id: "{{ kp }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
   # VALIDAZIONE PIN E DISARMO
   # Pattern sicuro: il PIN vuoto non viene mai considerato valido
   # ══════════════════════════════════════════════════════════════════════════
@@ -616,6 +773,7 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
+      # PIN valido → identifica utente e controlla sensori aperti
       - if:
           - condition: template
             value_template: >
@@ -633,7 +791,7 @@ script:
           - action: script.ring_keypad_resolve_user
             data:
               code: "{{ code }}"
-          - action: script.ring_keypad_do_arm
+          - action: script.ring_keypad_arm_or_challenge
             data:
               mode: "{{ mode }}"
               keypad_id: "{{ keypad_id }}"
@@ -658,6 +816,8 @@ script:
         description: "Topic base della tastiera (per log)"
         required: true
     sequence:
+      # Cancella eventuale bypass pendente (reset flag + ferma timer timeout)
+      - action: script.ring_keypad_bypass_cancel
       # FIX RK-30: ferma ring_keypad_do_arm se ancora in esecuzione (exit delay in corso).
       # Senza questo, il delay del do_arm continua in background e al termine
       # sovrascrive lo stato con "armed_home/away", ri-armando allarme-core.

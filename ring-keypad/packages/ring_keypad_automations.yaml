@@ -46,6 +46,7 @@ automation:
 
   # ════════════════════════════════════════════════════════════════════════
   # TASTO ARM AWAY + codice (event_type=5, data_type=2)
+  # Se bypass pendente per questa tastiera: solo V può confermare → code_rejected.
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_input_arm_away
     alias: "Keypad - Input: Arm Away (con codice)"
@@ -55,11 +56,28 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      - action: script.ring_keypad_validate_and_arm
-        data:
-          code: "{{ trigger.payload_json.get('value', '') }}"
-          mode: "armed_away"
-          keypad_id: "{{ keypad_id }}"
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.ring_keypad_bypass_pending
+                state: "on"
+              - condition: template
+                value_template: "{{ states('input_text.ring_keypad_bypass_keypad') == keypad_id }}"
+            sequence:
+              - action: script.ring_keypad_code_rejected
+                data:
+                  keypad_id: "{{ keypad_id }}"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_last_event
+                data:
+                  value: "Bypass attivo - premere V per confermare"
+        default:
+          - action: script.ring_keypad_validate_and_arm
+            data:
+              code: "{{ trigger.payload_json.get('value', '') }}"
+              mode: "armed_away"
+              keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
   # TASTO ARM AWAY senza codice (event_type=5, data_type=0)
@@ -76,12 +94,29 @@ automation:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
       - choose:
+          # Bypass pendente → solo V può confermare, non questo tasto
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.ring_keypad_bypass_pending
+                state: "on"
+              - condition: template
+                value_template: "{{ states('input_text.ring_keypad_bypass_keypad') == keypad_id }}"
+            sequence:
+              - action: script.ring_keypad_code_rejected
+                data:
+                  keypad_id: "{{ keypad_id }}"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_last_event
+                data:
+                  value: "Bypass attivo - premere V per confermare"
+          # Nessun bypass pendente + code non richiesto → controlla sensori e arma
           - conditions:
               - condition: state
                 entity_id: input_boolean.ring_keypad_require_code_to_arm
                 state: "off"
             sequence:
-              - action: script.ring_keypad_do_arm
+              - action: script.ring_keypad_arm_or_challenge
                 data:
                   mode: "armed_away"
                   keypad_id: "{{ keypad_id }}"
@@ -92,6 +127,7 @@ automation:
 
   # ════════════════════════════════════════════════════════════════════════
   # TASTO ARM HOME + codice (event_type=6, data_type=2)
+  # Se bypass pendente per questa tastiera: solo V può confermare → code_rejected.
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_input_arm_home
     alias: "Keypad - Input: Arm Home (con codice)"
@@ -101,11 +137,28 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      - action: script.ring_keypad_validate_and_arm
-        data:
-          code: "{{ trigger.payload_json.get('value', '') }}"
-          mode: "armed_home"
-          keypad_id: "{{ keypad_id }}"
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.ring_keypad_bypass_pending
+                state: "on"
+              - condition: template
+                value_template: "{{ states('input_text.ring_keypad_bypass_keypad') == keypad_id }}"
+            sequence:
+              - action: script.ring_keypad_code_rejected
+                data:
+                  keypad_id: "{{ keypad_id }}"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_last_event
+                data:
+                  value: "Bypass attivo - premere V per confermare"
+        default:
+          - action: script.ring_keypad_validate_and_arm
+            data:
+              code: "{{ trigger.payload_json.get('value', '') }}"
+              mode: "armed_home"
+              keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
   # TASTO ARM HOME senza codice (event_type=6, data_type=0)
@@ -122,12 +175,29 @@ automation:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
       - choose:
+          # Bypass pendente → solo V può confermare, non questo tasto
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.ring_keypad_bypass_pending
+                state: "on"
+              - condition: template
+                value_template: "{{ states('input_text.ring_keypad_bypass_keypad') == keypad_id }}"
+            sequence:
+              - action: script.ring_keypad_code_rejected
+                data:
+                  keypad_id: "{{ keypad_id }}"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_last_event
+                data:
+                  value: "Bypass attivo - premere V per confermare"
+          # Nessun bypass pendente + code non richiesto → controlla sensori e arma
           - conditions:
               - condition: state
                 entity_id: input_boolean.ring_keypad_require_code_to_arm
                 state: "off"
             sequence:
-              - action: script.ring_keypad_do_arm
+              - action: script.ring_keypad_arm_or_challenge
                 data:
                   mode: "armed_home"
                   keypad_id: "{{ keypad_id }}"
@@ -138,7 +208,8 @@ automation:
 
   # ════════════════════════════════════════════════════════════════════════
   # TASTO V (Enter) + codice (event_type=2, data_type=2)
-  # Arma con profilo sera: Armed Stay silenzioso + LED fast blink 1s.
+  # Se bypass pendente → conferma bypass (senza PIN).
+  # Altrimenti → arma profilo sera con PIN.
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_input_enter
     alias: "Keypad - Input: Tasto V (Arm Sera)"
@@ -148,17 +219,30 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      # Tasto V + codice → arma con profilo sera (Armed Stay silenzioso + LED fast blink)
-      - action: script.ring_keypad_validate_and_arm
-        data:
-          code: "{{ trigger.payload_json.get('value', '') }}"
-          mode: "armed_sera"
-          keypad_id: "{{ keypad_id }}"
+      - choose:
+          # Bypass pendente → V conferma il bypass, PIN ignorato
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.ring_keypad_bypass_pending
+                state: "on"
+              - condition: template
+                value_template: "{{ states('input_text.ring_keypad_bypass_keypad') == keypad_id }}"
+            sequence:
+              - action: script.ring_keypad_bypass_confirm
+                data:
+                  keypad_id: "{{ keypad_id }}"
+        default:
+          # Nessun bypass → arma profilo sera con PIN
+          - action: script.ring_keypad_validate_and_arm
+            data:
+              code: "{{ trigger.payload_json.get('value', '') }}"
+              mode: "armed_sera"
+              keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
   # TASTO V (Enter) senza codice (event_type=2, data_type=0)
-  # Se require_code_to_arm=off → arma direttamente con profilo sera
-  # Se require_code_to_arm=on  → feedback codice rifiutato
+  # Se bypass pendente → conferma bypass (senza PIN).
+  # Altrimenti → arma profilo sera se require_code_to_arm=off.
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_input_enter_nocode
     alias: "Keypad - Input: Tasto V (Arm Sera, no codice)"
@@ -169,12 +253,24 @@ automation:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
       - choose:
+          # Bypass pendente → V conferma il bypass
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.ring_keypad_bypass_pending
+                state: "on"
+              - condition: template
+                value_template: "{{ states('input_text.ring_keypad_bypass_keypad') == keypad_id }}"
+            sequence:
+              - action: script.ring_keypad_bypass_confirm
+                data:
+                  keypad_id: "{{ keypad_id }}"
+          # Nessun bypass + code non richiesto → controlla sensori e arma
           - conditions:
               - condition: state
                 entity_id: input_boolean.ring_keypad_require_code_to_arm
                 state: "off"
             sequence:
-              - action: script.ring_keypad_do_arm
+              - action: script.ring_keypad_arm_or_challenge
                 data:
                   mode: "armed_sera"
                   keypad_id: "{{ keypad_id }}"
@@ -185,7 +281,8 @@ automation:
 
   # ════════════════════════════════════════════════════════════════════════
   # TASTO X (Cancel) + codice (event_type=25, data_type=2)
-  # Solo tracciamento log. Nessuna azione di armo/disarmo.
+  # Se bypass pendente per questa tastiera: annulla il bypass e ripristina LED.
+  # In ogni caso aggiorna il log.
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_input_cancel
     alias: "Keypad - Input: Tasto X (Cancel)"
@@ -195,6 +292,18 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
+      # Se bypass pendente per questa tastiera: annulla e ripristina LED
+      - if:
+          - condition: state
+            entity_id: input_boolean.ring_keypad_bypass_pending
+            state: "on"
+          - condition: template
+            value_template: "{{ states('input_text.ring_keypad_bypass_keypad') == keypad_id }}"
+        then:
+          - action: script.ring_keypad_bypass_cancel
+          - action: script.ring_keypad_sync_state
+            data:
+              keypad_id: "{{ keypad_id }}"
       - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_event
