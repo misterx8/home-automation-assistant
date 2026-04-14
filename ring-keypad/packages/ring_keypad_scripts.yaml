@@ -610,7 +610,7 @@ script:
         description: "Codice inserito"
         required: true
       mode:
-        description: "armed_home o armed_away"
+        description: "armed_home, armed_away o armed_sera"
         required: true
       keypad_id:
         description: "Topic base della tastiera"
@@ -693,7 +693,7 @@ script:
     max_exceeded: silent
     fields:
       mode:
-        description: "armed_home o armed_away"
+        description: "armed_home, armed_away o armed_sera"
         required: true
       keypad_id:
         description: "Topic base della tastiera (per log)"

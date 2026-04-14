@@ -1,6 +1,6 @@
 # Allarme Core — Analisi Tecnica Dettagliata
 
-> Ultimo aggiornamento: 2026-04-09
+> Ultimo aggiornamento: 2026-04-14
 > Aggiornare questo file dopo ogni modifica al progetto.
 
 ---
@@ -18,7 +18,7 @@ concettualmente al core del sistema (stato macchina, profilo, script arm/disarm)
 | `allarme_core.yaml` | Stato macchina, profili, zone, scripts arm/disarm/panico, sensori aggregati globali |
 | `allarme_core_sensori.yaml` | input_boolean/input_text per ogni sensore wrapper |
 | `allarme_core_log.yaml` | input_text logbook, input_number clip video, script di log, template timeline |
-| `allarme_core_test.yaml` | input_boolean/input_number/input_datetime modalità test |
+| `allarme_core_test.yaml` | input_boolean/input_number/input_datetime modalità test + auto-reset triggered |
 | `allarme_core_batterie.yaml` | input_number soglia/debounce, template sensor batterie |
 | `allarme_core_automazioni.yaml` | Solo automazioni — nessuna entità propria |
 | `allarme_core_supporto.yaml` | binary_sensor zone_valida |
@@ -75,6 +75,16 @@ armed ──[binary_sensor.allarme_core_sensori_aperti_filtrati = on]──► t
 - Mappa `armed` → `armed_away` per compatibilità HA
 - arm_away → `script.arm_allarme_core`
 - disarm → `script.disarm_allarme_core`
+
+**Entità core della macchina a stati** (tutte in `allarme_core.yaml`):
+
+| Entità | Tipo | Valore | Scopo |
+|--------|------|--------|-------|
+| `input_select.allarme_core_stato` | input_select | disarmed/arming/armed/triggered | Stato macchina principale |
+| `input_select.allarme_core_profilo` | input_select | nessuno/sera/giorno/notte/tutti | Profilo attivo |
+| `input_number.allarme_core_arming_delay` | input_number | 5-120s, step 5 | Tempo inserimento (exit delay arming→armed); sincronizzato in ring-keypad |
+| `input_number.allarme_core_notifica_timeout_secondi` | input_number | 10-120s, step 5 | Timeout attesa notifica dopo trigger |
+| `input_datetime.allarme_core_arming_started` | input_datetime | timestamp | Timestamp inizio arming (fix AC-BUG-05) |
 
 ---
 
@@ -302,10 +312,18 @@ Attributi: `sensori_anomali` (lista dict {fisico, wrapper, stato}), `contatore`
 
 ## 12. MODALITÀ TEST
 
+Tutte le entità seguenti sono dichiarate in `allarme_core_test.yaml`.
+
+**Modalità test:**
 - `input_boolean.allarme_core_modalita_test` — flag letto da Node-RED
 - `input_number.allarme_core_test_timeout_minuti` — timeout auto-disattivazione (5-120 min)
 - `input_datetime.allarme_core_test_attivato_alle` — timestamp attivazione
 - Automazione usa `platform: template` + `platform: homeassistant event: start` (resiliente al riavvio)
+
+**Auto-reset da triggered:**
+- `input_boolean.allarme_core_auto_reset_triggered` — abilita il disarmo automatico dopo N minuti in triggered
+- `input_number.allarme_core_auto_reset_minuti` — minuti di attesa prima del disarmo automatico
+- `input_boolean.allarme_core_auto_reset_avviso_loggato` — flag interno anti-doppio-log dell'avviso pre-reset (resettato ad ogni triggered)
 
 ---
 

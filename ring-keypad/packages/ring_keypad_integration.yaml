@@ -209,6 +209,7 @@ automation:
           - arming       # NUOVO: avvia arm_allarme_core (normale) per calcolo bypass
           - armed_home
           - armed_away
+          - armed_sera
     condition:
       # Debug mode: blocca propagazione keypad → allarme-core
       # La direzione inversa (allarme-core → keypad) non passa da questa automazione.
@@ -265,6 +266,15 @@ automation:
                           entity_id: input_select.allarme_core_profilo
                         data:
                           option: "giorno"
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ target_mode == 'armed_sera' }}"
+                    sequence:
+                      - action: input_select.select_option
+                        target:
+                          entity_id: input_select.allarme_core_profilo
+                        data:
+                          option: "sera"
               # Armo normale: fire-and-forget (script.turn_on) per non bloccare la coda.
               # Se l'utente disarma subito dopo, il caso 'disarmed' parte immediatamente
               # mentre arm_allarme_core è ancora nel suo delay → disarm_allarme_core
@@ -310,6 +320,27 @@ automation:
                   entity_id: input_select.allarme_core_profilo
                 data:
                   option: "giorno"
+              # Safety fallback: fire-and-forget per non bloccare la coda
+              - action: script.turn_on
+                target:
+                  entity_id: script.arm_allarme_core
+
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'armed_sera' }}"
+              # Anti-loop: invia solo se allarme-core non è già armed+sera O già in arming
+              - condition: template
+                value_template: >
+                  {{ states('input_select.allarme_core_stato') != 'arming' and
+                     (states('input_select.allarme_core_stato') != 'armed' or
+                      states('input_select.allarme_core_profilo') != 'sera') }}
+            sequence:
+              # Imposta profilo sera prima di armare
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.allarme_core_profilo
+                data:
+                  option: "sera"
               # Safety fallback: fire-and-forget per non bloccare la coda
               - action: script.turn_on
                 target:

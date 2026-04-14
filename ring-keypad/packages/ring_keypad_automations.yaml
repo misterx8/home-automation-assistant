@@ -16,7 +16,7 @@
 #  6         | 0         | Tasto Arm Home senza codice
 #  5         | 2         | Tasto Arm Away + codice
 #  5         | 0         | Tasto Arm Away senza codice
-#  2         | 2         | Tasto V (Enter) + codice → solo log
+#  2         | 2         | Tasto V (Enter) + codice → arma profilo sera
 # 25         | 2         | Tasto X (Cancel) + codice → solo log
 # 17         | 0         | Tasto Police hold 3s → anti-rapina SILENZIOSO
 # 19         | 0         | Tasto Medical hold 3s
@@ -138,26 +138,50 @@ automation:
 
   # ════════════════════════════════════════════════════════════════════════
   # TASTO V (Enter) + codice (event_type=2, data_type=2)
-  # Solo tracciamento log. Nessuna azione di armo/disarmo.
+  # Arma con profilo sera: Armed Stay silenzioso + LED fast blink 1s.
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_input_enter
-    alias: "Keypad - Input: Tasto V (Enter)"
+    alias: "Keypad - Input: Tasto V (Arm Sera)"
     trigger:
       - platform: mqtt
         topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/2/2"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.ring_keypad_last_event
+      # Tasto V + codice → arma con profilo sera (Armed Stay silenzioso + LED fast blink)
+      - action: script.ring_keypad_validate_and_arm
         data:
-          value: "Tasto V - codice inserito"
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.ring_keypad_last_keypad
-        data:
-          value: "{{ keypad_id }}"
+          code: "{{ trigger.payload_json.get('value', '') }}"
+          mode: "armed_sera"
+          keypad_id: "{{ keypad_id }}"
+
+  # ════════════════════════════════════════════════════════════════════════
+  # TASTO V (Enter) senza codice (event_type=2, data_type=0)
+  # Se require_code_to_arm=off → arma direttamente con profilo sera
+  # Se require_code_to_arm=on  → feedback codice rifiutato
+  # ════════════════════════════════════════════════════════════════════════
+  - id: ring_keypad_input_enter_nocode
+    alias: "Keypad - Input: Tasto V (Arm Sera, no codice)"
+    trigger:
+      - platform: mqtt
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/2/0"
+    variables:
+      keypad_id: "{{ trigger.topic.split('/')[1] }}"
+    action:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.ring_keypad_require_code_to_arm
+                state: "off"
+            sequence:
+              - action: script.ring_keypad_do_arm
+                data:
+                  mode: "armed_sera"
+                  keypad_id: "{{ keypad_id }}"
+        default:
+          - action: script.ring_keypad_code_rejected
+            data:
+              keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
   # TASTO X (Cancel) + codice (event_type=25, data_type=2)

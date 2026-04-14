@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
-> Ultima revisione: 2026-04-13  
-> Versione architettura: 3.6 (volume sirena hardware; BUG-01 fix payload fisso 99 per allarmi vitali; BUG-02 fix stop do_arm al disarmo esterno)
+> Ultima revisione: 2026-04-14  
+> Versione architettura: 3.8 (tasto V arma profilo sera: `ring_keypad_input_enter` → `validate_and_arm mode=armed_sera`; `ring_keypad_command_to_allarme_core` esteso con trigger e case `armed_sera`)
 
 ---
 
@@ -59,7 +59,8 @@ Topic ricevuti: `zwave2mqtt/{keypad_id}/unknownClass_111/endpoint_0/{event_type}
 | 6 | 0 | Tasto Arm Home senza codice |
 | 5 | 2 | Tasto Arm Away + codice |
 | 5 | 0 | Tasto Arm Away senza codice |
-| 2 | 2 | Tasto V (Enter) + codice — solo log |
+| 2 | 2 | Tasto V (Enter) + codice → arma profilo sera (valida PIN) |
+| 2 | 0 | Tasto V (Enter) senza codice → arma sera se `require_code_to_arm=off` |
 | 25 | 2 | Tasto X (Cancel) + codice — solo log |
 | 17 | 0 | Anti-rapina Police hold 3s |
 | 19 | 0 | Medical hold 3s |
@@ -101,6 +102,7 @@ Topic: `zwave2mqtt/{keypad_id}/configuration/endpoint_0/System_Security_Mode_Dis
 | Payload | Descrizione |
 |---------|-------------|
 | `0` | LED spenti |
+| `1` | Fast blink ~1s (usato da `armed_sera`) |
 | `3` | Lampeggio 3s |
 | `601` | Sempre accesi |
 
@@ -186,7 +188,7 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 
 | Entità | Valori possibili | Descrizione |
 |--------|-----------------|-------------|
-| `input_select.ring_keypad_alarm_state` | disarmed, armed_home, armed_away, arming, triggered_burglar, triggered_rapina, triggered_fire, triggered_medical, triggered_water | Stato interno del keypad (unica fonte di verità per gli indicatori) |
+| `input_select.ring_keypad_alarm_state` | disarmed, armed_home, armed_away, armed_sera, arming, triggered_burglar, triggered_rapina, triggered_fire, triggered_medical, triggered_water | Stato interno del keypad (unica fonte di verità per gli indicatori) |
 | `input_select.ring_keypad_led_mode` | Spenti, Lampeggio (3s), Sempre accesi | Controlla System_Security_Mode_Display sulla tastiera |
 
 ### `input_text`
@@ -273,6 +275,7 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 | `ring_keypad_show_disarmed` | keypad_id | `Not_armed_-_disarmed/9` | Voice-aware |
 | `ring_keypad_show_armed_home` | keypad_id | `Armed_Stay/9` | Voice-aware |
 | `ring_keypad_show_armed_away` | keypad_id | `Armed_Away/9` | Voice-aware |
+| `ring_keypad_show_armed_sera` | keypad_id | `Armed_Stay/9` payload 1 + `System_Security_Mode_Display` payload 1 | Silenzioso + fast blink LED (~1s); bypassa `ring_keypad_led_mode` |
 | `ring_keypad_code_rejected` | keypad_id | `Code_not_accepted/9` payload 99 | Sempre con suono |
 | `ring_keypad_bypass_challenge` | keypad_id | `Bypass_challenge/1` payload 99 | sub_cmd 1! |
 | `ring_keypad_show_exit_delay` | keypad_id | `Exit_Delay/timeout` stringa `Xm Ys` | — |
@@ -300,7 +303,7 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 
 | Script | Parametri | Descrizione |
 |--------|-----------|-------------|
-| `ring_keypad_sync_state` | keypad_id | Dispatcher: invia indicatore corretto in base a `ring_keypad_alarm_state` (10 stati) |
+| `ring_keypad_sync_state` | keypad_id | Dispatcher: chiama prima `set_led_mode` (reset preferenza utente), poi invia indicatore corretto in base a `ring_keypad_alarm_state` (11 stati, incluso `armed_sera`) |
 | `ring_keypad_sync_all` | — | Chiama `sync_state` su tutte le tastiere in `ring_keypad_active_keypads` |
 | `ring_keypad_broadcast_alarm` | alarm_type | Invia allarme specifico a tutte le tastiere (burglar/rapina/fire/medical/water) |
 
@@ -327,7 +330,8 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 | `ring_keypad_input_arm_away_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/5/0` | `do_arm` o `code_rejected` |
 | `ring_keypad_input_arm_home` | `zwave2mqtt/+/unknownClass_111/endpoint_0/6/2` | `validate_and_arm mode=armed_home` |
 | `ring_keypad_input_arm_home_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/6/0` | `do_arm` o `code_rejected` |
-| `ring_keypad_input_enter` | `zwave2mqtt/+/unknownClass_111/endpoint_0/2/2` | Aggiorna log "Tasto V" |
+| `ring_keypad_input_enter` | `zwave2mqtt/+/unknownClass_111/endpoint_0/2/2` | `validate_and_arm mode=armed_sera` |
+| `ring_keypad_input_enter_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/2/0` | `do_arm mode=armed_sera` o `code_rejected` |
 | `ring_keypad_input_cancel` | `zwave2mqtt/+/unknownClass_111/endpoint_0/25/2` | Aggiorna log "Tasto X" |
 | `ring_keypad_input_rapina` | `zwave2mqtt/+/unknownClass_111/endpoint_0/17/0` | Stato `triggered_rapina` + broadcast rapina |
 | `ring_keypad_input_medical` | `zwave2mqtt/+/unknownClass_111/endpoint_0/19/0` | Stato `triggered_medical` + broadcast |
@@ -338,9 +342,9 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 | ID Automazione | Trigger | Azione |
 |----------------|---------|--------|
 | `ring_keypad_sync_on_state_change` | State: `ring_keypad_alarm_state` | `sync_all` |
-| `ring_keypad_restore_on_connect` | MQTT: `zwave2mqtt/+/status` = Alive | `sync_state` + `set_led_mode` + `set_siren_volume` su tastiera tornata online |
-| `ring_keypad_sync_on_ha_start` | HA start | Delay 15s → `sync_all` + `set_led_mode_all` + `set_siren_volume_all` |
-| `ring_keypad_sync_led_on_mode_change` | State: `ring_keypad_led_mode` | `set_led_mode_all` |
+| `ring_keypad_restore_on_connect` | MQTT: `zwave2mqtt/+/status` = Alive | `set_siren_volume` + `sync_state` (gestisce LED internamente) su tastiera tornata online |
+| `ring_keypad_sync_on_ha_start` | HA start | Delay 15s → `set_siren_volume_all` + `sync_all` (`sync_state` gestisce LED internamente per ogni tastiera) |
+| `ring_keypad_sync_led_on_mode_change` | State: `ring_keypad_led_mode` | `set_led_mode_all` **solo se** `ring_keypad_alarm_state != 'armed_sera'` (fast blink non viene sovrascritto) |
 | `ring_keypad_sync_siren_volume_on_change` | State: `ring_keypad_siren_volume` | `set_siren_volume_all` |
 
 ### Automazioni di integrazione (in `ring_keypad_integration.yaml`)
@@ -348,7 +352,7 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 | ID Automazione | Trigger | Condizione | Azione |
 |----------------|---------|------------|--------|
 | `ring_keypad_sync_from_allarme_core` | State: `allarme_core_stato` o `allarme_core_profilo` | stato==armed per trigger profilo | Aggiorna `ring_keypad_alarm_state` con mappatura profilo-aware |
-| `ring_keypad_command_to_allarme_core` | State: `ring_keypad_alarm_state` → disarmed/arming/armed_* | **debug OFF** + anti-loop stato/profilo | Imposta profilo + chiama arm/disarm allarme-core |
+| `ring_keypad_command_to_allarme_core` | State: `ring_keypad_alarm_state` → disarmed/arming/armed_home/armed_away/armed_sera | **debug OFF** + anti-loop stato/profilo | Imposta profilo (notte/giorno/sera) + chiama arm/disarm allarme-core |
 | `ring_keypad_sync_exit_delay` | State: `allarme_core_arming_delay` + HA start | — | Copia valore in `ring_keypad_exit_delay` |
 | `ring_keypad_sync_from_safety_core` | State: `safety_core_stato` | — | Aggiorna `ring_keypad_alarm_state` (fire/water/reset) |
 | `ring_keypad_command_to_safety_core` | State: `ring_keypad_alarm_state` → triggered_fire | **debug OFF** + safety_core non già triggered | Imposta safety_core triggered + log manuale |
@@ -458,7 +462,7 @@ allarme-core cambia stato
 | `armed` | `notte` | `armed_home` | Armed Stay |
 | `armed` | `giorno` | `armed_away` | Armed Away |
 | `armed` | `tutti` | `armed_away` | Armed Away |
-| `armed` | `sera` | `disarmed` | Nessun LED (modalità automatica) |
+| `armed` | `sera` | `armed_sera` | Armed Stay silenzioso + fast blink LED (~1s) |
 | `triggered` | qualsiasi | `triggered_burglar` | Alarming |
 
 Il trigger su `allarme_core_profilo` è condizionato a `stato == 'armed'` per evitare flickering durante la sequenza di armo dalla tastiera.
@@ -483,7 +487,7 @@ Il trigger su `allarme_core_profilo` è condizionato a `stato == 'armed'` per ev
 | ID Automazione | Trigger | Azione |
 |----------------|---------|--------|
 | `ring_keypad_sync_from_allarme_core` | State: `allarme_core_stato` o `allarme_core_profilo` (se armed) | Aggiorna `ring_keypad_alarm_state` con mappatura profilo-aware |
-| `ring_keypad_command_to_allarme_core` | State: `ring_keypad_alarm_state` → disarmed/arming/armed_* | Imposta profilo + chiama arm_allarme_core (arming) o disarm_allarme_core |
+| `ring_keypad_command_to_allarme_core` | State: `ring_keypad_alarm_state` → disarmed/arming/armed_home/armed_away/armed_sera | Imposta profilo (notte/giorno/sera) + chiama arm_allarme_core (arming) o disarm_allarme_core |
 | `ring_keypad_sync_exit_delay` | State: `allarme_core_arming_delay` + HA start | Copia valore in `ring_keypad_exit_delay` |
 
 ### Integrazione safety-core (attiva, sezione 3)
@@ -636,7 +640,7 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-18 | Automazione `ring_keypad_input_cancel`: data_type era `0` invece di `2` (il manuale documenta il Cancel con codice come 25/2) | **Corretto 2026-04-12** | Topic aggiornato a `25/2` |
 | RK-19 | Automazione `ring_keypad_input_police`: rinominata in `ring_keypad_input_rapina`, stato cambiato da `triggered_burglar` a `triggered_rapina` | **Corretto 2026-04-12** | Distinzione semantica: burglar=intrusione esterna, rapina=minaccia con presenza |
 | RK-20 | Doppio countdown all'armo da tastiera: `ring_keypad_do_arm` (exit_delay) + `arm_allarme_core` (arming_delay) causavano due delay in sequenza e flickering del LED | **Corretto 2026-04-13** | Integration chiama `arm_allarme_core` all'inizio della fase `arming` (non alla fine); i due sistemi armano in parallelo con delay sincronizzato → nessun doppio countdown |
-| RK-21 | `ring_keypad_sync_from_allarme_core`: stato `armed` sempre mappato a `armed_away` indipendentemente dal profilo — tastiera non distingueva casa/fuori | **Corretto 2026-04-13** | Mappatura profilo-aware: notte→armed_home, giorno/tutti→armed_away, sera→disarmed |
+| RK-21 | `ring_keypad_sync_from_allarme_core`: stato `armed` sempre mappato a `armed_away` indipendentemente dal profilo — tastiera non distingueva casa/fuori | **Corretto 2026-04-13** | Mappatura profilo-aware: notte→armed_home, giorno/tutti→armed_away, sera→armed_sera (2026-04-14) |
 | RK-22 | `ring_keypad_sync_from_allarme_core`: non reagiva ai cambi di `allarme_core_profilo` mentre armato — cambio profilo da UI non aggiornava LED tastiera | **Corretto 2026-04-13** | Aggiunto trigger su `allarme_core_profilo` con condizione `stato==armed` |
 | RK-23 | `ring_keypad_exit_delay` e `allarme_core_arming_delay` erano indipendenti — countdown tastiera poteva divergere dal delay allarme-core | **Corretto 2026-04-13** | Aggiunta automazione `ring_keypad_sync_exit_delay` che mantiene i due valori sincronizzati |
 | RK-24 | Anti-loop `armed_away` in `ring_keypad_command_to_allarme_core`: controllava solo `profilo != 'giorno'` ma non `!= 'tutti'` — con profilo `tutti` armato, premere armed_away dalla tastiera cambiava profilo a giorno inaspettatamente | **Corretto 2026-04-13** | Condizione aggiornata a `not in ['giorno', 'tutti']` |
@@ -653,3 +657,7 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-35 | `ring_keypad_alarm_burglar/fire/medical/water`: payload voice-aware (`99` se voice_feedback=on, `1` se off) — allarmi di sicurezza vitale potevano risultare silenziosi se voice_feedback era disabilitato | **Corretto 2026-04-13** | Payload fisso a `"99"` per tutti e quattro gli script; `ring_keypad_voice_feedback` rimane attivo solo per gli stati operativi normali (disarmed/armed_home/armed_away) |
 | RK-36 | `ring_keypad_sync_from_allarme_core` ramo `disarmed`: `ring_keypad_do_arm` non veniva fermato al disarmo da dashboard/esterno — il delay dell'exit delay continuava in background e al termine sovrascriveva lo stato con `armed_home/away`, ri-armando allarme-core | **Corretto 2026-04-13** | Aggiunto `script.turn_off ring_keypad_do_arm` come primo passo del ramo `disarmed` in `ring_keypad_sync_from_allarme_core`; copre il caso "disarmo da dashboard/esterno" che `ring_keypad_do_disarm` non gestisce (viene chiamato solo da tastiera) |
 | RK-37 | Template blocchi per nuove tastiere in `ring_keypad_keypads.yaml` mancavano di `object_id` — aggiungendo una seconda tastiera, HA avrebbe generato entity ID auto dal nome, potenzialmente in conflitto con zwave2mqtt discovery (stessa causa di RK-11) | **Corretto 2026-04-13** | Aggiunti `object_id` con pattern `<topic_base>_batteria` / `<topic_base>_online` nei template commentati; aggiornate sezioni 3.4 e 10 della documentazione; aggiunto template pronto nella dashboard sezione "Stato Hardware" |
+| RK-38 | Profilo `sera` armato mostrava tastiera come `disarmed` — nessun indicatore visivo che il sistema fosse armato | **Corretto 2026-04-14** | Introdotto stato `armed_sera` con `Armed_Stay` silenzioso (payload 1) + fast blink LED (`System_Security_Mode_Display=1`, ~1s); nuovo script `ring_keypad_show_armed_sera` che bypassa `ring_keypad_led_mode` senza sovrascriverlo in modo permanente |
+| RK-39 | `ring_keypad_sync_led_on_mode_change`: cambio preferenza LED sovrascriveva il fast blink di `armed_sera` — rimpiazzava il blink con il valore salvato dall'utente | **Corretto 2026-04-14** | Aggiunta condizione: l'automazione si blocca se `ring_keypad_alarm_state == 'armed_sera'`; il LED corretto viene ripristinato automaticamente al prossimo cambio di stato tramite `sync_state` |
+| RK-40 | Sequenza `ring_keypad_restore_on_connect` e `ring_keypad_sync_on_ha_start`: chiamavano `sync_state` e poi separatamente `set_led_mode` — `set_led_mode` poteva sovrascrivere il fast blink di `armed_sera` impostato da `sync_state` | **Corretto 2026-04-14** | `sync_state` ora chiama `set_led_mode` internamente come primo passo prima di applicare l'indicatore; rimossa la chiamata separata a `set_led_mode` nelle due automazioni |
+| RK-41 | Tasto V (Enter) non attivava il profilo sera — `ring_keypad_input_enter` aggiornava solo il log senza armare; non esisteva percorso per armare con profilo sera dalla tastiera fisica | **Corretto 2026-04-14** | `ring_keypad_input_enter` sostituito con chiamata a `validate_and_arm mode=armed_sera`; `ring_keypad_command_to_allarme_core` esteso con `armed_sera` nel trigger `to:`, caso `armed_sera→profilo sera` nel blocco `arming` e nuovo case safety fallback per `armed_sera` |
