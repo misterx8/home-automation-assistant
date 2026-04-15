@@ -108,5 +108,3 @@ topic per leggere se è stato premuto per piu di 3 secondi allarme anti rapina e
 topic per leggere se è stato premuto per piu di 3 secondi allarme medico e quindi attivato: zwave2mqtt/tastiera_allarme_camera/unknownClass_111/endpoint_0/19/0 ----- esempio: {"time":1775988051557}
 topic per leggere se è stato premuto per piu di 3 secondi allarme incendio e quindi attivato: zwave2mqtt/tastiera_allarme_camera/unknownClass_111/endpoint_0/16/0 ----- esempio: {"time":1775988051557}
 
-
-topic per impostare il timeout di bypass zwave2mqtt/tastiera_allarme_camera/configuration/endpoint_0/Timeout_Display_on_Status_Change/set esempio payload: 5 --- con valore minimo 5 e massimo 30 espresso in secondi 
