@@ -148,10 +148,10 @@ script:
   ring_keypad_bypass_challenge:
     alias: "Keypad → Bypass richiesto"
     description: >
-      Attiva l'indicatore Bypass_challenge sulla tastiera (sub_cmd 1, payload 99 con voce).
-      Poi avvia il keepalive che ogni 5s rinvia payload 1 (solo LED, senza voce) per tutta
-      la durata del bypass timeout, simulando una finestra di conferma visiva continua.
-      L'hardware mostra il LED ~5s per messaggio; il keepalive lo rinnova fino a scadenza.
+      Attiva l'indicatore Bypass_challenge sulla tastiera con voce (sub_cmd 1, payload 99).
+      Poi avvia il keepalive che ogni 5s rinvia Bypass_challenge/9 payload 1 (sub_cmd 9 =
+      solo LED, nessuna voce) per tutta la durata del bypass timeout, simulando una finestra
+      di conferma visiva continua. sub_cmd 1 = voce+LED; sub_cmd 9 = solo LED.
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -180,8 +180,9 @@ script:
   ring_keypad_bypass_keepalive:
     alias: "Keypad - Keepalive LED Bypass"
     description: >
-      Invia Bypass_challenge/1 con payload 1 (solo LED, nessuna voce) ogni 5 secondi
+      Invia Bypass_challenge/9 con payload 1 (sub_cmd 9 = solo LED, nessuna voce) ogni 5 secondi
       finché bypass_pending è on e bypass_keypad corrisponde a keypad_id.
+      sub_cmd 1 attiva la voce; sub_cmd 9 accende solo il LED senza annuncio vocale.
       Viene fermato da bypass_cancel o bypass_confirm.
     mode: restart
     fields:
@@ -211,8 +212,8 @@ script:
               then:
                 - action: mqtt.publish
                   data:
-                    topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Bypass_challenge/1/set"
-                    # payload 1 = solo LED, nessuna voce (non ripetere l'annuncio vocale)
+                    topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Bypass_challenge/9/set"
+                    # sub_cmd 9 = solo LED, nessuna voce; sub_cmd 1 attiva sempre la voce
                     payload: "1"
 
   # ══════════════════════════════════════════════════════════════════════════

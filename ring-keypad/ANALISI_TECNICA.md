@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
 > Ultima revisione: 2026-04-15  
-> Versione architettura: 4.6 (RK-54: keepalive LED bypass — `ring_keypad_bypass_keepalive` rinnova visivamente l'indicatore ogni 5s per tutta la finestra software)
+> Versione architettura: 4.7 (RK-55: tasto X senza codice ora cancella il bypass — aggiunto trigger 25/0 a `ring_keypad_input_cancel`)
 
 ---
 
@@ -61,7 +61,8 @@ Topic ricevuti: `zwave2mqtt/{keypad_id}/unknownClass_111/endpoint_0/{event_type}
 | 5 | 0 | Tasto Arm Away senza codice |
 | 2 | 2 | Tasto V (Enter) + codice → arma profilo sera (valida PIN) |
 | 2 | 0 | Tasto V (Enter) senza codice → arma sera se `require_code_to_arm=off` |
-| 25 | 2 | Tasto X (Cancel) + codice — solo log |
+| 25 | 2 | Tasto X (Cancel) + codice — annulla bypass o solo log |
+| 25 | 0 | Tasto X (Cancel) senza codice — annulla bypass o solo log |
 | 17 | 0 | Anti-rapina Police hold 3s |
 | 19 | 0 | Medical hold 3s |
 | 16 | 0 | Fire hold 3s |
@@ -320,7 +321,7 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 | `ring_keypad_validate_and_arm` | code, mode, keypad_id | **Puro PIN→arm**: PIN valido → `resolve_user` + `arm_or_challenge`; PIN errato → `code_rejected`. Nessuna logica bypass (gestita a monte nelle automazioni) |
 | `ring_keypad_arm_or_challenge` | mode, keypad_id | Controlla sensori aperti nelle zone del profilo target: se pulito → `do_arm`; se ci sono sensori → attiva `bypass_pending` + `bypass_challenge` + avvia `bypass_timeout_script` |
 | `ring_keypad_bypass_confirm` | keypad_id | `stored_mode` ← `bypass_mode`; `turn_off do_arm`; `bypass_cancel`; `do_arm(stored_mode)` — nessuna verifica PIN, il tasto V è sufficiente |
-| `ring_keypad_bypass_keepalive` | keypad_id | `mode: restart` — loop `repeat/while`: ogni 5s invia `Bypass_challenge/1` payload `1` (solo LED, no voce) finché `bypass_pending=on` AND `bypass_keypad==keypad_id` |
+| `ring_keypad_bypass_keepalive` | keypad_id | `mode: restart` — loop `repeat/while`: ogni 5s invia `Bypass_challenge/9` payload `1` (sub_cmd 9 = solo LED, no voce) finché `bypass_pending=on` AND `bypass_keypad==keypad_id`. sub_cmd 1 attiva la voce; sub_cmd 9 solo LED. |
 | `ring_keypad_bypass_cancel` | — | Resetta `bypass_pending`, `bypass_mode`, `bypass_keypad`; ferma `bypass_timeout_script` e `bypass_keepalive` |
 | `ring_keypad_bypass_timeout_script` | — | `mode: restart` — allo scadere di `ring_keypad_bypass_timeout` secondi: **prima** inline-reset bypass (turn_off pending + clear mode/keypad), **poi** `sync_state` (ordine critico: evita race condition RK-45); non chiama `bypass_cancel` per evitare `turn_off` su se stesso |
 | `ring_keypad_do_disarm` | keypad_id | **Prima** chiama `bypass_cancel`; poi ferma `do_arm` (RK-30); imposta stato `disarmed` + log |
@@ -341,7 +342,7 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 | `ring_keypad_input_arm_home_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/6/0` | Se bypass_pending → `code_rejected`; se `require_code=off` → `arm_or_challenge`; altrimenti `code_rejected` |
 | `ring_keypad_input_enter` | `zwave2mqtt/+/unknownClass_111/endpoint_0/2/2` | Se bypass_pending → `bypass_confirm`; altrimenti `validate_and_arm mode=armed_sera` |
 | `ring_keypad_input_enter_nocode` | `zwave2mqtt/+/unknownClass_111/endpoint_0/2/0` | Se bypass_pending → `bypass_confirm`; se `require_code=off` → `arm_or_challenge`; altrimenti `code_rejected` |
-| `ring_keypad_input_cancel` | `zwave2mqtt/+/unknownClass_111/endpoint_0/25/2` | Se `bypass_pending=on` per questa tastiera → `bypass_cancel` + `sync_state` (annulla bypass attivo); altrimenti solo log "Tasto X" |
+| `ring_keypad_input_cancel` | `25/2` (con codice) + `25/0` (senza codice) | Se `bypass_pending=on` per questa tastiera → `bypass_cancel` + `sync_state` (annulla bypass attivo); altrimenti solo log "Tasto X" |
 | `ring_keypad_input_rapina` | `zwave2mqtt/+/unknownClass_111/endpoint_0/17/0` | Stato `triggered_rapina` + broadcast rapina |
 | `ring_keypad_input_medical` | `zwave2mqtt/+/unknownClass_111/endpoint_0/19/0` | Stato `triggered_medical` + broadcast |
 | `ring_keypad_input_fire` | `zwave2mqtt/+/unknownClass_111/endpoint_0/16/0` | Stato `triggered_fire` + broadcast |
@@ -711,4 +712,5 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-50 | **UX/Refactor** — Logica bypass accoppiata a `validate_and_arm`: CASO 1/2a/2b rendevano lo script complesso e il PIN era richiesto anche quando non necessario. Il bypass non appartiene alla validazione PIN. | **Corretto 2026-04-14** | Nuovo script `ring_keypad_bypass_confirm`: unica responsabilità, conferma bypass senza PIN. `validate_and_arm` semplificato a puro PIN→arm. Le automazioni V (2/2 e 2/0) intercettano il bypass prima, chiamano `bypass_confirm`. Le automazioni ARM HOME/AWAY (5/2, 6/2) aggiungono guard bypass→`code_rejected` prima di `validate_and_arm`. |
 | RK-53 | **MEDIO** — `Timeout_Display_on_Status_Change` non configurabile via MQTT su questo dispositivo: il tentativo di impostarlo in `ring_keypad_bypass_challenge` non aveva effetto, introducendo una chiamata MQTT inutile. L'indicatore hardware scompare secondo il valore Z-Wave salvato in NVRAM (non modificabile da software). La finestra di conferma bypass deve essere gestita interamente via software. | **Corretto 2026-04-15** | Rimosso il publish `Timeout_Display_on_Status_Change` da `ring_keypad_bypass_challenge`. La finestra è gestita da `ring_keypad_bypass_timeout_script` (delay software): anche dopo che l'indicatore hardware scompare, premere V entro `ring_keypad_bypass_timeout` secondi arma il sistema. Range aggiornato a 5-60s (non più vincolato al limite hardware 30s). |
 | RK-52 | **CRITICO** — Bypass loop con `require_code_to_arm=off`: `bypass_confirm` chiama `bypass_cancel` (bypass_pending=off) PRIMA che `do_arm` imposti lo stato su `arming`. In quella finestra, un messaggio `2/0` duplicato dall'hardware o premuto una seconda volta trovava bypass_pending=off → Branch 2 (`require_code_to_arm=off`) → `arm_or_challenge` con sensori aperti → nuovo bypass challenge. Il sistema sembrava "riprovare l'inserimento sera" all'infinito. | **Corretto 2026-04-15** | Guardia doppia al Branch 2 di `ring_keypad_input_enter_nocode`: (1) `not is_state('script.ring_keypad_bypass_confirm', 'on')` — blocca il branch mentre `bypass_confirm` è in esecuzione, copre la race window tra `bypass_cancel` e `do_arm`; (2) `ring_keypad_alarm_state == 'disarmed'` — blocca il branch durante arming/armed. |
-| RK-54 | **UX** — L'indicatore hardware `Bypass_challenge` scompare dopo ~5s (timeout gestito dall'NVRAM del dispositivo, non modificabile via MQTT): l'utente non aveva più feedback visivo per la maggior parte della finestra di bypass software, rendendo difficile capire che poteva ancora premere V. | **Implementato 2026-04-15** | Nuovo script `ring_keypad_bypass_keepalive` (`mode: restart`): loop `repeat/while` che ogni 5s invia `Bypass_challenge/1` payload `1` (solo LED, nessuna voce — evita annunci vocali ripetuti) finché `bypass_pending=on` AND `bypass_keypad==keypad_id`. `ring_keypad_bypass_challenge` lo avvia subito dopo il primo invio payload `99`. `ring_keypad_bypass_cancel` lo ferma insieme a `bypass_timeout_script`. |
+| RK-55 | **BUG** — Tasto X non interrompeva il bypass: `ring_keypad_input_cancel` ascoltava solo `25/2` (X + codice). Durante un bypass attivo l'utente preme X senza inserire codice → la tastiera emette `25/0`, evento non gestito → bypass continua fino al timeout software. | **Corretto 2026-04-15** | Aggiunto secondo trigger `25/0` all'automazione `ring_keypad_input_cancel`. Ora sia X+codice che X senza codice cancellano il bypass attivo e ripristinano i LED. |
+| RK-54 | **UX** — L'indicatore hardware `Bypass_challenge` scompare dopo ~5s (timeout gestito dall'NVRAM del dispositivo, non modificabile via MQTT): l'utente non aveva più feedback visivo per la maggior parte della finestra di bypass software, rendendo difficile capire che poteva ancora premere V. | **Implementato 2026-04-15** | Nuovo script `ring_keypad_bypass_keepalive` (`mode: restart`): loop `repeat/while` che ogni 5s invia `Bypass_challenge/9` payload `1` (**sub_cmd 9 = solo LED, nessuna voce** — sub_cmd 1 attiva sempre la voce indipendentemente dal payload) finché `bypass_pending=on` AND `bypass_keypad==keypad_id`. `ring_keypad_bypass_challenge` lo avvia subito dopo il primo invio sub_cmd 1 payload `99`. `ring_keypad_bypass_cancel` lo ferma insieme a `bypass_timeout_script`. |

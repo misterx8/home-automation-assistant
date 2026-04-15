@@ -17,7 +17,8 @@
 #  5         | 2         | Tasto Arm Away + codice
 #  5         | 0         | Tasto Arm Away senza codice
 #  2         | 2         | Tasto V (Enter) + codice → arma profilo sera
-# 25         | 2         | Tasto X (Cancel) + codice → solo log
+# 25         | 2         | Tasto X (Cancel) + codice → annulla bypass o solo log
+# 25         | 0         | Tasto X (Cancel) senza codice → annulla bypass o solo log
 # 17         | 0         | Tasto Police hold 3s → anti-rapina SILENZIOSO
 # 19         | 0         | Tasto Medical hold 3s
 # 16         | 0         | Tasto Fire hold 3s
@@ -290,15 +291,18 @@ automation:
               keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
-  # TASTO X (Cancel) + codice (event_type=25, data_type=2)
+  # TASTO X (Cancel) — con codice (25/2) o senza codice (25/0)
   # Se bypass pendente per questa tastiera: annulla il bypass e ripristina LED.
   # In ogni caso aggiorna il log.
+  # Nota: durante il bypass l'utente preme X senza codice → 25/0, non solo 25/2.
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_input_cancel
     alias: "Keypad - Input: Tasto X (Cancel)"
     trigger:
       - platform: mqtt
         topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/25/2"
+      - platform: mqtt
+        topic: "zwave2mqtt/+/unknownClass_111/endpoint_0/25/0"
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
