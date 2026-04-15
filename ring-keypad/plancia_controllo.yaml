@@ -47,6 +47,15 @@ header:
           } %} <ha-alert alert-type="error">ALLARME IN CORSO — {{
           etichette.get(stato, stato | replace('triggered_','') | upper)
           }}</ha-alert>
+    - type: conditional
+      conditions:
+        - condition: state
+          entity: input_boolean.ring_keypad_bypass_pending
+          state: "on"
+      card:
+        type: markdown
+        content: >-
+          <ha-alert alert-type="warning">BYPASS IN ATTESA — premere V per confermare o X per annullare</ha-alert>
 sections:
   - type: grid
     cards:
@@ -67,7 +76,7 @@ sections:
             {% set stato = states('input_select.ring_keypad_alarm_state') %} {%
             if stato.startswith('triggered_') %}
               {% set color = 'red' %}
-            {% elif stato in ['armed_home','armed_away','arming'] %}
+            {% elif stato in ['armed_home','armed_away','arming','armed_sera'] %}
               {% set color = '#f0a500' %}
             {% else %}
               {% set color = 'green' %}
@@ -83,6 +92,7 @@ sections:
             'disarmed':          'Disinserito',
             'armed_home':        'Armato Casa',
             'armed_away':        'Armato Fuori',
+            'armed_sera':        'Armato Sera',
             'arming':            'Armamento in corso...',
             'triggered_burglar': 'ALLARME INTRUSIONE',
             'triggered_rapina':  'ANTI-RAPINA SILENZIOSO',
@@ -105,7 +115,7 @@ sections:
             mdi:alarm-light-off
           {% elif stato.startswith('triggered_') %}
             mdi:alarm-light
-          {% elif stato in ['armed_home','armed_away'] %}
+          {% elif stato in ['armed_home','armed_away','armed_sera'] %}
             mdi:shield-lock
           {% elif stato == 'arming' %}
             mdi:shield-sync
@@ -116,6 +126,8 @@ sections:
           {% set stato = states('input_select.ring_keypad_alarm_state') %} {% if
           stato.startswith('triggered_') %}
             red
+          {% elif stato == 'armed_sera' %}
+            #8B6FDB
           {% elif stato in ['armed_home','armed_away','arming'] %}
             orange
           {% else %}
@@ -126,6 +138,26 @@ sections:
           rows: 1
         tap_action:
           action: none
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: input_boolean.ring_keypad_bypass_pending
+            state: "on"
+        grid_options:
+          columns: 12
+          rows: 1
+        card:
+          type: custom:mushroom-template-card
+          primary: Bypass in attesa di conferma
+          secondary: >
+            {% set tastiera = states('input_text.ring_keypad_bypass_keypad') %}
+            {% set profilo = states('input_text.ring_keypad_bypass_mode') %}
+            Tastiera: {{ tastiera if tastiera not in ['','unknown','unavailable'] else 'N/D' }}
+            — Profilo: {{ profilo if profilo not in ['','unknown','unavailable'] else 'N/D' }}
+          icon: mdi:shield-alert
+          icon_color: orange
+          tap_action:
+            action: none
       - type: conditional
         conditions:
           - condition: or
@@ -481,6 +513,14 @@ sections:
                       name: Stato Corrente
                     - entity: input_text.ring_keypad_arming_target_mode
                       name: Target Mode Arming
+                      secondary_info: last-updated
+                    - entity: input_boolean.ring_keypad_bypass_pending
+                      name: Bypass Pendente
+                    - entity: input_text.ring_keypad_bypass_mode
+                      name: Bypass Mode
+                      secondary_info: last-updated
+                    - entity: input_text.ring_keypad_bypass_keypad
+                      name: Bypass Tastiera
                       secondary_info: last-updated
         card_mod:
           style: |
