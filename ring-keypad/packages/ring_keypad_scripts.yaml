@@ -147,17 +147,73 @@ script:
 
   ring_keypad_bypass_challenge:
     alias: "Keypad → Bypass richiesto"
-    description: "Richiesta bypass — sub_cmd 1! (non 9) — SEMPRE con suono"
+    description: >
+      Attiva l'indicatore Bypass_challenge sulla tastiera (sub_cmd 1, payload 99 con voce).
+      Poi avvia il keepalive che ogni 5s rinvia payload 1 (solo LED, senza voce) per tutta
+      la durata del bypass timeout, simulando una finestra di conferma visiva continua.
+      L'hardware mostra il LED ~5s per messaggio; il keepalive lo rinnova fino a scadenza.
     fields:
       keypad_id:
         description: "Topic base della tastiera"
         required: true
     sequence:
+      # Primo invio: payload 99 = LED + voce
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Bypass_challenge/1/set"
-          # payload 99 come da manuale del dispositivo
           payload: "99"
+      # Avvia keepalive LED (payload 1 = solo LED, senza voce) ogni 5s
+      - action: script.turn_on
+        target:
+          entity_id: script.ring_keypad_bypass_keepalive
+        data:
+          variables:
+            keypad_id: "{{ keypad_id }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # BYPASS KEEPALIVE — rinvia Bypass_challenge/1 ogni 5s (payload 1, solo LED)
+  # Mantiene acceso il LED di bypass sulla tastiera per tutta la finestra software.
+  # Si interrompe quando bypass_pending si azzera (cancel/confirm/timeout).
+  # mode: restart → se chiamato di nuovo (nuova tastiera), riparte subito.
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_bypass_keepalive:
+    alias: "Keypad - Keepalive LED Bypass"
+    description: >
+      Invia Bypass_challenge/1 con payload 1 (solo LED, nessuna voce) ogni 5 secondi
+      finché bypass_pending è on e bypass_keypad corrisponde a keypad_id.
+      Viene fermato da bypass_cancel o bypass_confirm.
+    mode: restart
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - repeat:
+          while:
+            - condition: state
+              entity_id: input_boolean.ring_keypad_bypass_pending
+              state: "on"
+            - condition: template
+              value_template: >
+                {{ states('input_text.ring_keypad_bypass_keypad') == keypad_id }}
+          sequence:
+            - delay:
+                seconds: 5
+            # Ricontrollo dopo il delay (il bypass può essere stato cancellato nel frattempo)
+            - if:
+                - condition: state
+                  entity_id: input_boolean.ring_keypad_bypass_pending
+                  state: "on"
+                - condition: template
+                  value_template: >
+                    {{ states('input_text.ring_keypad_bypass_keypad') == keypad_id }}
+              then:
+                - action: mqtt.publish
+                  data:
+                    topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Bypass_challenge/1/set"
+                    # payload 1 = solo LED, nessuna voce (non ripetere l'annuncio vocale)
+                    payload: "1"
 
   # ══════════════════════════════════════════════════════════════════════════
   # DELAY CON COUNTDOWN (formato stringa "{min}m{sec}s")
@@ -671,6 +727,10 @@ script:
       - action: script.turn_off
         target:
           entity_id: script.ring_keypad_bypass_timeout_script
+      # Ferma anche il keepalive LED bypass
+      - action: script.turn_off
+        target:
+          entity_id: script.ring_keypad_bypass_keepalive
 
   # ══════════════════════════════════════════════════════════════════════════
   # BYPASS TIMEOUT — allo scadere cancella bypass e ripristina LED tastiera

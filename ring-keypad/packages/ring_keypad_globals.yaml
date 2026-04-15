@@ -140,8 +140,11 @@ input_number:
 
   ring_keypad_bypass_timeout:
     name: "Keypad - Timeout Conferma Bypass (sec)"
-    min: 15
-    max: 120
+    # Finestra software entro cui premere V per confermare il bypass.
+    # Indipendente dall'hardware: l'indicatore sulla tastiera può scomparire prima,
+    # ma premendo V entro questo timeout il sistema arma comunque.
+    min: 5
+    max: 60
     step: 5
     unit_of_measurement: s
     icon: mdi:timer-alert-outline

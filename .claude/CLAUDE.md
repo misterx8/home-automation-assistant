@@ -2,6 +2,22 @@
 
 This repository uses a multi-agent architecture powered by Claude Code.
 
+---
+
+# Regole YAML — Helper configurabili dall'utente
+
+**REGOLA OBBLIGATORIA — Nessun `initial` su helper configurabili dall'utente:**
+`input_number`, `input_boolean`, `input_text`, `input_select` e simili che l'utente
+può modificare dalla UI NON devono avere il campo `initial:`.
+HA usa `initial` solo al primo avvio (entità non ancora esistente nel registry);
+al riavvio ripristina il valore salvato nel registry. Se `initial` è presente,
+al riavvio il valore viene sovrascritto con `initial` e le modifiche dell'utente
+vanno perse.
+Eccezione: `initial` è accettabile SOLO per entità tecniche interne che non
+vengono mai modificate dall'utente (flag di stato interni, contatori di sistema).
+
+---
+
 Claude must orchestrate specialized sub-agents to design, generate, validate and debug Home Assistant configurations.
 
 The goal is to always produce valid, optimized and production-ready configurations.

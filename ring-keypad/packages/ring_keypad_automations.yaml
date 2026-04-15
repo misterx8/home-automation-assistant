@@ -264,11 +264,21 @@ automation:
               - action: script.ring_keypad_bypass_confirm
                 data:
                   keypad_id: "{{ keypad_id }}"
-          # Nessun bypass + code non richiesto → controlla sensori e arma
+          # Nessun bypass + code non richiesto → controlla sensori e arma.
+          # GUARDIA DOPPIA anti-loop:
+          #   1. bypass_confirm NON in esecuzione: evita che un messaggio 2/0 duplicato
+          #      (hardware o rete) arrivi DOPO che bypass_cancel ha azzerato bypass_pending
+          #      ma PRIMA che do_arm imposti lo stato su "arming", chiamando
+          #      arm_or_challenge con sensori ancora aperti e ri-entrando nel bypass loop.
+          #   2. stato == disarmed: evita arm_or_challenge durante arming/armed.
           - conditions:
               - condition: state
                 entity_id: input_boolean.ring_keypad_require_code_to_arm
                 state: "off"
+              - condition: template
+                value_template: >
+                  {{ not is_state('script.ring_keypad_bypass_confirm', 'on') and
+                     states('input_select.ring_keypad_alarm_state') == 'disarmed' }}
             sequence:
               - action: script.ring_keypad_arm_or_challenge
                 data:
