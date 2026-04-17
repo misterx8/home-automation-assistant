@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
 > Ultima revisione: 2026-04-15  
-> Versione architettura: 4.8 (RK-56: rimossa chiamata diretta `show_exit_delay` da `do_arm` — il sync automatico evita il doppio MQTT)
+> Versione architettura: 4.9 (Aggiunto sistema log: `ring_keypad_log.yaml` + `var/ring_keypad.yaml` + sezione Log nella dashboard)
 
 ---
 
@@ -28,7 +28,10 @@ ring-keypad/
 │   ├── ring_keypad_scripts.yaml        # Script parametrici (accettano keypad_id)
 │   ├── ring_keypad_automations.yaml    # Automazioni con wildcard MQTT
 │   ├── ring_keypad_keypads.yaml        # Sensori MQTT fisici per tastiera
-│   └── ring_keypad_integration.yaml   # Bridge bidirezionale verso sistemi esterni
+│   ├── ring_keypad_integration.yaml   # Bridge bidirezionale verso sistemi esterni
+│   └── ring_keypad_log.yaml            # Sistema log: logbook, timeline, note
+├── var/
+│   └── ring_keypad.yaml                # Var timeline (da aggiungere al var.yaml di HA)
 └── ANALISI_TECNICA.md                  # Questo file
 ```
 
@@ -41,6 +44,8 @@ ring-keypad/
 | `ring_keypad_automations.yaml` | `automation.*` (trigger MQTT) |
 | `ring_keypad_keypads.yaml` | `mqtt.sensor`, `mqtt.binary_sensor` per tastiera |
 | `ring_keypad_integration.yaml` | `automation.*` (bridge esterno) |
+| `ring_keypad_log.yaml` | `input_text` logbook, `script.*` log, `automation.*` log, `template sensor` timeline |
+| `var/ring_keypad.yaml` | `var.ring_keypad_timeline_md`, `var.ring_keypad_timeline_critici_md`, `var.ring_keypad_timeline_operazioni_md`, `var.ring_keypad_timeline_note_md` |
 
 ---
 
@@ -715,3 +720,96 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-55 | **BUG** — Tasto X non interrompeva il bypass: `ring_keypad_input_cancel` ascoltava solo `25/2` (X + codice). Durante un bypass attivo l'utente preme X senza inserire codice → la tastiera emette `25/0`, evento non gestito → bypass continua fino al timeout software. | **Corretto 2026-04-15** | Aggiunto secondo trigger `25/0` all'automazione `ring_keypad_input_cancel`. Ora sia X+codice che X senza codice cancellano il bypass attivo e ripristinano i LED. |
 | RK-56 | **BUG** — Doppio comando MQTT `Exit_Delay` durante l'armo: `ring_keypad_do_arm` impostava lo stato su `arming` (triggera `sync_on_state_change` → `sync_all` → `sync_state` → `show_exit_delay`) e poi chiamava `show_exit_delay` anche direttamente sulla tastiera. Risultato: la tastiera riceveva il countdown due volte in rapida successione. | **Corretto 2026-04-15** | Rimossa la chiamata diretta a `show_exit_delay` da `ring_keypad_do_arm`. Il cambio stato su `arming` innesca automaticamente `sync_on_state_change` → `sync_all` → `show_exit_delay` su TUTTE le tastiere attive, il che è anche più corretto (multi-tastiera). |
 | RK-54 | **UX** — L'indicatore hardware `Bypass_challenge` scompare dopo ~5s (timeout gestito dall'NVRAM del dispositivo, non modificabile via MQTT): l'utente non aveva più feedback visivo per la maggior parte della finestra di bypass software, rendendo difficile capire che poteva ancora premere V. | **Implementato 2026-04-15** | Nuovo script `ring_keypad_bypass_keepalive` (`mode: restart`): loop `repeat/while` che ogni 5s invia `Bypass_challenge/9` payload `1` (**sub_cmd 9 = solo LED, nessuna voce** — sub_cmd 1 attiva sempre la voce indipendentemente dal payload) finché `bypass_pending=on` AND `bypass_keypad==keypad_id`. `ring_keypad_bypass_challenge` lo avvia subito dopo il primo invio sub_cmd 1 payload `99`. `ring_keypad_bypass_cancel` lo ferma insieme a `bypass_timeout_script`. |
+
+---
+
+## Sezione 13 — Sistema Log
+
+### Architettura
+
+Il sistema log è implementato in `ring_keypad_log.yaml` (**Opzione A** — zero impatto sui file esistenti). Il file è autonomo: non modifica nessuno degli altri 5 package.
+
+### Entità helper
+
+| Entità | Tipo | Descrizione |
+|--------|------|-------------|
+| `input_text.ring_keypad_logbook_event` | fittizia | Usata come entity_id in `logbook.log` per filtrare la Logbook card in UI |
+| `input_text.ring_keypad_logbook_ultimo_evento` | trigger | Aggiornata da `logbook_emit`; osservata dall'automazione timeline append |
+| `input_text.ring_keypad_nota_manuale` | UI | Campo testo per note manuali da dashboard |
+
+### Script
+
+| Script | Descrizione |
+|--------|-------------|
+| `ring_keypad_logbook_emit` | `msg` → `logbook.log` + update `ultimo_evento` |
+| `ring_keypad_logbook_nota` | Prefissa `📝 Nota:` e chiama `logbook_emit` |
+| `ring_keypad_logbook_nota_da_ui` | Legge `ring_keypad_nota_manuale`, chiama `logbook_emit`, svuota il campo |
+| `ring_keypad_logbook_cancella_tutto` | Azzera le 4 `var.*` timeline (globale + 3 sezioni) |
+
+### Sorgenti di log
+
+Il log è completamente autonomo grazie a tre sorgenti di osservazione:
+
+| ID Automazione | Trigger | Copertura |
+|----------------|---------|-----------|
+| `ring_keypad_log_da_last_event` | `input_text.ring_keypad_last_event` | Tutte le azioni da tastiera: arm, disarm, PIN errato, bypass, tasto X, ANTI-RAPINA, MEDICAL, FIRE |
+| `ring_keypad_log_da_alarm_state_esterno` | `ring_keypad_alarm_state` → `triggered_burglar`, `triggered_water` | Allarmi da sistemi esterni (allarme-core → burglar; safety-core → acqua) — questi stati non hanno corrispondente scrittura su `last_event` |
+| `ring_keypad_log_tastiera_online` | MQTT `zwave2mqtt/+/status` | Tastiera tornata online (payload `status = Alive`) |
+| `ring_keypad_log_timeline_append` | `input_text.ring_keypad_logbook_ultimo_evento` | Append a `var.*_timeline_md` (globale + sezione appropriata) |
+
+### Decorazione emoji
+
+| Contenuto messaggio | Emoji | Sezione timeline |
+|---------------------|-------|-----------------|
+| `PIN errato` | ❌ | Operazioni |
+| `ANTI-RAPINA` | 🚨 | Critici |
+| `MEDICAL` | 🚑 | Critici |
+| `FIRE` | 🔥 | Critici |
+| `triggered_burglar` | 🚨 | Critici |
+| `triggered_water` | 💧 | Critici |
+| `Bypass attivo` | ⚠️ | Operazioni |
+| `Tasto X` / `annullamento` | ↩️ | Operazioni |
+| `Disarmato` | 🔓 | Operazioni |
+| `Armo ... armed_sera` | 🌙 | Operazioni |
+| `Armo` | 🔒 | Operazioni |
+| Tastiera online | 📡 | Operazioni |
+| Nota manuale | 📝 | Note |
+| Altro | ℹ️ | Operazioni |
+
+### Var timeline
+
+Dichiarate in `ring-keypad/var/ring_keypad.yaml` (da aggiungere al `var.yaml` di HA):
+
+| Var | Uso |
+|-----|-----|
+| `var.ring_keypad_timeline_md` | Timeline globale — letta dal template sensor "Timeline Render" |
+| `var.ring_keypad_timeline_critici_md` | Sezione critici — popup dashboard |
+| `var.ring_keypad_timeline_operazioni_md` | Sezione operazioni — popup dashboard |
+| `var.ring_keypad_timeline_note_md` | Sezione note — popup dashboard |
+
+Ogni var mantiene al massimo 25 righe (le più recenti).
+
+### Template sensor
+
+| Sensor | `unique_id` | Descrizione |
+|--------|-------------|-------------|
+| `Ring Keypad – Timeline Render` | `ring_keypad_timeline_render` | Legge `var.ring_keypad_timeline_md`, colora le righe per tipo, espone in `long_state` |
+| `Ring Keypad – Count Critici` | `ring_keypad_count_critici` | Conta le righe in `var.ring_keypad_timeline_critici_md` |
+| `Ring Keypad – Count Operazioni` | `ring_keypad_count_operazioni` | Conta le righe in `var.ring_keypad_timeline_operazioni_md` |
+| `Ring Keypad – Count Note` | `ring_keypad_count_note` | Conta le righe in `var.ring_keypad_timeline_note_md` |
+
+### Dashboard (plancia_controllo.yaml)
+
+La sezione "Log & Attività" è stata estesa con:
+- **Pulsante Registro** — popup con 3 markdown card (Critici / Operazioni / Note) scrollabili
+- **Tile Cancella Log** — chiama `ring_keypad_logbook_cancella_tutto`
+- **Tile Aggiungi Nota** — popup con campo testo + pulsante salva
+- **`custom:timeline-card`** — storico visivo 24h di `ring_keypad_alarm_state` e `last_user`
+- **Tile Ultimo Evento Log** — mostra `ring_keypad_logbook_ultimo_evento`
+
+### Installazione
+
+1. Copiare `packages/ring_keypad_log.yaml` in `config/packages/ring_keypad/` (o nella directory packages HA)
+2. Aggiungere il contenuto di `var/ring_keypad.yaml` al `var.yaml` esistente in HA
+3. Riavviare HA
+4. Il log parte immediatamente a raccogliere eventi senza configurazione aggiuntiva

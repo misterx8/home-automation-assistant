@@ -1,0 +1,327 @@
+# ============================================================================
+# RING KEYPAD - LOG
+# Stesso pattern di allarme_core_log.yaml e safety_core_log.yaml:
+#   - entity fittizia input_text.ring_keypad_logbook_event
+#   - script ring_keypad_logbook_emit per log uniforme
+#   - automazioni autonome: zero modifica ai file esistenti
+#   - var.* per timeline (dichiarate in ring-keypad/var/ring_keypad.yaml)
+#   - template sensor per render e contatori
+#
+# SORGENTI DI LOG (Opzione A — nessun file esistente toccato):
+#   1. ring_keypad_last_event  → azioni da tastiera (arm/disarm/PIN/bypass/emergenza)
+#   2. ring_keypad_alarm_state → SOLO triggered_burglar e triggered_water
+#      (stati impostati esclusivamente da allarme-core e safety-core senza
+#      corrispondente scrittura su last_event)
+#   3. MQTT zwave2mqtt/+/status = Alive → tastiera tornata online
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# ENTITY FITTIZIE (usate per filtrare la Logbook card in UI)
+# NOTA: NO initial — helper modificabili dall'utente
+# ----------------------------------------------------------------------------
+input_text:
+  ring_keypad_logbook_event:
+    name: "Ring Keypad Logbook Event"
+    max: 255
+
+  ring_keypad_logbook_ultimo_evento:
+    name: "Ring Keypad Logbook Ultimo Evento"
+    max: 255
+
+  ring_keypad_nota_manuale:
+    name: "Ring Keypad - Nota Manuale"
+    max: 255
+    icon: mdi:note-text
+
+# ----------------------------------------------------------------------------
+# SCRIPT
+# ----------------------------------------------------------------------------
+script:
+
+  # Emette un evento nel Logbook HA e aggiorna l'entity ultimo_evento.
+  # Chiamato da tutte le automazioni con: msg: "testo"
+  ring_keypad_logbook_emit:
+    alias: "Ring Keypad - Emit Logbook Event"
+    mode: queued
+    max: 50
+    fields:
+      msg:
+        description: "Messaggio evento"
+    sequence:
+      - action: logbook.log
+        data:
+          name: "Ring Keypad"
+          entity_id: input_text.ring_keypad_logbook_event
+          message: "{{ msg | string }}"
+      - action: input_text.set_value
+        data:
+          entity_id: input_text.ring_keypad_logbook_ultimo_evento
+          value: "{{ msg | string }}"
+
+  # Aggiunge una nota manuale al log (chiamata con parametro nota)
+  ring_keypad_logbook_nota:
+    alias: "Ring Keypad - Nota Logbook"
+    icon: mdi:note-plus
+    mode: queued
+    max: 50
+    fields:
+      nota:
+        description: "Testo nota"
+        example: "Manutenzione / test tastiera"
+    sequence:
+      - action: script.ring_keypad_logbook_emit
+        data:
+          msg: "📝 Nota: {{ nota | string }}"
+
+  # Salva la nota scritta nel campo UI input_text.ring_keypad_nota_manuale
+  ring_keypad_logbook_nota_da_ui:
+    alias: "Ring Keypad - Salva Nota da UI"
+    icon: mdi:content-save
+    mode: queued
+    max: 50
+    sequence:
+      - variables:
+          testo: "{{ states('input_text.ring_keypad_nota_manuale') | trim }}"
+      - condition: template
+        value_template: "{{ testo | length > 0 }}"
+      - action: script.ring_keypad_logbook_emit
+        data:
+          msg: "📝 Nota: {{ testo }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_nota_manuale
+        data:
+          value: ""
+
+  # Azzera tutte le timeline var (globale + 3 sezioni)
+  ring_keypad_logbook_cancella_tutto:
+    alias: "Ring Keypad - Cancella Tutto Logbook"
+    icon: mdi:delete
+    mode: queued
+    max: 50
+    sequence:
+      - action: var.set
+        data:
+          entity_id:
+            - var.ring_keypad_timeline_md
+            - var.ring_keypad_timeline_critici_md
+            - var.ring_keypad_timeline_note_md
+            - var.ring_keypad_timeline_operazioni_md
+          value: ""
+          attributes:
+            long_state: ""
+
+# ----------------------------------------------------------------------------
+# AUTOMAZIONI — zero dipendenza dai file esistenti
+# ----------------------------------------------------------------------------
+automation:
+
+  # ── 1. Log da last_event (azioni originate dalla tastiera fisica) ─────────
+  # ring_keypad_last_event viene aggiornato dagli script/automazioni esistenti:
+  #   "Disarmato da [user]"            → do_disarm
+  #   "Armo [mode] da [user]"          → do_arm
+  #   "PIN errato - tentativo ..."     → validate_and_disarm / validate_and_arm
+  #   "Bypass attivo - premere V ..."  → input_arm_* con bypass pending
+  #   "Tasto X - annullamento"         → input_cancel
+  #   "ANTI-RAPINA dalla tastiera [kp]"→ input_rapina
+  #   "MEDICAL dalla tastiera [kp]"    → input_medical
+  #   "FIRE dalla tastiera [kp]"       → input_fire
+  - id: ring_keypad_log_da_last_event
+    alias: "Ring Keypad - Log da Last Event"
+    mode: queued
+    max: 50
+    trigger:
+      - platform: state
+        entity_id: input_text.ring_keypad_last_event
+    condition:
+      - condition: template
+        value_template: >
+          {{ trigger.to_state is not none
+             and (trigger.to_state.state | string | trim) != ''
+             and (trigger.from_state is none or
+                  trigger.from_state.state != trigger.to_state.state) }}
+    variables:
+      msg_raw: "{{ trigger.to_state.state | default('') | string }}"
+      keypad: "{{ states('input_text.ring_keypad_last_keypad') | default('') | trim }}"
+    action:
+      - action: script.ring_keypad_logbook_emit
+        data:
+          msg: >
+            {% set m = msg_raw %}
+            {% set kp = ' [' ~ keypad ~ ']' if keypad not in ['','unknown','unavailable'] else '' %}
+            {% if 'PIN errato' in m %}
+              ❌ {{ m }}{{ kp }}
+            {% elif 'ANTI-RAPINA' in m %}
+              🚨 {{ m }}
+            {% elif 'MEDICAL' in m %}
+              🚑 {{ m }}
+            {% elif 'FIRE' in m %}
+              🔥 {{ m }}
+            {% elif 'Bypass attivo' in m %}
+              ⚠️ {{ m }}{{ kp }}
+            {% elif 'Tasto X' in m or 'annullamento' in m %}
+              ↩️ {{ m }}{{ kp }}
+            {% elif 'Disarmato' in m %}
+              🔓 {{ m }}{{ kp }}
+            {% elif 'Armo' in m and 'armed_sera' in m %}
+              🌙 {{ m }}{{ kp }}
+            {% elif 'Armo' in m %}
+              🔒 {{ m }}{{ kp }}
+            {% else %}
+              ℹ️ {{ m }}{{ kp }}
+            {% endif %}
+
+  # ── 2. Log stati da sistema esterno (triggered_burglar, triggered_water) ───
+  # Questi stati vengono impostati ESCLUSIVAMENTE dall'integrazione esterna:
+  #   triggered_burglar → ring_keypad_sync_from_allarme_core (stato triggered)
+  #   triggered_water   → ring_keypad_sync_from_safety_core  (categoria acqua)
+  # Non hanno scrittura corrispondente su ring_keypad_last_event.
+  - id: ring_keypad_log_da_alarm_state_esterno
+    alias: "Ring Keypad - Log Allarme da Sistema Esterno"
+    mode: queued
+    max: 20
+    trigger:
+      - platform: state
+        entity_id: input_select.ring_keypad_alarm_state
+        to:
+          - triggered_burglar
+          - triggered_water
+    action:
+      - action: script.ring_keypad_logbook_emit
+        data:
+          msg: >
+            {% if trigger.to_state.state == 'triggered_burglar' %}
+              🚨 ALLARME INTRUSIONE segnalato da allarme-core
+            {% elif trigger.to_state.state == 'triggered_water' %}
+              💧 ALLARME ACQUA segnalato da safety-core
+            {% endif %}
+
+  # ── 3. Log tastiera tornata online ────────────────────────────────────────
+  # Ascolta lo stesso topic MQTT di ring_keypad_restore_on_connect.
+  # Non interferisce con la logica esistente (solo log).
+  - id: ring_keypad_log_tastiera_online
+    alias: "Ring Keypad - Log Tastiera Online"
+    mode: queued
+    max: 20
+    trigger:
+      - platform: mqtt
+        topic: "zwave2mqtt/+/status"
+    variables:
+      keypad_id: "{{ trigger.topic.split('/')[1] }}"
+      status_val: "{{ (trigger.payload_json | default({})).get('status', '') }}"
+    condition:
+      - condition: template
+        value_template: "{{ status_val == 'Alive' }}"
+    action:
+      - action: script.ring_keypad_logbook_emit
+        data:
+          msg: "📡 Tastiera online: {{ keypad_id }}"
+
+  # ── 4. Append alla timeline globale e alla sezione appropriata ────────────
+  # Ogni nuovo messaggio in logbook_ultimo_evento viene preposto a:
+  #   var.ring_keypad_timeline_md       → timeline globale (per Timeline Render)
+  #   var.ring_keypad_timeline_*_md     → sezione (per popup Critici/Oper/Note)
+  - id: ring_keypad_log_timeline_append
+    alias: "Ring Keypad - UI Timeline Append"
+    mode: queued
+    max: 50
+    trigger:
+      - platform: state
+        entity_id: input_text.ring_keypad_logbook_ultimo_evento
+    condition:
+      - condition: template
+        value_template: >
+          {{ trigger.to_state is not none
+             and (trigger.to_state.state | string | trim) != ''
+             and (trigger.from_state is none or
+                  trigger.from_state.state != trigger.to_state.state) }}
+    variables:
+      ts: "{{ now().strftime('%H:%M:%S') }}"
+      msg: "{{ trigger.to_state.state | string }}"
+      line: "- **{{ ts }}** {{ msg }}"
+      keep: 25
+      target: >
+        {% if '🚨' in msg or '🔥' in msg or '🚑' in msg or '💧' in msg %}
+          critici
+        {% elif '📝' in msg %}
+          note
+        {% else %}
+          operazioni
+        {% endif %}
+      ent_sezione: >
+        {% if target == 'critici' %}
+          var.ring_keypad_timeline_critici_md
+        {% elif target == 'note' %}
+          var.ring_keypad_timeline_note_md
+        {% else %}
+          var.ring_keypad_timeline_operazioni_md
+        {% endif %}
+      old_global: >
+        {{ state_attr('var.ring_keypad_timeline_md','long_state') | default('', true) | string }}
+      old_sezione: >
+        {{ state_attr(ent_sezione,'long_state') | default('', true) | string }}
+      new_global: >
+        {% set lines = old_global.split('\n') if old_global | length > 0 else [] %}
+        {{ ([line] + lines)[:keep] | join('\n') }}
+      new_sezione: >
+        {% set lines = old_sezione.split('\n') if old_sezione | length > 0 else [] %}
+        {{ ([line] + lines)[:keep] | join('\n') }}
+    action:
+      - action: var.set
+        data:
+          entity_id: var.ring_keypad_timeline_md
+          attributes:
+            long_state: "{{ new_global }}"
+      - action: var.set
+        data:
+          entity_id: "{{ ent_sezione }}"
+          attributes:
+            long_state: "{{ new_sezione }}"
+
+# ----------------------------------------------------------------------------
+# TEMPLATE SENSOR — timeline render e contatori
+# ----------------------------------------------------------------------------
+template:
+  - sensor:
+      - name: "Ring Keypad – Timeline Render"
+        unique_id: ring_keypad_timeline_render
+        state: ""
+        attributes:
+          long_state: >
+            {% set src = state_attr('var.ring_keypad_timeline_md','long_state') | default('', true) | string %}
+            {% set lines = src.split('\n') | map('trim') | reject('equalto','') | list %}
+            {% set out = namespace(v=[]) %}
+            {% for l in lines[:20] %}
+              {% if '🚨' in l or '🔥' in l or '🚑' in l or '💧' in l %}
+                {% set out.v = out.v + ['🔴 ' ~ l] %}
+              {% elif '🔒' in l or '🌙' in l %}
+                {% set out.v = out.v + ['🟢 ' ~ l] %}
+              {% elif '🔓' in l %}
+                {% set out.v = out.v + ['⚪ ' ~ l] %}
+              {% elif '⚠️' in l or '↩️' in l %}
+                {% set out.v = out.v + ['🟡 ' ~ l] %}
+              {% elif '📝' in l %}
+                {% set out.v = out.v + ['⚫ ' ~ l] %}
+              {% else %}
+                {% set out.v = out.v + ['🔵 ' ~ l] %}
+              {% endif %}
+            {% endfor %}
+            {{ out.v | join('\n') }}
+
+      - name: "Ring Keypad – Count Critici"
+        unique_id: ring_keypad_count_critici
+        state: >
+          {% set s = state_attr('var.ring_keypad_timeline_critici_md','long_state') | default('', true) | string %}
+          {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
+
+      - name: "Ring Keypad – Count Operazioni"
+        unique_id: ring_keypad_count_operazioni
+        state: >
+          {% set s = state_attr('var.ring_keypad_timeline_operazioni_md','long_state') | default('', true) | string %}
+          {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}
+
+      - name: "Ring Keypad – Count Note"
+        unique_id: ring_keypad_count_note
+        state: >
+          {% set s = state_attr('var.ring_keypad_timeline_note_md','long_state') | default('', true) | string %}
+          {{ (s.split('\n') | map('trim') | reject('equalto','') | list) | length }}

@@ -579,5 +579,157 @@ sections:
               box-shadow: 0 0 0 2px #555;
               padding-left: 12px;
             }
+      - type: button
+        grid_options:
+          columns: 6
+          rows: 2
+        name: Registro
+        icon: mdi:book-open-outline
+        tap_action:
+          action: perform-action
+          perform_action: browser_mod.popup
+          data:
+            title: Registro Log Ring Keypad
+            content:
+              type: vertical-stack
+              cards:
+                - type: markdown
+                  title: Critici
+                  content: >
+                    {% set c_raw =
+                    state_attr('var.ring_keypad_timeline_critici_md','long_state')
+                    | default('', true) | string %} {% set c_list =
+                    c_raw.split('\n') | map('trim') | reject('equalto','') |
+                    list %} ### 🚨 Critici ({{ c_list | length }}) {{ c_raw |
+                    trim if c_list | length > 0 else '_Nessun evento critico._'
+                    }}
+                  card_mod:
+                    style: |
+                      ha-markdown {
+                        max-height: 200px;
+                        overflow-y: auto;
+                        display: block;
+                      }
+                - type: markdown
+                  title: Operazioni
+                  content: >
+                    {% set o_raw =
+                    state_attr('var.ring_keypad_timeline_operazioni_md','long_state')
+                    | default('', true) | string %} {% set o_list =
+                    o_raw.split('\n') | map('trim') | reject('equalto','') |
+                    list %} ### ⚙️ Operazioni ({{ o_list | length }}) {{ o_raw |
+                    trim if o_list | length > 0 else '_Nessuna operazione._' }}
+                  card_mod:
+                    style: |
+                      ha-markdown {
+                        max-height: 200px;
+                        overflow-y: auto;
+                        display: block;
+                      }
+                - type: markdown
+                  title: Note
+                  content: >
+                    {% set n_raw =
+                    state_attr('var.ring_keypad_timeline_note_md','long_state')
+                    | default('', true) | string %} {% set n_list =
+                    n_raw.split('\n') | map('trim') | reject('equalto','') |
+                    list %} ### 📝 Note ({{ n_list | length }}) {{ n_raw | trim
+                    if n_list | length > 0 else '_Nessuna nota._' }}
+                  card_mod:
+                    style: |
+                      ha-markdown {
+                        max-height: 200px;
+                        overflow-y: auto;
+                        display: block;
+                      }
+      - type: tile
+        grid_options:
+          columns: 3
+          rows: 1
+        entity: script.ring_keypad_logbook_cancella_tutto
+        name: Cancella Log
+        vertical: false
+        tap_action:
+          action: toggle
+        icon_tap_action:
+          action: toggle
+        features_position: bottom
+      - type: tile
+        grid_options:
+          columns: 3
+          rows: 1
+        entity: script.ring_keypad_logbook_nota_da_ui
+        name: Aggiungi Nota
+        icon: mdi:note-plus
+        vertical: false
+        tap_action:
+          action: perform-action
+          perform_action: browser_mod.popup
+          data:
+            title: Aggiungi nota al log
+            content:
+              type: entities
+              entities:
+                - entity: input_text.ring_keypad_nota_manuale
+                  name: Testo della nota
+                - entity: script.ring_keypad_logbook_nota_da_ui
+                  name: Salva nota
+        features_position: bottom
+      - type: custom:timeline-card
+        title: Ring Keypad – Stato & Eventi
+        hours: 24
+        limit: 50
+        overflow: scroll
+        max_height: 480px
+        relative_time: true
+        refresh_interval: 30
+        entities:
+          - entity: input_select.ring_keypad_alarm_state
+            collapse_duplicates: true
+            name: Stato
+            state_map:
+              disarmed: DISARMATO
+              armed_home: ARMATO CASA
+              armed_away: ARMATO FUORI
+              armed_sera: ARMATO SERA
+              arming: INSERIMENTO
+              triggered_burglar: INTRUSIONE
+              triggered_rapina: ANTI-RAPINA
+              triggered_fire: INCENDIO
+              triggered_medical: MEDICO
+              triggered_water: ACQUA
+            icon_map:
+              disarmed: mdi:lock-open
+              armed_home: mdi:lock
+              armed_away: mdi:lock
+              armed_sera: mdi:weather-night
+              arming: mdi:lock-alert-outline
+              triggered_burglar: mdi:alarm-light
+              triggered_rapina: mdi:police-badge
+              triggered_fire: mdi:fire
+              triggered_medical: mdi:medical-bag
+              triggered_water: mdi:water-alert
+            icon_color_map:
+              disarmed: green
+              armed_home: yellow
+              armed_away: orange
+              armed_sera: purple
+              arming: grey
+              triggered_burglar: red
+              triggered_rapina: red
+              triggered_fire: red
+              triggered_medical: red
+              triggered_water: red
+          - entity: input_text.ring_keypad_last_user
+            collapse_duplicates: true
+            name: Utente
+      - type: tile
+        grid_options:
+          columns: 12
+          rows: 1
+        entity: input_text.ring_keypad_logbook_ultimo_evento
+        name: Ultimo Evento Log
+        vertical: false
+        features_position: bottom
 badges: []
 cards: []

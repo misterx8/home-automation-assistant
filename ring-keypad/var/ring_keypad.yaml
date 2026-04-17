@@ -1,0 +1,25 @@
+# ============================================================================
+# RING KEYPAD - VAR
+# Da aggiungere al var.yaml esistente (stesso file dove hai le var di allarme_core)
+# ============================================================================
+
+ring_keypad_timeline_md:
+  friendly_name: "Ring Keypad Timeline (MD)"
+  icon: mdi:chart-gantt
+  attributes:
+    long_state: ""
+
+ring_keypad_timeline_critici_md:
+  friendly_name: "Ring Keypad Timeline Critici (MD)"
+  attributes:
+    long_state: ""
+
+ring_keypad_timeline_operazioni_md:
+  friendly_name: "Ring Keypad Timeline Operazioni (MD)"
+  attributes:
+    long_state: ""
+
+ring_keypad_timeline_note_md:
+  friendly_name: "Ring Keypad Timeline Note (MD)"
+  attributes:
+    long_state: ""
