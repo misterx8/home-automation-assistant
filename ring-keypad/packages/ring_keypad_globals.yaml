@@ -46,7 +46,6 @@ input_select:
       - "Spenti"
       - "Lampeggio (3s)"
       - "Sempre accesi"
-    initial: "Sempre accesi"
     icon: mdi:led-outline
 
 input_text:
@@ -54,7 +53,6 @@ input_text:
   # ── REGISTRO TASTIERE ──────────────────────────────────────────────────────
   ring_keypad_active_keypads:
     name: "Keypad - Tastiere attive (topic base, separati da virgola)"
-    initial: "tastiera_allarme_camera"
     max: 255
     icon: mdi:keyboard-settings
 
@@ -91,49 +89,51 @@ input_text:
     icon: mdi:shield-arrow-up
 
   # ── PIN UTENTI (mode:password = nascosti in UI, non serve secrets.yaml) ────
+  # pattern accetta: stringa vuota (PIN non configurato) oppure 4-8 cifre numeriche.
+  # HA mostra un errore UI se l'utente tenta di impostare un PIN non valido (FIX C-5).
   ring_keypad_pin_master:
     name: "Keypad PIN - Master"
     max: 16
     mode: password
+    pattern: "^$|^[0-9]{4,8}$"
     icon: mdi:shield-key
 
   ring_keypad_pin_user1:
     name: "Keypad PIN - Utente 1"
     max: 16
     mode: password
+    pattern: "^$|^[0-9]{4,8}$"
     icon: mdi:account-key
 
   ring_keypad_pin_user2:
     name: "Keypad PIN - Utente 2"
     max: 16
     mode: password
+    pattern: "^$|^[0-9]{4,8}$"
     icon: mdi:account-key
 
   ring_keypad_pin_user3:
     name: "Keypad PIN - Utente 3"
     max: 16
     mode: password
+    pattern: "^$|^[0-9]{4,8}$"
     icon: mdi:account-key
 
   # ── NOMI UTENTI ────────────────────────────────────────────────────────────
   ring_keypad_name_master:
     name: "Keypad Nome - Master"
-    initial: "Master"
     max: 32
 
   ring_keypad_name_user1:
     name: "Keypad Nome - Utente 1"
-    initial: "Utente 1"
     max: 32
 
   ring_keypad_name_user2:
     name: "Keypad Nome - Utente 2"
-    initial: "Utente 2"
     max: 32
 
   ring_keypad_name_user3:
     name: "Keypad Nome - Utente 3"
-    initial: "Utente 3"
     max: 32
 
 input_number:
@@ -155,7 +155,6 @@ input_number:
     min: 5
     max: 120
     step: 5
-    initial: 30
     unit_of_measurement: "s"
     icon: mdi:timer-outline
 
@@ -164,8 +163,30 @@ input_number:
     min: 1
     max: 10
     step: 1
-    initial: 5
     icon: mdi:volume-high
+
+  # ── PROTEZIONE BRUTE-FORCE (FIX C-6) ───────────────────────────────────────
+  # Contatore interno tentativi PIN falliti: helper tecnico, non modificato
+  # dall'utente → accettato `initial: 0`. Resetta automaticamente dopo 60s
+  # di inattività o al disarmo/armo riuscito.
+  ring_keypad_failed_attempts:
+    name: "Keypad - Tentativi PIN falliti"
+    min: 0
+    max: 10
+    step: 1
+    initial: 0
+    mode: box
+    icon: mdi:counter
+
+  # Soglia lockout configurabile dall'utente → NESSUN `initial`
+  # (al riavvio sovrascriverebbe il valore salvato dal registry).
+  ring_keypad_max_failed_attempts:
+    name: "Keypad - Soglia lockout (tentativi PIN falliti)"
+    min: 3
+    max: 10
+    step: 1
+    mode: box
+    icon: mdi:shield-lock
 
 
 input_boolean:
@@ -177,7 +198,6 @@ input_boolean:
 
   ring_keypad_require_code_to_arm:
     name: "Keypad - Richiedi codice per armare"
-    initial: false
     icon: mdi:shield-lock-outline
 
   ring_keypad_bypass_pending:
@@ -189,5 +209,34 @@ input_boolean:
   # Se off: payload 1 (solo LED, nessun suono di conferma)
   ring_keypad_voice_feedback:
     name: "Keypad - Feedback vocale"
-    initial: true
     icon: mdi:volume-high
+
+  # ── LOCKOUT PROTEZIONE BRUTE-FORCE (FIX C-6) ──────────────────────────────
+  # Stato tecnico interno: si attiva quando failed_attempts supera la soglia,
+  # si resetta esplicitamente dopo 5 minuti o al reset manuale.
+  # Nessun `initial`: è uno stato runtime che HA preserva nel registry.
+  ring_keypad_lockout_active:
+    name: "Keypad - Lockout Attivo"
+    icon: mdi:lock-alert
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# TEMPLATE BINARY_SENSOR (FIX C-4)
+# Rileva PIN duplicati tra utenti: se due o più utenti hanno lo stesso PIN,
+# resolve_user assegna sempre all'utente con priorità più alta (master per primo),
+# silenziando le credenziali degli altri. Il sensore va mostrato in dashboard
+# come warning: on = collisione PIN attiva.
+# ══════════════════════════════════════════════════════════════════════════
+template:
+  - binary_sensor:
+      - name: "Keypad - Collisione PIN"
+        unique_id: ring_keypad_pin_collision
+        icon: mdi:shield-alert
+        state: >
+          {% set pins = [
+            states('input_text.ring_keypad_pin_master'),
+            states('input_text.ring_keypad_pin_user1'),
+            states('input_text.ring_keypad_pin_user2'),
+            states('input_text.ring_keypad_pin_user3')
+          ] | select('match', '.{4,}') | list %}
+          {{ pins | count != pins | unique | list | count }}

@@ -56,6 +56,24 @@ header:
         type: markdown
         content: >-
           <ha-alert alert-type="warning">BYPASS IN ATTESA — premere V per confermare o X per annullare</ha-alert>
+    - type: conditional
+      conditions:
+        - condition: state
+          entity: input_boolean.ring_keypad_lockout_active
+          state: "on"
+      card:
+        type: markdown
+        content: >-
+          <ha-alert alert-type="error">🔒 LOCKOUT ATTIVO — tastiera bloccata per troppi PIN errati. Reset automatico dopo 5 minuti.</ha-alert>
+    - type: conditional
+      conditions:
+        - condition: state
+          entity: binary_sensor.keypad_collisione_pin
+          state: "on"
+      card:
+        type: markdown
+        content: >-
+          <ha-alert alert-type="warning">⚠️ COLLISIONE PIN — due o più utenti hanno lo stesso PIN. Verificare la configurazione.</ha-alert>
 sections:
   - type: grid
     cards:
@@ -401,6 +419,58 @@ sections:
               box-shadow: 0 0 0 2px {{ color }};
               padding-left: 12px;
             }
+      - type: tile
+        entity: input_number.ring_keypad_max_failed_attempts
+        name: Soglia Lockout (tentativi)
+        vertical: false
+        features_position: bottom
+        features:
+          - type: numeric-input
+            style: buttons
+        grid_options:
+          columns: 6
+          rows: 2
+        card_mod:
+          style: >
+            {% set val = states('input_number.ring_keypad_max_failed_attempts') | int(5) %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'red' if val <= 3 else ('orange' if val <= 5 else '#4a90d9') }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: input_boolean.ring_keypad_lockout_active
+        name: Lockout Brute-Force
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set on = is_state('input_boolean.ring_keypad_lockout_active','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'grey' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: input_number.ring_keypad_failed_attempts
+        name: Tentativi PIN falliti
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set n = states('input_number.ring_keypad_failed_attempts') | int(0) %}
+            {% set max = states('input_number.ring_keypad_max_failed_attempts') | int(5) %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'red' if n >= max else ('orange' if n > 0 else 'grey') }};
+              padding-left: 12px;
+            }
       - type: button
         name: Sync Forzato
         icon: mdi:sync
@@ -456,6 +526,15 @@ sections:
                       name: Nome Utente 3
                     - entity: input_text.ring_keypad_pin_user3
                       name: PIN Utente 3
+                - type: conditional
+                  conditions:
+                    - condition: state
+                      entity: binary_sensor.keypad_collisione_pin
+                      state: "on"
+                  card:
+                    type: markdown
+                    content: >-
+                      <ha-alert alert-type="warning">⚠️ Due o più utenti hanno lo stesso PIN — verificare la configurazione sopra.</ha-alert>
                 - type: entities
                   title: Tastiere e Display
                   entities:
@@ -522,6 +601,13 @@ sections:
                     - entity: input_text.ring_keypad_bypass_keypad
                       name: Bypass Tastiera
                       secondary_info: last-updated
+                    - type: divider
+                    - entity: input_boolean.ring_keypad_lockout_active
+                      name: Lockout Attivo
+                    - entity: input_number.ring_keypad_failed_attempts
+                      name: Tentativi falliti
+                    - entity: binary_sensor.keypad_collisione_pin
+                      name: Collisione PIN
         card_mod:
           style: |
             ha-card {

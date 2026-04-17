@@ -787,27 +787,47 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      - if:
-          - condition: template
-            value_template: >
-              {% set ns = namespace(valid=false) %}
-              {% for pin in [
-                states('input_text.ring_keypad_pin_master'),
-                states('input_text.ring_keypad_pin_user1'),
-                states('input_text.ring_keypad_pin_user2'),
-                states('input_text.ring_keypad_pin_user3')
-              ] %}
-                {% if pin | length >= 4 and pin == code %}{% set ns.valid = true %}{% endif %}
-              {% endfor %}
-              {{ ns.valid }}
-        then:
-          - action: script.ring_keypad_resolve_user
-            data:
-              code: "{{ code }}"
-          - action: script.ring_keypad_do_disarm
-            data:
-              keypad_id: "{{ keypad_id }}"
-        else:
+      - choose:
+          # CASO 1: lockout attivo → code_rejected, feedback identico a PIN errato
+          # (non rivela all'attaccante che è in lockout).
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.ring_keypad_lockout_active
+                state: "on"
+            sequence:
+              - action: script.ring_keypad_code_rejected
+                data:
+                  keypad_id: "{{ keypad_id }}"
+
+          # CASO 2: PIN valido → reset contatore + disarmo
+          - conditions:
+              - condition: template
+                value_template: >
+                  {% set ns = namespace(valid=false) %}
+                  {% for pin in [
+                    states('input_text.ring_keypad_pin_master'),
+                    states('input_text.ring_keypad_pin_user1'),
+                    states('input_text.ring_keypad_pin_user2'),
+                    states('input_text.ring_keypad_pin_user3')
+                  ] %}
+                    {% if pin | length >= 4 and pin == code %}{% set ns.valid = true %}{% endif %}
+                  {% endfor %}
+                  {{ ns.valid }}
+            sequence:
+              - action: script.ring_keypad_resolve_user
+                data:
+                  code: "{{ code }}"
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.ring_keypad_failed_attempts
+                data:
+                  value: 0
+              - action: script.ring_keypad_do_disarm
+                data:
+                  keypad_id: "{{ keypad_id }}"
+
+        # CASO 3 (default): PIN errato — conta SEMPRE per il disarmo
+        default:
           - action: script.ring_keypad_code_rejected
             data:
               keypad_id: "{{ keypad_id }}"
@@ -816,6 +836,28 @@ script:
               entity_id: input_text.ring_keypad_last_event
             data:
               value: "PIN errato - tentativo disarmo"
+          # Calcola il nuovo valore in variabile locale per evitare race condition
+          # tra set_value e la lettura successiva nella condizione soglia.
+          - variables:
+              new_count: "{{ [states('input_number.ring_keypad_failed_attempts') | int(0) + 1, 10] | min }}"
+          - action: input_number.set_value
+            target:
+              entity_id: input_number.ring_keypad_failed_attempts
+            data:
+              value: "{{ new_count }}"
+          - if:
+              - condition: template
+                value_template: >
+                  {{ new_count | int >= states('input_number.ring_keypad_max_failed_attempts') | int(5) }}
+            then:
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.ring_keypad_lockout_active
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_last_event
+                data:
+                  value: "LOCKOUT ATTIVATO - troppi PIN errati"
 
   # ══════════════════════════════════════════════════════════════════════════
   # VALIDAZIONE PIN E ARMO
@@ -834,29 +876,50 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
-      # PIN valido → identifica utente e controlla sensori aperti
-      - if:
-          - condition: template
-            value_template: >
-              {% set ns = namespace(valid=false) %}
-              {% for pin in [
-                states('input_text.ring_keypad_pin_master'),
-                states('input_text.ring_keypad_pin_user1'),
-                states('input_text.ring_keypad_pin_user2'),
-                states('input_text.ring_keypad_pin_user3')
-              ] %}
-                {% if pin | length >= 4 and pin == code %}{% set ns.valid = true %}{% endif %}
-              {% endfor %}
-              {{ ns.valid }}
-        then:
-          - action: script.ring_keypad_resolve_user
-            data:
-              code: "{{ code }}"
-          - action: script.ring_keypad_arm_or_challenge
-            data:
-              mode: "{{ mode }}"
-              keypad_id: "{{ keypad_id }}"
-        else:
+      - choose:
+          # CASO 1: lockout attivo → code_rejected, feedback identico a PIN errato
+          - conditions:
+              - condition: state
+                entity_id: input_boolean.ring_keypad_lockout_active
+                state: "on"
+            sequence:
+              - action: script.ring_keypad_code_rejected
+                data:
+                  keypad_id: "{{ keypad_id }}"
+
+          # CASO 2: PIN valido → reset contatore + identifica utente + arma
+          - conditions:
+              - condition: template
+                value_template: >
+                  {% set ns = namespace(valid=false) %}
+                  {% for pin in [
+                    states('input_text.ring_keypad_pin_master'),
+                    states('input_text.ring_keypad_pin_user1'),
+                    states('input_text.ring_keypad_pin_user2'),
+                    states('input_text.ring_keypad_pin_user3')
+                  ] %}
+                    {% if pin | length >= 4 and pin == code %}{% set ns.valid = true %}{% endif %}
+                  {% endfor %}
+                  {{ ns.valid }}
+            sequence:
+              - action: script.ring_keypad_resolve_user
+                data:
+                  code: "{{ code }}"
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.ring_keypad_failed_attempts
+                data:
+                  value: 0
+              - action: script.ring_keypad_arm_or_challenge
+                data:
+                  mode: "{{ mode }}"
+                  keypad_id: "{{ keypad_id }}"
+
+        # CASO 3 (default): PIN errato
+        # Conta i fallimenti SOLO se il PIN è obbligatorio per armare:
+        # se require_code_to_arm=off l'utente può armare senza codice,
+        # quindi i tentativi errati non contribuiscono al lockout.
+        default:
           - action: script.ring_keypad_code_rejected
             data:
               keypad_id: "{{ keypad_id }}"
@@ -865,6 +928,31 @@ script:
               entity_id: input_text.ring_keypad_last_event
             data:
               value: "PIN errato - tentativo armo {{ mode }}"
+          - if:
+              - condition: state
+                entity_id: input_boolean.ring_keypad_require_code_to_arm
+                state: "on"
+            then:
+              - variables:
+                  new_count: "{{ [states('input_number.ring_keypad_failed_attempts') | int(0) + 1, 10] | min }}"
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.ring_keypad_failed_attempts
+                data:
+                  value: "{{ new_count }}"
+              - if:
+                  - condition: template
+                    value_template: >
+                      {{ new_count | int >= states('input_number.ring_keypad_max_failed_attempts') | int(5) }}
+                then:
+                  - action: input_boolean.turn_on
+                    target:
+                      entity_id: input_boolean.ring_keypad_lockout_active
+                  - action: input_text.set_value
+                    target:
+                      entity_id: input_text.ring_keypad_last_event
+                    data:
+                      value: "LOCKOUT ATTIVATO - troppi PIN errati"
 
   # ══════════════════════════════════════════════════════════════════════════
   # DISARMO EFFETTIVO
@@ -909,9 +997,14 @@ script:
 
   ring_keypad_do_arm:
     alias: "Keypad - Esegui armo"
-    # mode single: previene esecuzioni concorrenti durante l'exit delay
-    mode: single
-    max_exceeded: silent
+    # FIX C-3: mode restart.
+    # Con `mode: single`, premendo Arm Home (exit delay parte) e poi Arm Away
+    # entro il delay, la seconda chiamata veniva scartata silenziosamente e
+    # il sistema armava nel profilo sbagliato senza feedback. Con `restart`,
+    # un nuovo profilo premuto durante l'exit delay riavvia lo script con il
+    # nuovo profilo — comportamento desiderato.
+    # `max_exceeded: silent` rimosso: irrilevante con mode: restart.
+    mode: restart
     fields:
       mode:
         description: "armed_home, armed_away o armed_sera"

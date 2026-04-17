@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
-> Ultima revisione: 2026-04-15  
-> Versione architettura: 4.9 (Aggiunto sistema log: `ring_keypad_log.yaml` + `var/ring_keypad.yaml` + sezione Log nella dashboard)
+> Ultima revisione: 2026-04-17  
+> Versione architettura: 5.0 (Fix critici C-2/C-3/C-4/C-5/C-6: protezione payload MQTT, mode:restart su do_arm, rilevamento PIN duplicati, validazione pattern PIN, sistema anti brute-force)
 
 ---
 
@@ -208,8 +208,8 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 | `ring_keypad_arming_target_mode` | Target mode (armed_home/armed_away) salvato all'inizio dell'arming | Usato dall'integration per impostare profilo allarme-core e chiamare arm_allarme_core (normale) con calcolo bypass |
 | `ring_keypad_bypass_mode` | Mode (armed_home/armed_away/armed_sera) del bypass pendente | Impostato da `arm_or_challenge`; resettato da `bypass_cancel` |
 | `ring_keypad_bypass_keypad` | Topic base della tastiera che ha avviato il bypass | Impostato da `arm_or_challenge`; resettato da `bypass_cancel` |
-| `ring_keypad_pin_master` | PIN Master | mode: password |
-| `ring_keypad_pin_user1..3` | PIN Utenti 1-3 | mode: password |
+| `ring_keypad_pin_master` | PIN Master | mode: password; pattern `^$\|^[0-9]{4,8}$` (fix C-5) |
+| `ring_keypad_pin_user1..3` | PIN Utenti 1-3 | mode: password; pattern `^$\|^[0-9]{4,8}$` (fix C-5) |
 | `ring_keypad_name_master` | Nome Master | Per log |
 | `ring_keypad_name_user1..3` | Nomi Utenti 1-3 | Per log |
 
@@ -217,9 +217,11 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 
 | Entità | Default | Descrizione |
 |--------|---------|-------------|
-| `ring_keypad_bypass_timeout` | slider 15-120s | Timeout conferma bypass: dopo quanti secondi il `Bypass_challenge` scade e il LED viene ripristinato |
+| `ring_keypad_bypass_timeout` | slider 5-60s | Timeout conferma bypass: dopo quanti secondi il `Bypass_challenge` scade e il LED viene ripristinato |
 | `ring_keypad_exit_delay` | 30s | Countdown uscita (arming → armed) |
 | `ring_keypad_siren_volume` | 5 | Volume sirena hardware (1-10), sincronizzato via `Siren_Volume` configuration CC |
+| `ring_keypad_failed_attempts` | 0 (tecnico, `initial: 0` accettato) | Contatore tentativi PIN falliti — reset dopo 60s inattività o PIN corretto |
+| `ring_keypad_max_failed_attempts` | configurabile (default HA: 5) | Soglia tentativi prima del lockout (3-10) |
 
 ### `input_boolean`
 
@@ -229,6 +231,13 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 | `ring_keypad_require_code_to_arm` | false | Se true, richiede PIN anche per armare |
 | `ring_keypad_bypass_pending` | false | Flag attivo durante l'attesa di conferma bypass (sensori aperti) |
 | `ring_keypad_voice_feedback` | true | Se on: payload 99 (LED+suono) per disarmed/armed; se off: payload 1 (solo LED) |
+| `ring_keypad_lockout_active` | — | Lockout brute-force attivo; reset automatico dopo 5 min (fix C-6) |
+
+### Template binary_sensor (dichiarati in `ring_keypad_globals.yaml`)
+
+| Entità | Descrizione |
+|--------|-------------|
+| `binary_sensor.keypad_collisione_pin` | `on` se due o più utenti hanno lo stesso PIN (≥4 cifre) — fix C-4 |
 
 ### Sensori MQTT (per tastiera, dichiarati in `ring_keypad_keypads.yaml`)
 
@@ -361,6 +370,8 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 | `ring_keypad_sync_on_ha_start` | HA start | Delay 15s → `set_siren_volume_all` + `sync_all` (`sync_state` gestisce LED internamente per ogni tastiera) |
 | `ring_keypad_sync_led_on_mode_change` | State: `ring_keypad_led_mode` | `set_led_mode_all` **solo se** `ring_keypad_alarm_state != 'armed_sera'` (fast blink non viene sovrascritto) |
 | `ring_keypad_sync_siren_volume_on_change` | State: `ring_keypad_siren_volume` | `set_siren_volume_all` |
+| `ring_keypad_lockout_reset` | State: `ring_keypad_lockout_active` = on per 5 min | Disattiva lockout + azzera `failed_attempts` + log (fix C-6) |
+| `ring_keypad_failed_attempts_reset` | State: `ring_keypad_failed_attempts` invariato per 60s (+ lockout off + valore > 0) | Azzera contatore tentativi falliti — sliding window anti brute-force (fix C-6) |
 
 ### Automazioni di integrazione (in `ring_keypad_integration.yaml`)
 
@@ -720,6 +731,11 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-55 | **BUG** — Tasto X non interrompeva il bypass: `ring_keypad_input_cancel` ascoltava solo `25/2` (X + codice). Durante un bypass attivo l'utente preme X senza inserire codice → la tastiera emette `25/0`, evento non gestito → bypass continua fino al timeout software. | **Corretto 2026-04-15** | Aggiunto secondo trigger `25/0` all'automazione `ring_keypad_input_cancel`. Ora sia X+codice che X senza codice cancellano il bypass attivo e ripristinano i LED. |
 | RK-56 | **BUG** — Doppio comando MQTT `Exit_Delay` durante l'armo: `ring_keypad_do_arm` impostava lo stato su `arming` (triggera `sync_on_state_change` → `sync_all` → `sync_state` → `show_exit_delay`) e poi chiamava `show_exit_delay` anche direttamente sulla tastiera. Risultato: la tastiera riceveva il countdown due volte in rapida successione. | **Corretto 2026-04-15** | Rimossa la chiamata diretta a `show_exit_delay` da `ring_keypad_do_arm`. Il cambio stato su `arming` innesca automaticamente `sync_on_state_change` → `sync_all` → `show_exit_delay` su TUTTE le tastiere attive, il che è anche più corretto (multi-tastiera). |
 | RK-54 | **UX** — L'indicatore hardware `Bypass_challenge` scompare dopo ~5s (timeout gestito dall'NVRAM del dispositivo, non modificabile via MQTT): l'utente non aveva più feedback visivo per la maggior parte della finestra di bypass software, rendendo difficile capire che poteva ancora premere V. | **Implementato 2026-04-15** | Nuovo script `ring_keypad_bypass_keepalive` (`mode: restart`): loop `repeat/while` che ogni 5s invia `Bypass_challenge/9` payload `1` (**sub_cmd 9 = solo LED, nessuna voce** — sub_cmd 1 attiva sempre la voce indipendentemente dal payload) finché `bypass_pending=on` AND `bypass_keypad==keypad_id`. `ring_keypad_bypass_challenge` lo avvia subito dopo il primo invio sub_cmd 1 payload `99`. `ring_keypad_bypass_cancel` lo ferma insieme a `bypass_timeout_script`. |
+| C-2 | **CRITICO** — `trigger.payload_json` è `None` se il payload MQTT non è JSON valido (es. messaggio corrotto, retained obsoleto). Chiamare `.get(...)` su `None` causa `UndefinedError` e l'automazione fallisce silenziosamente: l'evento viene perso. | **Corretto 2026-04-17** | Sostituito `trigger.payload_json.get('value', '')` con `(trigger.payload_json \| default({})).get('value', '')` nelle 4 automazioni con codice: `ring_keypad_input_disarm`, `ring_keypad_input_arm_away`, `ring_keypad_input_arm_home`, `ring_keypad_input_enter`. |
+| C-3 | **CRITICO** — `ring_keypad_do_arm` con `mode: single` e `max_exceeded: silent`: durante l'exit delay (30s), qualsiasi richiesta di cambio profilo (es. Arm Home → Arm Away) viene scartata silenziosamente. Il sistema arma nel profilo originale senza feedback. | **Corretto 2026-04-17** | Cambiato `mode: single` → `mode: restart` e rimosso `max_exceeded: silent`. Con `mode: restart`, premere un nuovo profilo durante l'exit delay riavvia lo script con il nuovo profilo (comportamento desiderato). |
+| C-4 | **CRITICO** — PIN duplicati tra utenti non rilevati: `ring_keypad_resolve_user` valuta sequenzialmente, quindi se due utenti condividono lo stesso PIN, il log viene sempre attribuito all'utente con priorità più alta (master per primo). Nessun warning visibile. | **Implementato 2026-04-17** | Aggiunto template `binary_sensor.keypad_collisione_pin` in `ring_keypad_globals.yaml`: `on` se due o più PIN configurati (≥4 cifre) sono identici. Da mostrare in dashboard come warning. |
+| C-5 | **CRITICO** — PIN < 4 cifre configurati dall'utente vengono silenziosamente ignorati (guard `length >= 4`). L'utente crede di avere un PIN attivo ma non funziona mai. Nessuna validazione UI. | **Corretto 2026-04-17** | Aggiunto `pattern: "^$\|^[0-9]{4,8}$"` a tutti i 4 `input_text` PIN in `ring_keypad_globals.yaml`. HA mostra errore UI se il PIN non rispetta il pattern (vuoto OK, oppure 4-8 cifre numeriche). |
+| C-6 | **CRITICO** — Nessuna protezione brute-force su PIN (RK-03 aperto): nessun rate limiting, tentativi illimitati. Un attaccante con accesso fisico può provare decine di PIN al minuto. | **Implementato 2026-04-17** | Sistema completo: `input_number.ring_keypad_failed_attempts` (contatore interno, `initial: 0`), `input_number.ring_keypad_max_failed_attempts` (soglia configurabile, 3-10), `input_boolean.ring_keypad_lockout_active` (flag lockout). `validate_and_disarm` e `validate_and_arm` incrementano il contatore su PIN errato, attivano lockout al raggiungimento della soglia, resettano il contatore su PIN corretto. In lockout: `code_rejected` immediato (indistinguibile da PIN errato, per non rivelare il lockout). Automazione `ring_keypad_lockout_reset`: reset automatico dopo 5 min. Automazione `ring_keypad_failed_attempts_reset`: sliding window — reset contatore dopo 60s di inattività se lockout non attivo. |
 
 ---
 

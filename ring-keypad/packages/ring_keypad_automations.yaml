@@ -40,9 +40,11 @@ automation:
     variables:
       keypad_id: "{{ trigger.topic.split('/')[1] }}"
     action:
+      # FIX C-2: se payload MQTT non è JSON valido, trigger.payload_json è None.
+      # (x | default({})) garantisce un dict anche in quel caso, evitando UndefinedError.
       - action: script.ring_keypad_validate_and_disarm
         data:
-          code: "{{ trigger.payload_json.get('value', '') }}"
+          code: "{{ (trigger.payload_json | default({})).get('value', '') }}"
           keypad_id: "{{ keypad_id }}"
 
   # ════════════════════════════════════════════════════════════════════════
@@ -74,9 +76,10 @@ automation:
                 data:
                   value: "Bypass attivo - premere V per confermare"
         default:
+          # FIX C-2: (payload_json | default({})) evita crash se payload non è JSON valido
           - action: script.ring_keypad_validate_and_arm
             data:
-              code: "{{ trigger.payload_json.get('value', '') }}"
+              code: "{{ (trigger.payload_json | default({})).get('value', '') }}"
               mode: "armed_away"
               keypad_id: "{{ keypad_id }}"
 
@@ -155,9 +158,10 @@ automation:
                 data:
                   value: "Bypass attivo - premere V per confermare"
         default:
+          # FIX C-2: (payload_json | default({})) evita crash se payload non è JSON valido
           - action: script.ring_keypad_validate_and_arm
             data:
-              code: "{{ trigger.payload_json.get('value', '') }}"
+              code: "{{ (trigger.payload_json | default({})).get('value', '') }}"
               mode: "armed_home"
               keypad_id: "{{ keypad_id }}"
 
@@ -234,9 +238,10 @@ automation:
                   keypad_id: "{{ keypad_id }}"
         default:
           # Nessun bypass → arma profilo sera con PIN
+          # FIX C-2: (payload_json | default({})) evita crash se payload non è JSON valido
           - action: script.ring_keypad_validate_and_arm
             data:
-              code: "{{ trigger.payload_json.get('value', '') }}"
+              code: "{{ (trigger.payload_json | default({})).get('value', '') }}"
               mode: "armed_sera"
               keypad_id: "{{ keypad_id }}"
 
@@ -517,3 +522,57 @@ automation:
         entity_id: input_number.ring_keypad_siren_volume
     action:
       - action: script.ring_keypad_set_siren_volume_all
+
+  # ════════════════════════════════════════════════════════════════════════
+  # FIX C-6: RESET AUTOMATICO LOCKOUT DOPO 5 MINUTI
+  # Quando lockout_active resta on per 5 minuti consecutivi, lo disattiva
+  # e azzera il contatore tentativi falliti. Scadenza fissa (non sliding).
+  # ════════════════════════════════════════════════════════════════════════
+  - id: ring_keypad_lockout_reset
+    alias: "Keypad - Reset automatico lockout (5 min)"
+    trigger:
+      - platform: state
+        entity_id: input_boolean.ring_keypad_lockout_active
+        to: "on"
+        for:
+          minutes: 5
+    action:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ring_keypad_lockout_active
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.ring_keypad_failed_attempts
+        data:
+          value: 0
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_last_event
+        data:
+          value: "Lockout reset automatico dopo 5 minuti"
+
+  # ════════════════════════════════════════════════════════════════════════
+  # FIX C-6: RESET CONTATORE TENTATIVI DOPO 60s DI INATTIVITÀ (sliding window)
+  # Se il valore di failed_attempts resta invariato per 60s e il lockout NON
+  # è attivo, azzera il contatore. Permette all'utente legittimo che sbaglia
+  # 1-2 volte di ripartire senza incorrere nel lockout definitivo.
+  # ════════════════════════════════════════════════════════════════════════
+  - id: ring_keypad_failed_attempts_reset
+    alias: "Keypad - Reset contatore tentativi falliti (60s inattività)"
+    trigger:
+      - platform: state
+        entity_id: input_number.ring_keypad_failed_attempts
+        for:
+          seconds: 60
+    condition:
+      - condition: state
+        entity_id: input_boolean.ring_keypad_lockout_active
+        state: "off"
+      - condition: template
+        value_template: "{{ states('input_number.ring_keypad_failed_attempts') | int(0) > 0 }}"
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.ring_keypad_failed_attempts
+        data:
+          value: 0
