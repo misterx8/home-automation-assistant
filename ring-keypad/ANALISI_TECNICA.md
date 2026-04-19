@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
 > Ultima revisione: 2026-04-19  
-> Versione architettura: 5.4 (Aggiunta tastiera_allarme_sala; fix C-10/C-11 log PIN errati e LOCKOUT)
+> Versione architettura: 5.4 (Aggiunta tastiera_allarme_sala; fix C-10/C-11 log PIN errati e LOCKOUT; sezione 14 Dashboard; aggiornamento sezione 3 multi-tastiera)
 
 ---
 
@@ -155,30 +155,30 @@ topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Not_armed_-_disarmed/9/s
 
 ### 3.3 Registro tastiere attive
 
-L'elenco dei topic base è in `input_text.ring_keypad_active_keypads` (CSV):
+L'elenco dei topic base è in `input_text.ring_keypad_active_keypads` (CSV).
 
+**Tastiere attualmente configurate (2026-04-19):**
 ```
-tastiera_allarme_camera,tastiera_ingresso,tastiera_garage
+tastiera_allarme_camera,tastiera_allarme_sala
 ```
 
 Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su tutte le tastiere.
 
-### 3.4 Aggiungere una seconda tastiera
+### 3.4 Aggiungere una nuova tastiera
 
 1. **UI HA** — Aggiungere il topic base a `input_text.ring_keypad_active_keypads` separato da virgola  
-   (es. `tastiera_allarme_camera,tastiera_ingresso`)
+   (es. `tastiera_allarme_camera,tastiera_allarme_sala,tastiera_allarme_ingresso`)
 
-2. **`ring_keypad_keypads.yaml`** — Decommentare e adattare il blocco template per la nuova tastiera.  
-   **Obbligatorio**: impostare `object_id` seguendo il pattern `<topic_base>_batteria` / `<topic_base>_online`  
-   per evitare conflitti con la discovery zwave2mqtt (bug RK-11).  
-   Esempio:
+2. **`ring_keypad_keypads.yaml`** — Aggiungere i blocchi sensore batteria e online per la nuova tastiera.  
+   **Obbligatorio**: impostare `object_id` esplicito per evitare conflitti con la discovery zwave2mqtt (bug RK-11).  
+   Il pattern usato nel progetto è `tastiera_<stanza>_allarme_batteria` / `tastiera_<stanza>_allarme_online`:
    ```yaml
-   object_id: tastiera_ingresso_batteria   # → sensor.tastiera_ingresso_batteria
-   object_id: tastiera_ingresso_online     # → binary_sensor.tastiera_ingresso_online
+   object_id: tastiera_ingresso_allarme_batteria   # → sensor.tastiera_ingresso_allarme_batteria
+   object_id: tastiera_ingresso_allarme_online     # → binary_sensor.tastiera_ingresso_allarme_online
    ```
 
-3. **`plancia_controllo.yaml`** — Decommentare e adattare il blocco template nella sezione "Stato Hardware"  
-   sostituendo `<topic_base>` con il topic base reale.
+3. **`plancia_controllo.yaml`** — Aggiungere i tile Online + Batteria nella sezione "Stato Hardware",  
+   copiando il pattern dei tile esistenti e sostituendo le entity_id.
 
 4. **Riavviare HA** per registrare i nuovi sensori MQTT.
 
@@ -610,14 +610,14 @@ Decommentare la sezione 2 e commentare la sezione 1.
 ### Aggiungere una nuova tastiera
 
 1. **UI HA**: aggiungere il topic base a `ring_keypad_active_keypads` separato da virgola  
-   (es. `tastiera_allarme_camera,tastiera_ingresso`)
+   (es. `tastiera_allarme_camera,tastiera_allarme_sala,tastiera_allarme_ingresso`)
 
-2. **`ring_keypad_keypads.yaml`**: decommentare e adattare il blocco template.  
-   **Obbligatorio**: includere `object_id` con pattern `<topic_base>_batteria` / `<topic_base>_online`.  
+2. **`ring_keypad_keypads.yaml`**: aggiungere i blocchi sensor (batteria) e binary_sensor (online).  
+   **Obbligatorio**: includere `object_id` esplicito. Pattern usato: `tastiera_<stanza>_allarme_batteria` / `tastiera_<stanza>_allarme_online`.  
    Senza `object_id` HA genera entity ID auto che possono collidere con zwave2mqtt discovery (RK-11).
 
-3. **`plancia_controllo.yaml`**: decommentare e adattare il blocco template nella sezione "Stato Hardware",  
-   sostituendo `<topic_base>` con il topic base reale.
+3. **`plancia_controllo.yaml`**: aggiungere due tile (Online + Batteria) nella sezione "Stato Hardware",  
+   copiando il pattern dei tile esistenti e sostituendo le entity_id.
 
 4. **Riavviare HA** per registrare i sensori MQTT.
 
@@ -828,8 +828,10 @@ La sezione "Log & Attività" è stata estesa con:
 - **Pulsante Registro** — popup con 3 markdown card (Critici / Operazioni / Note) scrollabili
 - **Tile Cancella Log** — chiama `ring_keypad_logbook_cancella_tutto`
 - **Tile Aggiungi Nota** — popup con campo testo + pulsante salva
-- **`custom:timeline-card`** — storico visivo 24h di `ring_keypad_alarm_state` e `last_user`
+- **`custom:timeline-card`** — storico visivo 24h di `ring_keypad_alarm_state`, `last_user` e `lockout_active`
 - **Tile Ultimo Evento Log** — mostra `ring_keypad_logbook_ultimo_evento`
+
+Vedere **Sezione 14** per la documentazione completa della plancia.
 
 ### Installazione
 
@@ -837,3 +839,84 @@ La sezione "Log & Attività" è stata estesa con:
 2. Aggiungere il contenuto di `var/ring_keypad.yaml` al `var.yaml` esistente in HA
 3. Riavviare HA
 4. Il log parte immediatamente a raccogliere eventi senza configurazione aggiuntiva
+
+---
+
+## Sezione 14 — Dashboard (`plancia_controllo.yaml`)
+
+### Struttura generale
+
+La plancia è una `sections view` con path `ring-keypad`, organizzata in sezioni verticali.
+
+### Header (banner condizionali)
+
+Gli alert nell'header appaiono solo quando la condizione è vera:
+
+| Condizione | Tipo alert | Messaggio |
+|-----------|-----------|-----------|
+| `ring_keypad_debug = on` | warning | Debug attivo |
+| `ring_keypad_alarm_state` in triggered_* | error | Allarme in corso + tipo |
+| `ring_keypad_bypass_pending = on` | warning | Bypass in attesa — premere V o X |
+| `ring_keypad_lockout_active = on` | error | Lockout attivo — reset dopo 5 min |
+| `binary_sensor.keypad_collisione_pin = on` | warning | Due utenti con stesso PIN |
+
+### Sezione 1 — Controllo Tastiere Ring
+
+| Card | Tipo | Descrizione |
+|------|------|-------------|
+| Tile Stato Allarme | `tile` su `ring_keypad_alarm_state` | Bordo colorato: verde=disarmed, arancio=armed/arming, rosso=triggered |
+| Mushroom Template | stato leggibile + utente + tastiera | Icona e colore dinamici per tutti gli 11 stati |
+| Conditional bypass | visibile solo se `bypass_pending=on` | Mostra tastiera e profilo del bypass pendente |
+| Conditional allarme | visibile solo se triggered_* | Banner rosso con tipo allarme e istruzioni |
+
+### Sezione 2 — Stato Hardware
+
+| Card | Entità | Descrizione |
+|------|--------|-------------|
+| Tile Online Camera | `binary_sensor.tastiera_camera_allarme_online` | Bordo verde/rosso |
+| Tile Batteria Camera | `sensor.tastiera_camera_allarme_batteria` | Bordo verde/arancio/rosso per livello |
+| Tile Online Sala | `binary_sensor.tastiera_sala_allarme_online` | Bordo verde/rosso |
+| Tile Batteria Sala | `sensor.tastiera_sala_allarme_batteria` | Bordo verde/arancio/rosso per livello |
+| Mushroom tastiere attive | legge `ring_keypad_active_keypads` | Mostra lista e conteggio tastiere |
+
+> Per aggiungere una terza tastiera: aggiungere due tile (Online + Batteria) copiando il pattern esistente.
+
+### Sezione 3 — Configurazione
+
+Tile e mushroom per la configurazione operativa:
+
+| Card | Entità | Note |
+|------|--------|------|
+| Feedback vocale | `input_boolean.ring_keypad_voice_feedback` | Toggle |
+| Richiedi PIN per armare | `input_boolean.ring_keypad_require_code_to_arm` | Toggle |
+| Volume Sirena | `input_number.ring_keypad_siren_volume` | Slider 1-10 |
+| Modalità LED | `input_select.ring_keypad_led_mode` | Select |
+| Ritardo Uscita (da allarme-core) | `input_number.ring_keypad_exit_delay` | Read-only (senza `numeric-input`), sincronizzato da `ring_keypad_sync_exit_delay` |
+| Timeout Bypass | `input_number.ring_keypad_bypass_timeout` | Slider 5-60s |
+| Debug Mode | `input_boolean.ring_keypad_debug` | Toggle |
+| Collisione PIN | `binary_sensor.keypad_collisione_pin` | Warning se `on` |
+| Soglia Lockout | `input_number.ring_keypad_max_failed_attempts` | Configurabile 3-10 |
+| Tentativi falliti | `input_number.ring_keypad_failed_attempts` | Read-only, con pulsante reset |
+| Lockout Attivo | `input_boolean.ring_keypad_lockout_active` | Con pulsante reset manuale |
+
+Popup "Configurazione Avanzata" (browser_mod): form con PIN master/utenti 1-3 + nomi + tastiere attive.
+
+### Sezione 4 — Log & Attività
+
+| Card | Descrizione |
+|------|-------------|
+| Pulsante Registro | Popup con 3 markdown card: **Critici** / **Operazioni** / **Note** (scrollabili, max 25 righe ciascuna) |
+| Tile Cancella Log | Chiama `ring_keypad_logbook_cancella_tutto` — azzera tutte e 4 le `var.*_timeline_md` |
+| Tile Aggiungi Nota | Popup con `input_text.ring_keypad_nota_manuale` + pulsante salva (`ring_keypad_logbook_nota_da_ui`) |
+| `custom:timeline-card` | Storico visivo 24h, 3 entità: `ring_keypad_alarm_state` (stato + colori), `ring_keypad_last_user` (utente), `ring_keypad_lockout_active` (banda rossa = lockout attivo) |
+| Tile Ultimo Evento Log | `input_text.ring_keypad_logbook_ultimo_evento` — mostra l'ultimo messaggio di log |
+
+#### Colori nella timeline-card
+
+| Entità | Stato | Colore |
+|--------|-------|--------|
+| `ring_keypad_alarm_state` | disarmed | verde |
+| `ring_keypad_alarm_state` | armed_home/away/sera/arming | giallo/arancio/viola/grigio |
+| `ring_keypad_alarm_state` | triggered_* | rosso |
+| `ring_keypad_lockout_active` | `on` | rosso (banda) |
+| `ring_keypad_lockout_active` | `off` | grigio (nascosto) |

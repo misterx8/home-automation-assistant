@@ -21,6 +21,35 @@ input_text:
     name: "Safety Core - Nota Manuale"
     max: 255
     icon: mdi:note-text
+  # URL base di HA (es. http://homeassistant.local:8123) — usata dalla plancia
+  # per costruire link cliccabili agli snapshot (path relativo → URL completa)
+  safety_core_url_base_ha:
+    name: "Safety Core - URL Base HA"
+    max: 255
+    icon: mdi:web
+  # URL base Frigate (es. http://192.168.2.92:5000) — usata per generare le clip
+  safety_core_url_base_frigate:
+    name: "Safety Core - URL Base Frigate"
+    max: 255
+    icon: mdi:video-outline
+
+input_number:
+  # Secondi prima del triggered da includere nella clip Frigate
+  safety_core_clip_secondi_prima:
+    name: "Safety Core - Clip Secondi Prima"
+    min: 5
+    max: 120
+    step: 5
+    unit_of_measurement: "s"
+    icon: mdi:rewind
+  # Secondi dopo il triggered da includere nella clip Frigate
+  safety_core_clip_secondi_dopo:
+    name: "Safety Core - Clip Secondi Dopo"
+    min: 5
+    max: 60
+    step: 5
+    unit_of_measurement: "s"
+    icon: mdi:fast-forward
 
 
 # ----------------------------------------------------------------------------

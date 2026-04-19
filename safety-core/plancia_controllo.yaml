@@ -184,6 +184,86 @@ sections:
         name: Elettrovalvola Acqua
         vertical: false
         features_position: bottom
+      - type: button
+        name: Configurazione Avanzata
+        icon: mdi:cog-outline
+        grid_options:
+          columns: 9
+          rows: 1
+        tap_action:
+          action: perform-action
+          perform_action: browser_mod.popup
+          data:
+            title: "⚙️ Configurazione Avanzata"
+            content:
+              type: vertical-stack
+              cards:
+                - type: entities
+                  title: "🔗 URL & Credenziali"
+                  entities:
+                    - entity: input_text.safety_core_url_base_ha
+                      name: URL Home Assistant
+                    - entity: input_text.safety_core_url_base_frigate
+                      name: URL Frigate
+                - type: entities
+                  title: "🎥 Clip Frigate"
+                  entities:
+                    - entity: input_number.safety_core_clip_secondi_prima
+                      name: Clip — secondi prima
+                    - entity: input_number.safety_core_clip_secondi_dopo
+                      name: Clip — secondi dopo
+                - type: entities
+                  title: "🔋 Monitoraggio Batterie"
+                  entities:
+                    - entity: input_number.safety_core_soglia_batteria_bassa
+                      name: Soglia batteria bassa
+                    - entity: input_number.safety_core_debounce_offline_minuti
+                      name: Debounce offline (minuti)
+        card_mod:
+          style: >
+            {% set ha_ok = states('input_text.safety_core_url_base_ha') not in
+            ['','unknown','unavailable'] %} {% set fr_ok =
+            states('input_text.safety_core_url_base_frigate') not in
+            ['','unknown','unavailable'] %} {% set all_ok = ha_ok and fr_ok %}
+            {% set none_ok = not ha_ok and not fr_ok %} {% set border_color =
+            'green' if all_ok else ('red' if none_ok else 'orange') %} ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ border_color }};
+              position: relative;
+            } {% if not all_ok %} ha-card::after {
+              content: "⚠️";
+              position: absolute;
+              top: 6px;
+              right: 8px;
+              font-size: 0.85em;
+              pointer-events: none;
+              z-index: 1;
+            } {% endif %}
+      - type: button
+        name: Debug
+        icon: mdi:bug-outline
+        grid_options:
+          columns: 3
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px #444;
+              opacity: 0.5;
+            }
+        tap_action:
+          action: perform-action
+          perform_action: browser_mod.popup
+          data:
+            title: "🐛 Debug — Variabili"
+            content:
+              type: entities
+              entities:
+                - entity: var.safety_core_sensori_attivazione_var
+                - entity: input_boolean.safety_core_reset_in_corso
+                - entity: input_select.safety_core_ultima_categoria
+                - entity: input_select.safety_core_stato
   - type: grid
     cards:
       - type: heading
@@ -1210,33 +1290,95 @@ sections:
     cards:
       - type: heading
         heading_style: title
-        heading: Log Safety
+        heading: Log & Attività
         icon: mdi:math-log
-      - type: tile
+      - type: button
         grid_options:
           columns: 6
+          rows: 2
+        name: Registro
+        icon: mdi:book-open-outline
+        tap_action:
+          action: perform-action
+          perform_action: browser_mod.popup
+          data:
+            title: Registro Log Safety Core
+            content:
+              type: vertical-stack
+              cards:
+                - type: markdown
+                  title: Critici
+                  content: >
+                    {% set c_raw =
+                    state_attr('var.safety_core_timeline_critici_md','long_state')
+                    | default('', true) | string %} {% set c_list =
+                    c_raw.split('\n') | map('trim') | reject('equalto','') |
+                    list %} ### 🚨 Critici ({{ c_list | length }}) {{ c_raw |
+                    trim if c_list | length > 0 else '_Nessun evento critico._'
+                    }}
+                  card_mod:
+                    style: |
+                      ha-markdown {
+                        max-height: 200px;
+                        overflow-y: auto;
+                        display: block;
+                      }
+                - type: markdown
+                  title: Operazioni
+                  content: >
+                    {% set o_raw =
+                    state_attr('var.safety_core_timeline_operazioni_md','long_state')
+                    | default('', true) | string %} {% set o_list =
+                    o_raw.split('\n') | map('trim') | reject('equalto','') |
+                    list %} ### ⚙️ Operazioni ({{ o_list | length }}) {{ o_raw |
+                    trim if o_list | length > 0 else '_Nessuna operazione._' }}
+                  card_mod:
+                    style: |
+                      ha-markdown {
+                        max-height: 200px;
+                        overflow-y: auto;
+                        display: block;
+                      }
+                - type: markdown
+                  title: Note
+                  content: >
+                    {% set n_raw =
+                    state_attr('var.safety_core_timeline_note_md','long_state')
+                    | default('', true) | string %} {% set n_list =
+                    n_raw.split('\n') | map('trim') | reject('equalto','') |
+                    list %} ### 📝 Note ({{ n_list | length }}) {{ n_raw | trim
+                    if n_list | length > 0 else '_Nessuna nota._' }}
+                  card_mod:
+                    style: |
+                      ha-markdown {
+                        max-height: 200px;
+                        overflow-y: auto;
+                        display: block;
+                      }
+      - type: tile
+        grid_options:
+          columns: 4
           rows: 1
         entity: script.safety_core_logbook_cancella_tutto
-        name: Cancella tutti i log
+        name: Cancella Log
         vertical: false
         tap_action:
-          action: call-service
-          service: script.turn_on
-          service_data:
-            entity_id: script.safety_core_logbook_cancella_tutto
+          action: toggle
+        icon_tap_action:
+          action: toggle
         features_position: bottom
       - type: tile
         grid_options:
-          columns: 6
+          columns: 4
           rows: 1
         entity: script.safety_core_logbook_nota_da_ui
         name: Aggiungi Nota
         icon: mdi:note-plus
         vertical: false
         tap_action:
-          action: call-service
-          service: browser_mod.popup
-          service_data:
+          action: perform-action
+          perform_action: browser_mod.popup
+          data:
             title: Aggiungi nota al log
             content:
               type: entities
@@ -1247,17 +1389,17 @@ sections:
                   name: Salva nota
         features_position: bottom
       - type: custom:timeline-card
-        title: 🛡️ Safety Core – Stato & Eventi
+        title: Safety Core – Stato & Eventi
         hours: 24
         limit: 50
         overflow: scroll
-        max_height: 420px
+        max_height: 480px
         relative_time: true
         refresh_interval: 30
         entities:
           - entity: input_select.safety_core_stato
             collapse_duplicates: true
-            name: " "
+            name: Stato
             state_map:
               ok: OK
               triggered: ALLARME
@@ -1267,51 +1409,44 @@ sections:
             icon_color_map:
               ok: green
               triggered: red
-      - type: markdown
-        title: 🧾 Safety Core – Registro
-        content: >
-          ### 📌 Ultimo evento **{{
-          states('input_text.safety_core_logbook_ultimo_evento') }}**
-
-          ---
-
-          {% set c_raw =
-          state_attr('var.safety_core_timeline_critici_md','long_state') |
-          default('', true) | string %} {% set c_list = c_raw.split('\n') |
-          map('trim') | reject('equalto','') | list %} ### 🚨 Critici ({{ c_list
-          | length }}) {{ c_raw | trim if c_list | length > 0 else '_Nessun
-          evento critico._' }}
-
-          ---
-
-          {% set o_raw =
-          state_attr('var.safety_core_timeline_operazioni_md','long_state') |
-          default('', true) | string %} {% set o_list = o_raw.split('\n') |
-          map('trim') | reject('equalto','') | list %} ### ⚙️ Operazioni ({{
-          o_list | length }}) {{ o_raw | trim if o_list | length > 0 else
-          '_Nessuna operazione._' }}
-
-          ---
-
-          {% set n_raw =
-          state_attr('var.safety_core_timeline_note_md','long_state') |
-          default('', true) | string %} {% set n_list = n_raw.split('\n') |
-          map('trim') | reject('equalto','') | list %} ### 📝 Note ({{ n_list |
-          length }}) {{ n_raw | trim if n_list | length > 0 else '_Nessuna
-          nota._' }}
-      - type: markdown
-        title: 🛡️ Safety Core – Ultimo Evento
-        content: |
-          **{{ states('input_text.safety_core_logbook_ultimo_evento') }}**
+          - entity: input_select.safety_core_ultima_categoria
+            collapse_duplicates: true
+            name: Categoria
+            state_map:
+              nessuna: NESSUNA
+              fumo: FUMO
+              gas: GAS
+              carbonio: CARBONIO
+              acqua: ACQUA
+            icon_map:
+              nessuna: mdi:shield-off-outline
+              fumo: mdi:smoke-detector
+              gas: mdi:gas-cylinder
+              carbonio: mdi:molecule-co
+              acqua: mdi:water-alert
+            icon_color_map:
+              nessuna: grey
+              fumo: orange
+              gas: yellow
+              carbonio: purple
+              acqua: blue
+      - type: tile
+        grid_options:
+          columns: 12
+          rows: 1
+        entity: input_text.safety_core_logbook_ultimo_evento
+        name: Ultimo Evento
+        vertical: false
+        features_position: bottom
       - type: logbook
-        title: 🛡️ Safety Core – Eventi
+        title: Safety Core – Eventi
         entities:
           - input_text.safety_core_logbook_event
         hours_to_show: 24
   - type: grid
     cards:
       - type: heading
-        heading: Immagini Safety
+        heading: Immagini
         heading_style: title
         icon: far:image
       - type: markdown
@@ -1320,14 +1455,19 @@ sections:
           {% set s =
           state_attr('var.safety_core_last_snapshot_urls','long_state') |
           default('', true) | string %} {% set arr = s.split('\n') | map('trim')
-          | reject('equalto','') | list %} {% set imgs = arr[:4] %} {% if
-          imgs|length == 0 %} Nessuno snapshot disponibile. {% else %} {% for u
-          in imgs %} [![]({{ u }})]({{ u }})
-
-          {% endfor %} {% endif %}
+          | reject('equalto','') | list %} {% set imgs = arr[:4] %} {% set
+          base_raw = states('input_text.safety_core_url_base_ha') | trim %} {%
+          set base = '' if base_raw in ['unknown','unavailable'] else base_raw
+          %} {% if imgs|length == 0 %} Nessuno snapshot disponibile. {% else %}
+          {% for u in imgs %} [![]({{ base ~ u }})]({{ base ~ u }}) {% endfor %} {%
+          endif %}
       - type: markdown
-        title: 🎥 Clip Safety (30s)
+        title: 🎥 Clip Safety
         content: >
+          _{{ states('input_number.safety_core_clip_secondi_prima') | int(30)
+          }}s prima + {{ states('input_number.safety_core_clip_secondi_dopo') |
+          int(10) }}s dopo_
+
           {% set s = state_attr('var.safety_core_last_clip_urls','long_state') |
           default('', true) | string %} {% set arr = s.split('\n') | map('trim')
           | reject('equalto','') | list %} {% set arr = arr[:4] %} {% if
@@ -1380,13 +1520,6 @@ sections:
           |------|--------|
           {% for s in lista %}| {{ s.nome }} | {{ s.fisico }} |
           {% endfor %}{% endif %}
-      - type: entities
-        title: "Configurazione monitoraggio"
-        entities:
-          - entity: input_number.safety_core_soglia_batteria_bassa
-            name: "Soglia batteria bassa"
-          - entity: input_number.safety_core_debounce_offline_minuti
-            name: "Debounce offline (minuti)"
 
 header:
   card:

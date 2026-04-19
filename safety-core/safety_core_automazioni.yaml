@@ -209,9 +209,11 @@ automation:
             {% endfor %}
             {{ ns.out | join('\n') }}
 
-          frigate_base: "http://192.168.2.92:5000"
-          clip_start_ts: "{{ (as_timestamp(now()) - 30) | int }}"
-          clip_end_ts: "{{ (as_timestamp(now()) + 10) | int }}"
+          frigate_base: >-
+            {% set fb = states('input_text.safety_core_url_base_frigate') | trim %}
+            {{ fb if fb not in ['','unknown','unavailable'] else 'http://192.168.2.92:5000' }}
+          clip_start_ts: "{{ (as_timestamp(now()) - states('input_number.safety_core_clip_secondi_prima') | int(30)) | int }}"
+          clip_end_ts: "{{ (as_timestamp(now()) + states('input_number.safety_core_clip_secondi_dopo') | int(10)) | int }}"
 
           clips_text: >
             {% set ns = namespace(out=[]) %}

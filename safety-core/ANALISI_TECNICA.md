@@ -167,6 +167,10 @@ Ogni aggregato ha attributo `sensori_attivi` con lista entity_id dei sensori on.
 | `input_text.safety_core_logbook_event`      | input_text    | Entity fittizia per filtrare Logbook card    |
 | `input_text.safety_core_logbook_ultimo_evento` | input_text | Ultimo messaggio log (trigger timeline)      |
 | `input_text.safety_core_nota_manuale`       | input_text    | Campo UI per note manuali                    |
+| `input_text.safety_core_url_base_ha`        | input_text    | URL base HA (es. http://homeassistant.local:8123) — costruisce link cliccabili agli snapshot |
+| `input_text.safety_core_url_base_frigate`   | input_text    | URL Frigate (es. http://192.168.2.92:5000) — usata per generare clip (sostituisce il valore hardcoded) |
+| `input_number.safety_core_clip_secondi_prima` | input_number | Secondi prima del triggered nella clip Frigate (5-120, default 30) |
+| `input_number.safety_core_clip_secondi_dopo`  | input_number | Secondi dopo il triggered nella clip Frigate (5-60, default 10) |
 
 ---
 
@@ -316,6 +320,24 @@ Tutti i wrapper hanno un solo sensore fisico (nessun multi-sensore in safety_cor
 **Sezioni 2+ — Sensori per categoria:**
 
 Una sezione per categoria (Gas, Monossido, Acqua) con una card tile per ogni sensore.
+
+**Bottoni Configurazione & Debug (fine sezione 1):**
+
+| Card | Contenuto popup | Note |
+|------|----------------|------|
+| button "Configurazione Avanzata" (9 cols) | vertical-stack: URL & Credenziali (url_base_ha, url_base_frigate) / Clip Frigate (clip_secondi_prima/dopo) / Monitoraggio Batterie (soglia, debounce) | card_mod: verde=entrambi URL configurati, arancio=parziale, rosso=nessuno + badge ⚠️ |
+| button "Debug" (3 cols) | entities: var sensori attivazione, reset_in_corso, ultima_categoria, stato | opacità 0.5, bordo grigio |
+
+**Sezione Log & Attività:**
+
+| Card | Entity/contenuto | Note |
+|------|-----------------|------|
+| button | Registro (popup) | vertical-stack con 3 markdown scrollabili: Critici / Operazioni / Note da `var.safety_core_timeline_*_md` |
+| tile | `script.safety_core_logbook_cancella_tutto` | Cancella Log, 4 cols, action: toggle |
+| tile | `script.safety_core_logbook_nota_da_ui` | Aggiungi Nota, 4 cols, popup browser_mod |
+| custom:timeline-card | `input_select.safety_core_stato` + `input_select.safety_core_ultima_categoria` | 480px, 24h, collapse_duplicates |
+| tile | `input_text.safety_core_logbook_ultimo_evento` | Ultimo Evento, 12 cols |
+| logbook | `input_text.safety_core_logbook_event` | 24h |
 
 **Pattern card_mod per ogni sensore (differente da allarme_core):**
 
