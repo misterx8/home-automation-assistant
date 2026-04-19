@@ -215,6 +215,10 @@ automation:
           clip_start_ts: "{{ (as_timestamp(now()) - states('input_number.safety_core_clip_secondi_prima') | int(30)) | int }}"
           clip_end_ts: "{{ (as_timestamp(now()) + states('input_number.safety_core_clip_secondi_dopo') | int(10)) | int }}"
 
+          frigate_token: >-
+            {% set t = states('input_text.safety_core_frigate_token') | trim %}
+            {{ '' if t in ['','unknown','unavailable'] else t }}
+
           clips_text: >
             {% set ns = namespace(out=[]) %}
             {% for c in cams_all %}
@@ -222,9 +226,9 @@ automation:
               {% if not cam %}
                 {% set cam = (c | string).split('.')[1] %}
               {% endif %}
-              {% set ns.out = ns.out + [
-                frigate_base ~ '/api/' ~ cam ~ '/start/' ~ clip_start_ts ~ '/end/' ~ clip_end_ts ~ '/clip.mp4'
-              ] %}
+              {% set url = frigate_base ~ '/api/' ~ cam ~ '/start/' ~ clip_start_ts ~ '/end/' ~ clip_end_ts ~ '/clip.mp4' %}
+              {% set url = url ~ '?token=' ~ frigate_token if frigate_token | length > 0 else url %}
+              {% set ns.out = ns.out + [url] %}
             {% endfor %}
             {{ ns.out | join('\n') }}
 

@@ -169,6 +169,7 @@ Ogni aggregato ha attributo `sensori_attivi` con lista entity_id dei sensori on.
 | `input_text.safety_core_nota_manuale`       | input_text    | Campo UI per note manuali                    |
 | `input_text.safety_core_url_base_ha`        | input_text    | URL base HA (es. http://homeassistant.local:8123) — costruisce link cliccabili agli snapshot |
 | `input_text.safety_core_url_base_frigate`   | input_text    | URL Frigate (es. http://192.168.2.92:5000) — usata per generare clip (sostituisce il valore hardcoded) |
+| `input_text.safety_core_frigate_token`      | input_text    | Token JWT Frigate — se configurato aggiunge `?token=<valore>` alle URL clip |
 | `input_number.safety_core_clip_secondi_prima` | input_number | Secondi prima del triggered nella clip Frigate (5-120, default 30) |
 | `input_number.safety_core_clip_secondi_dopo`  | input_number | Secondi dopo il triggered nella clip Frigate (5-60, default 10) |
 

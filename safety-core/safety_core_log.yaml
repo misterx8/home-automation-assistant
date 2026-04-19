@@ -32,6 +32,11 @@ input_text:
     name: "Safety Core - URL Base Frigate"
     max: 255
     icon: mdi:video-outline
+  # Token JWT Frigate — aggiunto come ?token=<valore> alle URL clip se configurato
+  safety_core_frigate_token:
+    name: "Safety Core - Token Frigate"
+    max: 255
+    icon: mdi:key-outline
 
 input_number:
   # Secondi prima del triggered da includere nella clip Frigate

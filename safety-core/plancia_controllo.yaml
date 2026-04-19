@@ -205,6 +205,8 @@ sections:
                       name: URL Home Assistant
                     - entity: input_text.safety_core_url_base_frigate
                       name: URL Frigate
+                    - entity: input_text.safety_core_frigate_token
+                      name: Token Frigate
                 - type: entities
                   title: "🎥 Clip Frigate"
                   entities:
@@ -224,9 +226,12 @@ sections:
             {% set ha_ok = states('input_text.safety_core_url_base_ha') not in
             ['','unknown','unavailable'] %} {% set fr_ok =
             states('input_text.safety_core_url_base_frigate') not in
-            ['','unknown','unavailable'] %} {% set all_ok = ha_ok and fr_ok %}
-            {% set none_ok = not ha_ok and not fr_ok %} {% set border_color =
-            'green' if all_ok else ('red' if none_ok else 'orange') %} ha-card {
+            ['','unknown','unavailable'] %} {% set tk_ok =
+            states('input_text.safety_core_frigate_token') not in
+            ['','unknown','unavailable'] %} {% set all_ok = ha_ok and fr_ok and
+            tk_ok %} {% set none_ok = not ha_ok and not fr_ok and not tk_ok %}
+            {% set border_color = 'green' if all_ok else ('red' if none_ok else
+            'orange') %} ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ border_color }};
               position: relative;
