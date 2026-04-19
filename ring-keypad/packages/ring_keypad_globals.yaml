@@ -214,9 +214,12 @@ input_boolean:
   # ── LOCKOUT PROTEZIONE BRUTE-FORCE (FIX C-6) ──────────────────────────────
   # Stato tecnico interno: si attiva quando failed_attempts supera la soglia,
   # si resetta esplicitamente dopo 5 minuti o al reset manuale.
-  # Nessun `initial`: è uno stato runtime che HA preserva nel registry.
+  # initial: false garantisce il reset al riavvio HA: senza di esso, se HA
+  # si riavvia durante un lockout, il registry ripristina on e il trigger
+  # to:"on" for:5min non osserva la transizione → il lockout non scade mai.
   ring_keypad_lockout_active:
     name: "Keypad - Lockout Attivo"
+    initial: false
     icon: mdi:lock-alert
 
 

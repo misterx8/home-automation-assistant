@@ -831,24 +831,30 @@ script:
           - action: script.ring_keypad_code_rejected
             data:
               keypad_id: "{{ keypad_id }}"
-          - action: input_text.set_value
-            target:
-              entity_id: input_text.ring_keypad_last_event
-            data:
-              value: "PIN errato - tentativo disarmo"
-          # Calcola il nuovo valore in variabile locale per evitare race condition
-          # tra set_value e la lettura successiva nella condizione soglia.
+          # new_count calcolato PRIMA del log: incluso nel messaggio così ogni
+          # tentativo genera un valore diverso in last_event → tutti loggati.
           - variables:
               new_count: "{{ [states('input_number.ring_keypad_failed_attempts') | int(0) + 1, 10] | min }}"
+              max_att: "{{ states('input_number.ring_keypad_max_failed_attempts') | int(5) }}"
           - action: input_number.set_value
             target:
               entity_id: input_number.ring_keypad_failed_attempts
             data:
               value: "{{ new_count }}"
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.ring_keypad_last_event
+            data:
+              value: "PIN errato - tentativo disarmo ({{ new_count }}/{{ max_att }})"
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.ring_keypad_last_keypad
+            data:
+              value: "{{ keypad_id }}"
           - if:
               - condition: template
                 value_template: >
-                  {{ new_count | int >= states('input_number.ring_keypad_max_failed_attempts') | int(5) }}
+                  {{ new_count | int >= max_att | int }}
             then:
               - action: input_boolean.turn_on
                 target:
@@ -916,34 +922,42 @@ script:
                   keypad_id: "{{ keypad_id }}"
 
         # CASO 3 (default): PIN errato
-        # Conta i fallimenti SOLO se il PIN è obbligatorio per armare:
-        # se require_code_to_arm=off l'utente può armare senza codice,
-        # quindi i tentativi errati non contribuiscono al lockout.
+        # Il contatore aumenta sempre (per avere un valore unico nel messaggio di log).
+        # Il lockout si attiva SOLO se require_code_to_arm=on: se il PIN non è
+        # obbligatorio per armare, i tentativi errati non minacciano la sicurezza.
         default:
           - action: script.ring_keypad_code_rejected
             data:
               keypad_id: "{{ keypad_id }}"
+          # new_count calcolato PRIMA del log: incluso nel messaggio così ogni
+          # tentativo genera un valore diverso in last_event → tutti loggati.
+          - variables:
+              new_count: "{{ [states('input_number.ring_keypad_failed_attempts') | int(0) + 1, 10] | min }}"
+              max_att: "{{ states('input_number.ring_keypad_max_failed_attempts') | int(5) }}"
+          - action: input_number.set_value
+            target:
+              entity_id: input_number.ring_keypad_failed_attempts
+            data:
+              value: "{{ new_count }}"
           - action: input_text.set_value
             target:
               entity_id: input_text.ring_keypad_last_event
             data:
-              value: "PIN errato - tentativo armo {{ mode }}"
+              value: "PIN errato - tentativo armo {{ mode }} ({{ new_count }}/{{ max_att }})"
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.ring_keypad_last_keypad
+            data:
+              value: "{{ keypad_id }}"
           - if:
               - condition: state
                 entity_id: input_boolean.ring_keypad_require_code_to_arm
                 state: "on"
             then:
-              - variables:
-                  new_count: "{{ [states('input_number.ring_keypad_failed_attempts') | int(0) + 1, 10] | min }}"
-              - action: input_number.set_value
-                target:
-                  entity_id: input_number.ring_keypad_failed_attempts
-                data:
-                  value: "{{ new_count }}"
               - if:
                   - condition: template
                     value_template: >
-                      {{ new_count | int >= states('input_number.ring_keypad_max_failed_attempts') | int(5) }}
+                      {{ new_count | int >= max_att | int }}
                 then:
                   - action: input_boolean.turn_on
                     target:

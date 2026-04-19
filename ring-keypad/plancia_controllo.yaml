@@ -256,6 +256,40 @@ sections:
               box-shadow: 0 0 0 2px {{ color }};
               padding-left: 12px;
             }
+      - type: tile
+        entity: binary_sensor.tastiera_sala_allarme_online
+        name: Sala — Online
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set online =
+            is_state('binary_sensor.tastiera_sala_allarme_online','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'green' if online else 'red' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.tastiera_sala_allarme_batteria
+        name: Sala — Batteria
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set batt = states('sensor.tastiera_sala_allarme_batteria') |
+            int(0) %} {% set color = 'green' if batt > 30 else ('orange' if batt
+            > 15 else 'red') %} ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ color }};
+              padding-left: 12px;
+            }
       - type: custom:mushroom-template-card
         primary: Tastiere attive
         secondary: >
@@ -809,6 +843,18 @@ sections:
           - entity: input_text.ring_keypad_last_user
             collapse_duplicates: true
             name: Utente
+          - entity: input_boolean.ring_keypad_lockout_active
+            collapse_duplicates: true
+            name: Lockout
+            state_map:
+              "on": LOCKOUT ATTIVO
+              "off": ""
+            icon_map:
+              "on": mdi:lock-alert
+              "off": mdi:lock-check
+            icon_color_map:
+              "on": red
+              "off": grey
       - type: tile
         grid_options:
           columns: 12

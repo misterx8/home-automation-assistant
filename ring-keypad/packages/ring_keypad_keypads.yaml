@@ -33,6 +33,16 @@ mqtt:
       unit_of_measurement: "%"
       icon: mdi:battery
 
+    # ── TASTIERA 2: tastiera_allarme_sala ───────────────────────────────
+    - name: "Tastiera Sala - Batteria"
+      unique_id: ring_keypad_tastiera_allarme_sala_battery
+      object_id: tastiera_sala_allarme_batteria
+      state_topic: "zwave2mqtt/tastiera_allarme_sala/battery/endpoint_0/level"
+      value_template: "{{ value_json.value }}"
+      device_class: battery
+      unit_of_measurement: "%"
+      icon: mdi:battery
+      
     # ── TEMPLATE NUOVA TASTIERA - BATTERIA (decommentare e modificare) ─────
     # IMPORTANTE: object_id deve seguire il pattern "<topic_base>_batteria"
     # per garantire entity ID prevedibili ed evitare conflitti con zwave2mqtt
@@ -64,6 +74,18 @@ mqtt:
       unique_id: ring_keypad_tastiera_allarme_camera_online
       object_id: tastiera_camera_allarme_online
       state_topic: "zwave2mqtt/tastiera_allarme_camera/status"
+      # Payload JSON: {"time":..., "value":true, "status":"Alive", "nodeId":N}
+      value_template: "{{ value_json.status }}"
+      payload_on: "Alive"
+      payload_off: "Dead"
+      device_class: connectivity
+      icon: mdi:keyboard
+
+    # ── TASTIERA 2: tastiera_allarme_sala ───────────────────────────────
+    - name: "Tastiera Sala - Online"
+      unique_id: ring_keypad_tastiera_allarme_sala_online
+      object_id: tastiera_sala_allarme_online
+      state_topic: "zwave2mqtt/tastiera_allarme_sala/status"
       # Payload JSON: {"time":..., "value":true, "status":"Alive", "nodeId":N}
       value_template: "{{ value_json.status }}"
       payload_on: "Alive"

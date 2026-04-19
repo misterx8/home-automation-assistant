@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
-> Ultima revisione: 2026-04-17  
-> Versione architettura: 5.0 (Fix critici C-2/C-3/C-4/C-5/C-6: protezione payload MQTT, mode:restart su do_arm, rilevamento PIN duplicati, validazione pattern PIN, sistema anti brute-force)
+> Ultima revisione: 2026-04-19  
+> Versione architettura: 5.4 (Aggiunta tastiera_allarme_sala; fix C-10/C-11 log PIN errati e LOCKOUT)
 
 ---
 
@@ -231,7 +231,7 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 | `ring_keypad_require_code_to_arm` | false | Se true, richiede PIN anche per armare |
 | `ring_keypad_bypass_pending` | false | Flag attivo durante l'attesa di conferma bypass (sensori aperti) |
 | `ring_keypad_voice_feedback` | true | Se on: payload 99 (LED+suono) per disarmed/armed; se off: payload 1 (solo LED) |
-| `ring_keypad_lockout_active` | — | Lockout brute-force attivo; reset automatico dopo 5 min (fix C-6) |
+| `ring_keypad_lockout_active` | false (`initial: false`) | Lockout brute-force attivo; `initial: false` garantisce il reset al riavvio HA (fix C-7); reset automatico dopo 5 min (fix C-6) |
 
 ### Template binary_sensor (dichiarati in `ring_keypad_globals.yaml`)
 
@@ -246,7 +246,9 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 | `sensor.tastiera_<id>_batteria` | sensor | Livello batteria reale 0-100% (topic: `battery/endpoint_0/level`) |
 | `binary_sensor.tastiera_<id>_online` | binary_sensor | Connettività Z-Wave (topic: `status`, field JSON `status`) |
 
-**Tastiera attiva:** `tastiera_allarme_camera` (nodeId 5)
+**Tastiere attive:**
+- `tastiera_allarme_camera` (nodeId 5) → `sensor.tastiera_camera_allarme_batteria`, `binary_sensor.tastiera_camera_allarme_online`
+- `tastiera_allarme_sala` → `sensor.tastiera_sala_allarme_batteria`, `binary_sensor.tastiera_sala_allarme_online`
 
 ---
 
@@ -367,10 +369,10 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 |----------------|---------|--------|
 | `ring_keypad_sync_on_state_change` | State: `ring_keypad_alarm_state` | `sync_all` |
 | `ring_keypad_restore_on_connect` | MQTT: `zwave2mqtt/+/status` = Alive | `set_siren_volume` + `sync_state` (gestisce LED internamente) su tastiera tornata online |
-| `ring_keypad_sync_on_ha_start` | HA start | Delay 15s → `set_siren_volume_all` + `sync_all` (`sync_state` gestisce LED internamente per ogni tastiera) |
+| `ring_keypad_sync_on_ha_start` | HA start | Delay 15s → safety-net lockout reset (fix C-8) → `set_siren_volume_all` + `sync_all` (`sync_state` gestisce LED internamente per ogni tastiera) |
 | `ring_keypad_sync_led_on_mode_change` | State: `ring_keypad_led_mode` | `set_led_mode_all` **solo se** `ring_keypad_alarm_state != 'armed_sera'` (fast blink non viene sovrascritto) |
 | `ring_keypad_sync_siren_volume_on_change` | State: `ring_keypad_siren_volume` | `set_siren_volume_all` |
-| `ring_keypad_lockout_reset` | State: `ring_keypad_lockout_active` = on per 5 min | Disattiva lockout + azzera `failed_attempts` + log (fix C-6) |
+| `ring_keypad_lockout_reset` | State: `ring_keypad_lockout_active` = on (trigger immediato) | Delay 5 min nell'action (più affidabile del `for:` nel trigger) → se ancora on: disattiva lockout + azzera `failed_attempts` + log. `mode: restart` (fix C-9) |
 | `ring_keypad_failed_attempts_reset` | State: `ring_keypad_failed_attempts` invariato per 60s (+ lockout off + valore > 0) | Azzera contatore tentativi falliti — sliding window anti brute-force (fix C-6) |
 
 ### Automazioni di integrazione (in `ring_keypad_integration.yaml`)
@@ -736,6 +738,11 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | C-4 | **CRITICO** — PIN duplicati tra utenti non rilevati: `ring_keypad_resolve_user` valuta sequenzialmente, quindi se due utenti condividono lo stesso PIN, il log viene sempre attribuito all'utente con priorità più alta (master per primo). Nessun warning visibile. | **Implementato 2026-04-17** | Aggiunto template `binary_sensor.keypad_collisione_pin` in `ring_keypad_globals.yaml`: `on` se due o più PIN configurati (≥4 cifre) sono identici. Da mostrare in dashboard come warning. |
 | C-5 | **CRITICO** — PIN < 4 cifre configurati dall'utente vengono silenziosamente ignorati (guard `length >= 4`). L'utente crede di avere un PIN attivo ma non funziona mai. Nessuna validazione UI. | **Corretto 2026-04-17** | Aggiunto `pattern: "^$\|^[0-9]{4,8}$"` a tutti i 4 `input_text` PIN in `ring_keypad_globals.yaml`. HA mostra errore UI se il PIN non rispetta il pattern (vuoto OK, oppure 4-8 cifre numeriche). |
 | C-6 | **CRITICO** — Nessuna protezione brute-force su PIN (RK-03 aperto): nessun rate limiting, tentativi illimitati. Un attaccante con accesso fisico può provare decine di PIN al minuto. | **Implementato 2026-04-17** | Sistema completo: `input_number.ring_keypad_failed_attempts` (contatore interno, `initial: 0`), `input_number.ring_keypad_max_failed_attempts` (soglia configurabile, 3-10), `input_boolean.ring_keypad_lockout_active` (flag lockout). `validate_and_disarm` e `validate_and_arm` incrementano il contatore su PIN errato, attivano lockout al raggiungimento della soglia, resettano il contatore su PIN corretto. In lockout: `code_rejected` immediato (indistinguibile da PIN errato, per non rivelare il lockout). Automazione `ring_keypad_lockout_reset`: reset automatico dopo 5 min. Automazione `ring_keypad_failed_attempts_reset`: sliding window — reset contatore dopo 60s di inattività se lockout non attivo. |
+| C-7 | **CRITICO** — `ring_keypad_lockout_active` non aveva `initial: false`: se HA si riavviava durante un lockout attivo, il registry ripristinava il valore `on`. Il trigger `to: "on" for: minutes: 5` della `ring_keypad_lockout_reset` richiede una transizione `off→on` per avviare il timer; senza transizione il timer non partiva mai → il lockout rimaneva attivo indefinitamente fino a intervento manuale. | **Corretto 2026-04-18** | Aggiunto `initial: false` a `ring_keypad_lockout_active` in `ring_keypad_globals.yaml`. `initial` è accettabile perché l'entità è tecnica interna (mai modificata manualmente dall'utente dalla UI), esattamente come `ring_keypad_failed_attempts` che ha già `initial: 0`. Aggiornato il commento nel file YAML. |
+| C-8 | **DIFESA IN PROFONDITÀ** — Anche con `initial: false` (fix C-7), in scenari edge (es. HA che non persiste le entità al bootstrap) il lockout potrebbe non essere resettato. Nessun safety-net in `ring_keypad_sync_on_ha_start`. | **Implementato 2026-04-18** | Aggiunto blocco `if/then` in `ring_keypad_sync_on_ha_start` dopo il delay di 15s: se `ring_keypad_lockout_active = on`, lo resetta, azzera `failed_attempts` e scrive log "Lockout reset al riavvio HA". Non altera il flusso normale (nessun `else`). |
+| C-9 | **BUG** — `ring_keypad_lockout_reset` usava `for: minutes: 5` nel trigger: il timer di 5 minuti era gestito dal sistema di monitoraggio trigger di HA, che in certi scenari (alto carico MQTT, versioni specifiche di HA) non scattava affidabilmente. Il lockout rimaneva attivo anche senza riavvio HA. | **Corretto 2026-04-18** | Rimosso `for: minutes: 5` dal trigger. Il trigger ora scatta immediatamente quando `lockout_active` diventa `on`. Il delay di 5 minuti è spostato nell'`action:` (più affidabile). Aggiunto `mode: restart`: se il lockout viene ri-attivato prima della scadenza, il timer riparte. Aggiunto step `condition: state lockout_active=on` dopo il delay: se il lockout è stato resettato manualmente durante i 5 minuti, l'automazione termina senza azione. |
+| C-10 | **BUG** — `validate_and_disarm` e `validate_and_arm`: i messaggi PIN errato erano stringhe costanti (`"PIN errato - tentativo disarmo"`) — al secondo tentativo consecutivo `last_event` riceveva lo stesso valore → `from_state == to_state` → `ring_keypad_log_da_last_event` non scattava. Solo il primo tentativo veniva loggato, tutti i successivi erano persi. | **Corretto 2026-04-19** | `new_count` calcolato PRIMA di scrivere `last_event`, incluso nel messaggio: `"PIN errato - tentativo disarmo (N/M)"`. Ogni tentativo genera un valore unico → tutti loggati. Aggiunto `last_keypad` update nel ramo PIN errato (prima mancante). Per `validate_and_arm`: counter increment spostato fuori dalla condizione `require_code_to_arm` (sempre incrementato per avere count unico), lockout trigger mantenuto dentro `require_code_to_arm = on`. |
+| C-11 | **BUG** — LOCKOUT (`"LOCKOUT ATTIVATO - troppi PIN errati"`) non aveva emoji speciale → cadeva nel ramo `{% else %} ℹ️` di `ring_keypad_log_da_last_event` → routing in sezione "Operazioni" invece di "Critici" → non visibile come evento critico nella timeline plancia. | **Corretto 2026-04-19** | Aggiunto `{% elif 'LOCKOUT' in m %} 🔐` come primo caso in `ring_keypad_log_da_last_event`. Aggiunto `or '🔐' in msg` alla condizione critici in `ring_keypad_log_timeline_append`. Aggiunto `or '🔐' in l` al colore rosso in `Ring Keypad – Timeline Render`. LOCKOUT ora appare in sezione Critici con colore rosso. |
 
 ---
 
@@ -777,6 +784,7 @@ Il log è completamente autonomo grazie a tre sorgenti di osservazione:
 
 | Contenuto messaggio | Emoji | Sezione timeline |
 |---------------------|-------|-----------------|
+| `LOCKOUT` | 🔐 | Critici |
 | `PIN errato` | ❌ | Operazioni |
 | `ANTI-RAPINA` | 🚨 | Critici |
 | `MEDICAL` | 🚑 | Critici |

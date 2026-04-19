@@ -149,7 +149,9 @@ automation:
           msg: >
             {% set m = msg_raw %}
             {% set kp = ' [' ~ keypad ~ ']' if keypad not in ['','unknown','unavailable'] else '' %}
-            {% if 'PIN errato' in m %}
+            {% if 'LOCKOUT' in m %}
+              🔐 {{ m }}{{ kp }}
+            {% elif 'PIN errato' in m %}
               ❌ {{ m }}{{ kp }}
             {% elif 'ANTI-RAPINA' in m %}
               🚨 {{ m }}
@@ -241,7 +243,7 @@ automation:
       line: "- **{{ ts }}** {{ msg }}"
       keep: 25
       target: >
-        {% if '🚨' in msg or '🔥' in msg or '🚑' in msg or '💧' in msg %}
+        {% if '🚨' in msg or '🔥' in msg or '🚑' in msg or '💧' in msg or '🔐' in msg %}
           critici
         {% elif '📝' in msg %}
           note
@@ -292,7 +294,7 @@ template:
             {% set lines = src.split('\n') | map('trim') | reject('equalto','') | list %}
             {% set out = namespace(v=[]) %}
             {% for l in lines[:20] %}
-              {% if '🚨' in l or '🔥' in l or '🚑' in l or '💧' in l %}
+              {% if '🚨' in l or '🔥' in l or '🚑' in l or '💧' in l or '🔐' in l %}
                 {% set out.v = out.v + ['🔴 ' ~ l] %}
               {% elif '🔒' in l or '🌙' in l %}
                 {% set out.v = out.v + ['🟢 ' ~ l] %}

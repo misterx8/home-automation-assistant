@@ -487,6 +487,27 @@ automation:
     action:
       - delay:
           seconds: 15
+      # Safety-net: se HA si è riavviato durante un lockout, resettarlo.
+      # Con initial:false su lockout_active questo non dovrebbe servire,
+      # ma è una difesa in profondità.
+      - if:
+          - condition: state
+            entity_id: input_boolean.ring_keypad_lockout_active
+            state: "on"
+        then:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.ring_keypad_lockout_active
+          - action: input_number.set_value
+            target:
+              entity_id: input_number.ring_keypad_failed_attempts
+            data:
+              value: 0
+          - action: input_text.set_value
+            target:
+              entity_id: input_text.ring_keypad_last_event
+            data:
+              value: "Lockout reset al riavvio HA"
       - action: script.ring_keypad_set_siren_volume_all
       # sync_all → sync_state gestisce internamente il LED per ogni tastiera
       - action: script.ring_keypad_sync_all
@@ -524,19 +545,28 @@ automation:
       - action: script.ring_keypad_set_siren_volume_all
 
   # ════════════════════════════════════════════════════════════════════════
-  # FIX C-6: RESET AUTOMATICO LOCKOUT DOPO 5 MINUTI
-  # Quando lockout_active resta on per 5 minuti consecutivi, lo disattiva
-  # e azzera il contatore tentativi falliti. Scadenza fissa (non sliding).
+  # FIX C-6 / C-9: RESET AUTOMATICO LOCKOUT DOPO 5 MINUTI
+  # Il trigger scatta immediatamente al lockout (to: "on" senza for:).
+  # Il delay di 5 minuti è nell'action (più affidabile del for: nel trigger,
+  # che in alcuni scenari HA non si attiva correttamente).
+  # mode: restart: se il lockout viene ri-attivato prima della scadenza,
+  # il timer riparte da zero.
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_lockout_reset
     alias: "Keypad - Reset automatico lockout (5 min)"
+    mode: restart
     trigger:
       - platform: state
         entity_id: input_boolean.ring_keypad_lockout_active
         to: "on"
-        for:
-          minutes: 5
     action:
+      - delay:
+          minutes: 5
+      # Verifica che il lockout sia ancora attivo (potrebbe essere stato
+      # resettato manualmente durante i 5 minuti)
+      - condition: state
+        entity_id: input_boolean.ring_keypad_lockout_active
+        state: "on"
       - action: input_boolean.turn_off
         target:
           entity_id: input_boolean.ring_keypad_lockout_active
