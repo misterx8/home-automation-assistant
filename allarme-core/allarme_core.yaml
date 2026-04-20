@@ -310,7 +310,9 @@ template:
           {% set profilo = states('input_select.allarme_core_profilo') %}
           {% set stato = states('input_select.allarme_core_stato') %}
           {% set zone_attive = state_attr('sensor.allarme_core_zone_attive','zones') or [] %}
-          {% set esclusi = states('var.allarme_core_sensori_esclusi_var') or [] %}
+          {% set esclusi_raw = states('var.allarme_core_sensori_esclusi_var') | string | trim %}
+          {% set esclusi_raw = esclusi_raw | replace("'", '"') %}
+          {% set esclusi = (esclusi_raw | from_json) if esclusi_raw.startswith('[') else [] %}
 
           {# FIX-B: aggiunto 'triggered' alla lista stati validi #}
           {% if profilo == 'nessuno' or stato not in ['armed', 'triggered'] %}
@@ -335,12 +337,14 @@ template:
         attributes:
           profilo: "{{ states('input_select.allarme_core_profilo') }}"
           stato_allarme: "{{ states('input_select.allarme_core_stato') }}"
-          
+
           sensori_aperti_ids: >
             {% set profilo = states('input_select.allarme_core_profilo') %}
             {% set stato = states('input_select.allarme_core_stato') %}
             {% set zone_attive = state_attr('sensor.allarme_core_zone_attive','zones') or [] %}
-            {% set esclusi = states('var.allarme_core_sensori_esclusi_var') or [] %}
+            {% set esclusi_raw = states('var.allarme_core_sensori_esclusi_var') | string | trim %}
+            {% set esclusi_raw = esclusi_raw | replace("'", '"') %}
+            {% set esclusi = (esclusi_raw | from_json) if esclusi_raw.startswith('[') else [] %}
 
             {# FIX-B: aggiunto 'triggered' alla lista stati validi #}
             {% if profilo == 'nessuno' or stato not in ['armed', 'triggered'] %}

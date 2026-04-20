@@ -473,6 +473,8 @@ Entità rilevate nell'uso della plancia ma definite in `allarme_core_batterie.ya
 | AC-BUG-06 | script arm continuava in background dopo disarm → si armava da solo | allarme_core.yaml      |
 | FIX-B    | Sensori aperti filtrati ignorava stato "triggered"                  | allarme_core.yaml       |
 | FIX-C    | Race condition lettura causa allarme (template invece di lettura diretta binary_sensor) | allarme_core_automazioni.yaml |
+| FIX-D    | `esclusi` nel template `sensori_aperti_filtrati` usava stringa grezza invece di lista parsed — `not in` faceva substring matching anziché membership check. Corretto con `replace("'",'"') + from_json` in entrambe le occorrenze (state: e sensori_aperti_ids:) | allarme_core.yaml |
+| FIX-E    | Automazione "Memorizza sensori causa allarme" scriveva `var.allarme_core_sensori_attivazione_allarme_var = ""` anche con lista vuota (race condition / doppio trigger), sovrascrivendo i dati dell'ultimo allarme valido. Aggiunta `condition: template aperti\|length > 0` prima dei `var.set` | allarme_core_automazioni.yaml |
 
 ---
 

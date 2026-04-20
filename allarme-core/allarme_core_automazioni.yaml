@@ -160,6 +160,11 @@ automation:
         {{ ns.nomi }}
       ts: "{{ now().isoformat() }}"
     action:
+      # FIX: scrivi le variabili solo se ci sono sensori realmente attivi.
+      # Evita di sovrascrivere i dati dell'ultimo allarme valido con una lista vuota
+      # in caso di race condition (sensori già rientrati) o doppio trigger.
+      - condition: template
+        value_template: "{{ aperti | length > 0 }}"
       - service: var.set
         data:
           entity_id:
@@ -168,10 +173,6 @@ automation:
             {{ aperti | join(', ') }}
           attributes:
             profilo: "{{ states('input_select.allarme_core_profilo') }}"
-      # Aggiorna il dizionario JSON con il timestamp dell'ultimo allarme per ciascun sensore attivato.
-      # La logica viene eseguita nel contesto data: dell'action (stesso engine di Developer Tools),
-      # dove from_json, combine e to_json funzionano correttamente.
-      # 'aperti' è accessibile qui come variabile del blocco variables: dell'automazione.
       - service: var.set
         data:
           entity_id: var.allarme_core_ultimo_allarme_per_sensore
