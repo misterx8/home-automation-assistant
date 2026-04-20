@@ -1,0 +1,637 @@
+type: sections
+max_columns: 3
+title: Controllo Generale
+path: controllo-generale
+icon: mdi:security
+header:
+  cards:
+    - type: conditional
+      conditions:
+        - condition: state
+          entity: input_select.allarme_core_stato
+          state: triggered
+      card:
+        type: markdown
+        content: >-
+          <ha-alert alert-type="error">🚨 ALLARME CORE ATTIVO — Intrusione
+          rilevata</ha-alert>
+    - type: conditional
+      conditions:
+        - condition: state
+          entity: input_select.safety_core_stato
+          state: triggered
+      card:
+        type: markdown
+        content: >-
+          {% set cat = states('input_select.safety_core_ultima_categoria') %}
+          <ha-alert alert-type="error">🔥 SAFETY CORE — Allarme {{ cat | upper
+          }} in corso</ha-alert>
+    - type: conditional
+      conditions:
+        - condition: or
+          conditions:
+            - condition: state
+              entity: input_select.ring_keypad_alarm_state
+              state: triggered_burglar
+            - condition: state
+              entity: input_select.ring_keypad_alarm_state
+              state: triggered_rapina
+            - condition: state
+              entity: input_select.ring_keypad_alarm_state
+              state: triggered_fire
+            - condition: state
+              entity: input_select.ring_keypad_alarm_state
+              state: triggered_medical
+            - condition: state
+              entity: input_select.ring_keypad_alarm_state
+              state: triggered_water
+      card:
+        type: markdown
+        content: >-
+          {% set stato = states('input_select.ring_keypad_alarm_state') %} {%
+          set mappa = {
+            'triggered_burglar': 'INTRUSIONE',
+            'triggered_rapina':  'ANTI-RAPINA SILENZIOSO',
+            'triggered_fire':    'INCENDIO',
+            'triggered_medical': 'EMERGENZA MEDICA',
+            'triggered_water':   'PERDITA ACQUA'
+          } %} <ha-alert alert-type="error">🔑 TASTIERA — {{ mappa[stato] if
+          stato in mappa else stato | upper }}</ha-alert>
+    - type: conditional
+      conditions:
+        - condition: state
+          entity: input_boolean.allarme_core_modalita_test
+          state: "on"
+      card:
+        type: markdown
+        content: >-
+          <ha-alert alert-type="warning">🧪 MODALITÀ TEST ATTIVA — Sirene e
+          notifiche disabilitate</ha-alert>
+sections:
+  - type: grid
+    cards:
+      - type: heading
+        heading: Allarme Core
+        heading_style: title
+        icon: mdi:shield-half-full
+      - type: tile
+        entity: alarm_control_panel.allarme_core
+        vertical: false
+        features:
+          - type: alarm-modes
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 2
+        card_mod:
+          style: >
+            {% set stato = states('input_select.allarme_core_stato') %} {% if
+            stato == 'triggered' %}
+              {% set color = 'red' %}
+            {% elif stato in ['armed', 'arming'] %}
+              {% set color = 'orange' %}
+            {% else %}
+              {% set color = 'green' %}
+            {% endif %} ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ color }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: input_select.allarme_core_profilo
+        name: Profilo Attivo
+        vertical: false
+        features_position: bottom
+        features:
+          - type: select-options
+        grid_options:
+          columns: 12
+          rows: 2
+      - type: tile
+        entity: sensor.allarme_core_zone_attive
+        name: Zone Attive
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+      - type: custom:mushroom-template-card
+        primary: "{{ states('sensor.allarme_core_sensori_attivi') }}"
+        secondary: >-
+          {% set lista =
+          state_attr('sensor.allarme_core_sensori_esclusi_memoria', 'sensori') |
+          default([]) %} {% if lista | length == 0 %}
+            Nessun sensore escluso
+          {% else %}
+            Esclusi: {{ lista | join(', ') }}
+          {% endif %}
+        icon: mdi:motion-sensor
+        icon_color: >-
+          {% if is_state('sensor.allarme_core_sensori_attivi', 'Nessun sensore
+          attivo') %}
+            green
+          {% else %}
+            red
+          {% endif %}
+        grid_options:
+          columns: 12
+          rows: 1
+        tap_action:
+          action: none
+      - type: custom:mushroom-template-card
+        primary: "{{ states('sensor.allarme_core_ultimo_trigger') }}"
+        secondary: >-
+          {{ state_attr('sensor.allarme_core_ultimo_trigger', 'data_evento') |
+          default('Nessun evento registrato') }}
+        icon: mdi:alarm-light
+        icon_color: >-
+          {% if is_state('sensor.allarme_core_ultimo_trigger', 'Nessun evento')
+          %}
+            grey
+          {% else %}
+            red
+          {% endif %}
+        grid_options:
+          columns: 12
+          rows: 1
+        tap_action:
+          action: none
+      - type: button
+        name: Plancia Operativa
+        icon: mdi:shield-home
+        grid_options:
+          columns: 6
+          rows: 1
+        tap_action:
+          action: navigate
+          navigation_path: /home-new/configurazione-allarme
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px #4a90d9;
+            }
+      - type: button
+        name: Mappa Sensori
+        icon: mdi:motion-sensor
+        grid_options:
+          columns: 6
+          rows: 1
+        tap_action:
+          action: navigate
+          navigation_path: /home-new/allarme-mappa-sensori
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px #4a90d9;
+            }
+  - type: grid
+    cards:
+      - type: heading
+        heading: Safety Core
+        heading_style: title
+        icon: mdi:shield-alert
+      - type: tile
+        entity: input_select.safety_core_stato
+        name: Stato Sistema
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        card_mod:
+          style: |
+            {% set stato = states('input_select.safety_core_stato') %} ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if stato == 'triggered' else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: input_select.safety_core_ultima_categoria
+        name: Ultima Categoria
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+      - type: tile
+        entity: binary_sensor.safety_core_fumo_attivo
+        name: Fumo
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set on = is_state('binary_sensor.safety_core_fumo_attivo','on')
+            %} ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: binary_sensor.safety_core_gas_attivo
+        name: Gas
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set on = is_state('binary_sensor.safety_core_gas_attivo','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: binary_sensor.safety_core_carbonio_attivo
+        name: Monossido
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set on =
+            is_state('binary_sensor.safety_core_carbonio_attivo','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: binary_sensor.safety_core_acqua_attivo
+        name: Acqua
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set on = is_state('binary_sensor.safety_core_acqua_attivo','on')
+            %} ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'red' if on else 'green' }};
+              padding-left: 12px;
+            }
+      - type: heading
+        heading: Elettrovalvole
+        heading_style: subtitle
+        icon: mdi:pipe-valve
+      - type: tile
+        entity: switch.eth_rly16_board1_relay_1
+        name: Valvola GAS
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+      - type: tile
+        entity: switch.eth_rly16_board2_relay_3
+        name: Valvola Acqua
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+      - type: tile
+        entity: script.safety_core_reset
+        name: Reset Manuale
+        icon: mdi:shield-check
+        vertical: false
+        tap_action:
+          action: perform-action
+          perform_action: script.turn_on
+          target:
+            entity_id: script.safety_core_reset
+          confirmation:
+            text: >-
+              Confermi il reset manuale del Safety Core? Il sistema tornerà allo
+              stato OK.
+        features_position: bottom
+        grid_options:
+          columns: 12
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px green;
+            }
+      - type: button
+        name: Safety Core — Dettaglio
+        icon: mdi:shield-alert
+        grid_options:
+          columns: 12
+          rows: 1
+        tap_action:
+          action: navigate
+          navigation_path: /home-new/safety-core
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px #4a90d9;
+            }
+  - type: grid
+    cards:
+      - type: heading
+        heading: Ring Keypad
+        heading_style: title
+        icon: mdi:keyboard-settings
+      - type: custom:mushroom-template-card
+        primary: >
+          {% set stato = states('input_select.ring_keypad_alarm_state') %} {%
+          set mappa = {
+            'disarmed':          'Disinserito',
+            'armed_home':        'Armato Casa',
+            'armed_away':        'Armato Fuori',
+            'armed_sera':        'Armato Sera',
+            'arming':            'Armamento in corso…',
+            'triggered_burglar': 'ALLARME INTRUSIONE',
+            'triggered_rapina':  'ANTI-RAPINA SILENZIOSO',
+            'triggered_fire':    'ALLARME INCENDIO',
+            'triggered_medical': 'EMERGENZA MEDICA',
+            'triggered_water':   'ALLARME PERDITA ACQUA'
+          } %} {{ mappa[stato] if stato in mappa else stato }}
+        secondary: >
+          {% set utente = states('input_text.ring_keypad_last_user') %} {% set
+          tastiera = states('input_text.ring_keypad_last_keypad') %} {% if
+          utente not in ['','unknown','unavailable'] %}
+            Utente: {{ utente }}
+            {%- if tastiera not in ['','unknown','unavailable'] %} — {{ tastiera }}{% endif %}
+          {% else %}
+            Nessuna attività recente
+          {% endif %}
+        icon: >
+          {% set stato = states('input_select.ring_keypad_alarm_state') %} {% if
+          stato == 'triggered_rapina' %}
+            mdi:alarm-light-off
+          {% elif stato.startswith('triggered_') %}
+            mdi:alarm-light
+          {% elif stato in ['armed_home','armed_away','armed_sera'] %}
+            mdi:shield-lock
+          {% elif stato == 'arming' %}
+            mdi:shield-sync
+          {% else %}
+            mdi:shield-home-outline
+          {% endif %}
+        icon_color: >
+          {% set stato = states('input_select.ring_keypad_alarm_state') %} {% if
+          stato.startswith('triggered_') %}
+            red
+          {% elif stato == 'armed_sera' %}
+            #8B6FDB
+          {% elif stato in ['armed_home','armed_away','arming'] %}
+            orange
+          {% else %}
+            green
+          {% endif %}
+        grid_options:
+          columns: 12
+          rows: 2
+        tap_action:
+          action: none
+      - type: heading
+        heading: Stato Hardware
+        heading_style: subtitle
+        icon: mdi:keyboard-variant
+      - type: tile
+        entity: binary_sensor.tastiera_camera_allarme_online
+        name: Camera
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        card_mod:
+          style: >
+            {% set ok =
+            is_state('binary_sensor.tastiera_camera_allarme_online','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'green' if ok else 'red' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.tastiera_camera_allarme_batteria
+        name: Batt.
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        card_mod:
+          style: >
+            {% set b = states('sensor.tastiera_camera_allarme_batteria') |
+            int(0) %} ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'green' if b > 30 else ('orange' if b > 15 else 'red') }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: binary_sensor.tastiera_sala_allarme_online
+        name: Sala
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        card_mod:
+          style: >
+            {% set ok =
+            is_state('binary_sensor.tastiera_sala_allarme_online','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'green' if ok else 'red' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.tastiera_sala_allarme_batteria
+        name: Batt.
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 3
+          rows: 1
+        card_mod:
+          style: >
+            {% set b = states('sensor.tastiera_sala_allarme_batteria') | int(0)
+            %} ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'green' if b > 30 else ('orange' if b > 15 else 'red') }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: input_boolean.ring_keypad_lockout_active
+        name: Lockout Brute-Force
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set on =
+            is_state('input_boolean.ring_keypad_lockout_active','on') %} ha-card
+            {
+              border-radius: 30px;
+              box-shadow: 0 0 0 3px {{ 'red' if on else 'grey' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: input_number.ring_keypad_failed_attempts
+        name: PIN Falliti
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 6
+          rows: 1
+        card_mod:
+          style: >
+            {% set n = states('input_number.ring_keypad_failed_attempts') |
+            int(0) %} {% set mx =
+            states('input_number.ring_keypad_max_failed_attempts') | int(5) %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'red' if n >= mx else ('orange' if n > 0 else 'grey') }};
+              padding-left: 12px;
+            }
+      - type: custom:mushroom-template-card
+        primary: Ultimo Evento
+        secondary: >
+          {% set ev = states('input_text.ring_keypad_last_event') %} {{ ev if ev
+          not in ['','unknown','unavailable'] else 'Nessun evento registrato' }}
+        icon: mdi:history
+        icon_color: >
+          {% set ev = states('input_text.ring_keypad_last_event') %} {{ 'orange'
+          if ev not in ['','unknown','unavailable'] else 'grey' }}
+        grid_options:
+          columns: 12
+          rows: 1
+        tap_action:
+          action: none
+      - type: button
+        name: Ring Keypad — Dettaglio
+        icon: mdi:keyboard-settings
+        grid_options:
+          columns: 12
+          rows: 1
+        tap_action:
+          action: navigate
+          navigation_path: /home-new/ring-keypad
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px #4a90d9;
+            }
+  - type: grid
+    column_span: 3
+    columns: 12
+    cards:
+      - type: heading
+        heading: Salute Hardware — Aggregato Tutti i Sistemi
+        heading_style: title
+        icon: mdi:battery-heart-variant
+      - type: gauge
+        entity: sensor.allarme_core_batteria_minima
+        name: Batteria Min — Allarme Core
+        min: 0
+        max: 100
+        severity:
+          green: 30
+          yellow: 20
+          red: 0
+        needle: true
+        grid_options:
+          columns: 4
+          rows: 3
+      - type: gauge
+        entity: sensor.safety_core_batteria_minima
+        name: Batteria Min — Safety Core
+        min: 0
+        max: 100
+        severity:
+          green: 30
+          yellow: 20
+          red: 0
+        needle: true
+        grid_options:
+          columns: 4
+          rows: 3
+      - type: custom:mushroom-template-card
+        primary: Allarme Core
+        secondary: >
+          {% set bat = states('sensor.allarme_core_batterie_basse') | int(0) %}
+          {% set off = states('sensor.allarme_core_sensori_offline') | int(0) %}
+          {% set anom =
+          is_state('binary_sensor.allarme_core_anomalia_rilevata','on') %}
+          Batterie basse: {{ bat }} — Offline: {{ off }}{% if anom %} — ⚠️
+          Anomalia HW{% endif %}
+        icon: mdi:shield-half-full
+        icon_color: >
+          {% set bat = states('sensor.allarme_core_batterie_basse') | int(0) %}
+          {% set off = states('sensor.allarme_core_sensori_offline') | int(0) %}
+          {% set anom =
+          is_state('binary_sensor.allarme_core_anomalia_rilevata','on') %} {{
+          'red' if (bat > 0 or off > 0 or anom) else 'green' }}
+        tap_action:
+          action: none
+        grid_options:
+          columns: 6
+          rows: 3
+      - type: custom:mushroom-template-card
+        primary: Safety Core
+        secondary: >
+          {% set bat = states('sensor.safety_core_batterie_basse') | int(0) %}
+          {% set off = states('sensor.safety_core_sensori_offline') | int(0) %}
+          {% set anom =
+          is_state('binary_sensor.safety_core_anomalia_rilevata','on') %}
+          Batterie basse: {{ bat }} — Offline: {{ off }}{% if anom %} — ⚠️
+          Anomalia HW{% endif %}
+        icon: mdi:shield-alert
+        icon_color: >
+          {% set bat = states('sensor.safety_core_batterie_basse') | int(0) %}
+          {% set off = states('sensor.safety_core_sensori_offline') | int(0) %}
+          {% set anom =
+          is_state('binary_sensor.safety_core_anomalia_rilevata','on') %} {{
+          'red' if (bat > 0 or off > 0 or anom) else 'green' }}
+        tap_action:
+          action: none
+        grid_options:
+          columns: 6
+          rows: 3
+      - type: custom:mushroom-template-card
+        primary: Ring Keypad
+        secondary: >
+          {% set cb = states('sensor.tastiera_camera_allarme_batteria') | int(0)
+          %} {% set sb = states('sensor.tastiera_sala_allarme_batteria') |
+          int(0) %} {% set co =
+          is_state('binary_sensor.tastiera_camera_allarme_online','on') %} {%
+          set so = is_state('binary_sensor.tastiera_sala_allarme_online','on')
+          %} Camera: {{ cb }}%{% if not co %} (offline){% endif %} — Sala: {{ sb
+          }}%{% if not so %} (offline){% endif %}
+        icon: mdi:keyboard-settings
+        icon_color: >
+          {% set cb = states('sensor.tastiera_camera_allarme_batteria') |
+          int(100) %} {% set sb =
+          states('sensor.tastiera_sala_allarme_batteria') | int(100) %} {% set
+          co = is_state('binary_sensor.tastiera_camera_allarme_online','on') %}
+          {% set so =
+          is_state('binary_sensor.tastiera_sala_allarme_online','on') %} {{
+          'red' if (not co or not so or cb < 15 or sb < 15) else ('orange' if
+          (cb < 30 or sb < 30) else 'green') }}
+        tap_action:
+          action: none
+        grid_options:
+          columns: 6
+          rows: 3
+badges: []
+cards: []

@@ -3,6 +3,8 @@ max_columns: 4
 title: Ring Keypad
 path: ring-keypad
 icon: mdi:keyboard-settings
+subview: true
+back_path: /home-new/controllo-generale
 header:
   cards:
     - type: conditional

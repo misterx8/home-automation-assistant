@@ -3,6 +3,8 @@ max_columns: 10
 title: Safety Core
 path: safety-core
 icon: mdi:shield-alert
+subview: true
+back_path: /home-new/controllo-generale
 sections:
   - type: grid
     cards:

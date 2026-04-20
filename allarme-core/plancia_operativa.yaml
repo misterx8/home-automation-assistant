@@ -3,6 +3,8 @@ max_columns: 4
 title: Controllo Allarme
 path: configurazione-allarme
 icon: mdi:shield-half-full
+subview: true
+back_path: /home-new/controllo-generale
 sections:
   - type: grid
     cards:

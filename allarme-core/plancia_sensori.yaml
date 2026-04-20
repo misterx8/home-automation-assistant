@@ -3,6 +3,8 @@ max_columns: 4
 title: Mappa Sensori
 path: allarme-mappa-sensori
 icon: mdi:motion-sensor
+subview: true
+back_path: /home-new/configurazione-allarme
 sections:
   - type: grid
     cards:
