@@ -170,11 +170,11 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
    (es. `tastiera_allarme_camera,tastiera_allarme_sala,tastiera_allarme_ingresso`)
 
 2. **`ring_keypad_keypads.yaml`** — Aggiungere i blocchi sensore batteria e online per la nuova tastiera.  
-   **Obbligatorio**: impostare `object_id` esplicito per evitare conflitti con la discovery zwave2mqtt (bug RK-11).  
+   **Obbligatorio**: impostare `default_entity_id` esplicito (con dominio completo) per evitare conflitti con la discovery zwave2mqtt (bug RK-11, fix RK-57).  
    Il pattern usato nel progetto è `tastiera_<stanza>_allarme_batteria` / `tastiera_<stanza>_allarme_online`:
    ```yaml
-   object_id: tastiera_ingresso_allarme_batteria   # → sensor.tastiera_ingresso_allarme_batteria
-   object_id: tastiera_ingresso_allarme_online     # → binary_sensor.tastiera_ingresso_allarme_online
+   default_entity_id: sensor.tastiera_ingresso_allarme_batteria
+   default_entity_id: binary_sensor.tastiera_ingresso_allarme_online
    ```
 
 3. **`plancia_controllo.yaml`** — Aggiungere i tile Online + Batteria nella sezione "Stato Hardware",  
@@ -613,8 +613,8 @@ Decommentare la sezione 2 e commentare la sezione 1.
    (es. `tastiera_allarme_camera,tastiera_allarme_sala,tastiera_allarme_ingresso`)
 
 2. **`ring_keypad_keypads.yaml`**: aggiungere i blocchi sensor (batteria) e binary_sensor (online).  
-   **Obbligatorio**: includere `object_id` esplicito. Pattern usato: `tastiera_<stanza>_allarme_batteria` / `tastiera_<stanza>_allarme_online`.  
-   Senza `object_id` HA genera entity ID auto che possono collidere con zwave2mqtt discovery (RK-11).
+   **Obbligatorio**: includere `default_entity_id` esplicito con dominio completo. Pattern usato: `sensor.tastiera_<stanza>_allarme_batteria` / `binary_sensor.tastiera_<stanza>_allarme_online`.  
+   Senza `default_entity_id` HA genera entity ID auto che possono collidere con zwave2mqtt discovery (RK-11, fix RK-57).
 
 3. **`plancia_controllo.yaml`**: aggiungere due tile (Online + Batteria) nella sezione "Stato Hardware",  
    copiando il pattern dei tile esistenti e sostituendo le entity_id.
@@ -687,7 +687,7 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-08 | `binary_sensor.tastiera_camera_online`: mancava `value_template` → sensor sempre `off` (payload è JSON, non stringa) | **Corretto 2026-04-11** | Aggiunto `value_template: "{{ value_json.status }}"` |
 | RK-09 | Battery sensor: topic errato `battery/0/isLow` (booleano) invece di `battery/endpoint_0/level` (percentuale reale) | **Corretto 2026-04-11** | Topic e `value_template` aggiornati, ora fornisce 0-100% |
 | RK-10 | Nome nodo tastiera errato `tastiera_camera` invece di `tastiera_allarme_camera` in keypads.yaml e globals.yaml | **Corretto 2026-04-11** | Aggiornato in tutti i file |
-| RK-11 | Entity ID sensori MQTT duplicati con suffisso `_2` — zwave2mqtt MQTT discovery creava entità in conflitto con quelle YAML | **Corretto 2026-04-11** | Disabilitata discovery zwave2mqtt; aggiunti `object_id` espliciti in keypads.yaml: `tastiera_camera_allarme_batteria`, `tastiera_camera_allarme_online` |
+| RK-11 | Entity ID sensori MQTT duplicati con suffisso `_2` — zwave2mqtt MQTT discovery creava entità in conflitto con quelle YAML | **Corretto 2026-04-11** | Disabilitata discovery zwave2mqtt; aggiunti `object_id` espliciti in keypads.yaml (sostituiti con `default_entity_id` in RK-57) |
 | RK-12 | Dashboard `plancia_controllo.yaml`: header usava `header.card` (singolo) invece di `header.cards` (lista) — errore configurazione sections view | **Corretto 2026-04-11** | Cambiato `card:` in `cards:` e rimosso `vertical-stack` wrapper non supportato nell'header |
 | RK-13 | `condition: template` con `value_template` usava block scalar `>` — template renderizzava `"True\n"` invece di `"true"` | **Corretto 2026-04-11** | Convertito a stringa inline con `| string | lower` |
 | RK-14 | Topic Entry Control CC errati: usavano `111/0/` invece del path reale `unknownClass_111/endpoint_0/` — nessun trigger MQTT funzionante | **Corretto 2026-04-12** | Tutti i topic input aggiornati al formato verificato |
@@ -733,6 +733,7 @@ Il delay di exit delay è interno allo script. Se HA si riavvia durante il delay
 | RK-55 | **BUG** — Tasto X non interrompeva il bypass: `ring_keypad_input_cancel` ascoltava solo `25/2` (X + codice). Durante un bypass attivo l'utente preme X senza inserire codice → la tastiera emette `25/0`, evento non gestito → bypass continua fino al timeout software. | **Corretto 2026-04-15** | Aggiunto secondo trigger `25/0` all'automazione `ring_keypad_input_cancel`. Ora sia X+codice che X senza codice cancellano il bypass attivo e ripristinano i LED. |
 | RK-56 | **BUG** — Doppio comando MQTT `Exit_Delay` durante l'armo: `ring_keypad_do_arm` impostava lo stato su `arming` (triggera `sync_on_state_change` → `sync_all` → `sync_state` → `show_exit_delay`) e poi chiamava `show_exit_delay` anche direttamente sulla tastiera. Risultato: la tastiera riceveva il countdown due volte in rapida successione. | **Corretto 2026-04-15** | Rimossa la chiamata diretta a `show_exit_delay` da `ring_keypad_do_arm`. Il cambio stato su `arming` innesca automaticamente `sync_on_state_change` → `sync_all` → `show_exit_delay` su TUTTE le tastiere attive, il che è anche più corretto (multi-tastiera). |
 | RK-54 | **UX** — L'indicatore hardware `Bypass_challenge` scompare dopo ~5s (timeout gestito dall'NVRAM del dispositivo, non modificabile via MQTT): l'utente non aveva più feedback visivo per la maggior parte della finestra di bypass software, rendendo difficile capire che poteva ancora premere V. | **Implementato 2026-04-15** | Nuovo script `ring_keypad_bypass_keepalive` (`mode: restart`): loop `repeat/while` che ogni 5s invia `Bypass_challenge/9` payload `1` (**sub_cmd 9 = solo LED, nessuna voce** — sub_cmd 1 attiva sempre la voce indipendentemente dal payload) finché `bypass_pending=on` AND `bypass_keypad==keypad_id`. `ring_keypad_bypass_challenge` lo avvia subito dopo il primo invio sub_cmd 1 payload `99`. `ring_keypad_bypass_cancel` lo ferma insieme a `bypass_timeout_script`. |
+| RK-57 | **DEPRECAZIONE** — `object_id` nei sensori MQTT YAML deprecato in HA 2024.x: HA segnalava warning al boot per tutti e 4 i sensori tastiera in `ring_keypad_keypads.yaml` | **Corretto 2026-04-20** | Sostituito `object_id: <nome>` con `default_entity_id: <dominio>.<nome>` (sintassi completa richiesta) in tutti i sensori attivi e nei template commentati; aggiornate le note interne del file |
 | C-2 | **CRITICO** — `trigger.payload_json` è `None` se il payload MQTT non è JSON valido (es. messaggio corrotto, retained obsoleto). Chiamare `.get(...)` su `None` causa `UndefinedError` e l'automazione fallisce silenziosamente: l'evento viene perso. | **Corretto 2026-04-17** | Sostituito `trigger.payload_json.get('value', '')` con `(trigger.payload_json \| default({})).get('value', '')` nelle 4 automazioni con codice: `ring_keypad_input_disarm`, `ring_keypad_input_arm_away`, `ring_keypad_input_arm_home`, `ring_keypad_input_enter`. |
 | C-3 | **CRITICO** — `ring_keypad_do_arm` con `mode: single` e `max_exceeded: silent`: durante l'exit delay (30s), qualsiasi richiesta di cambio profilo (es. Arm Home → Arm Away) viene scartata silenziosamente. Il sistema arma nel profilo originale senza feedback. | **Corretto 2026-04-17** | Cambiato `mode: single` → `mode: restart` e rimosso `max_exceeded: silent`. Con `mode: restart`, premere un nuovo profilo durante l'exit delay riavvia lo script con il nuovo profilo (comportamento desiderato). |
 | C-4 | **CRITICO** — PIN duplicati tra utenti non rilevati: `ring_keypad_resolve_user` valuta sequenzialmente, quindi se due utenti condividono lo stesso PIN, il log viene sempre attribuito all'utente con priorità più alta (master per primo). Nessun warning visibile. | **Implementato 2026-04-17** | Aggiunto template `binary_sensor.keypad_collisione_pin` in `ring_keypad_globals.yaml`: `on` se due o più PIN configurati (≥4 cifre) sono identici. Da mostrare in dashboard come warning. |
