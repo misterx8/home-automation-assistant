@@ -279,6 +279,19 @@ script:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming/9/set"
           payload: "99"
 
+  ring_keypad_alarm_burglar_sera:
+    alias: "Keypad → Allarme Intrusione (profilo sera, silenzioso)"
+    description: "Allarme intrusione con profilo sera — stesso topic Alarming/9 ma payload 1 (silenzioso)"
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+    sequence:
+      - action: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Alarming/9/set"
+          payload: "1"
+
   ring_keypad_alarm_rapina:
     alias: "Keypad → Allarme Anti-Rapina"
     description: >
@@ -376,8 +389,9 @@ script:
   # ══════════════════════════════════════════════════════════════════════════
   # SYNC STATO → SINGOLA TASTIERA (dispatcher)
   # Legge input_select.ring_keypad_alarm_state e invia l'indicatore corretto.
-  # Include tutti gli stati: disarmed, armed_home, armed_away, arming,
-  # triggered_burglar, triggered_rapina, triggered_fire, triggered_medical, triggered_water
+  # Include tutti gli stati: disarmed, armed_home, armed_away, armed_sera, arming,
+  # triggered_burglar, triggered_burglar_sera, triggered_rapina, triggered_fire,
+  # triggered_medical, triggered_water
   # ══════════════════════════════════════════════════════════════════════════
 
   ring_keypad_sync_state:
@@ -449,6 +463,16 @@ script:
                 state: "triggered_burglar"
             sequence:
               - action: script.ring_keypad_alarm_burglar
+                data:
+                  keypad_id: "{{ keypad_id }}"
+
+          - conditions:
+              - condition: state
+                entity_id: input_select.ring_keypad_alarm_state
+                state: "triggered_burglar_sera"
+            sequence:
+              # Intrusione profilo sera: stesso topic Alarming/9 ma silenzioso (payload 1)
+              - action: script.ring_keypad_alarm_burglar_sera
                 data:
                   keypad_id: "{{ keypad_id }}"
 
@@ -636,7 +660,7 @@ script:
 
   # ══════════════════════════════════════════════════════════════════════════
   # BROADCAST ALLARME A TUTTE LE TASTIERE
-  # alarm_type: burglar | rapina | fire | medical | water
+  # alarm_type: burglar | burglar_sera | rapina | fire | medical | water
   # ══════════════════════════════════════════════════════════════════════════
 
   ring_keypad_broadcast_alarm:
@@ -679,6 +703,14 @@ script:
                       value_template: "{{ alarm_type == 'burglar' }}"
                   sequence:
                     - action: script.ring_keypad_alarm_burglar
+                      data:
+                        keypad_id: "{{ repeat.item }}"
+
+                - conditions:
+                    - condition: template
+                      value_template: "{{ alarm_type == 'burglar_sera' }}"
+                  sequence:
+                    - action: script.ring_keypad_alarm_burglar_sera
                       data:
                         keypad_id: "{{ repeat.item }}"
 

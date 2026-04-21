@@ -176,7 +176,8 @@ automation:
                 target:
                   entity_id: input_select.ring_keypad_alarm_state
                 data:
-                  option: "triggered_burglar"
+                  option: >-
+                    {% if profilo == 'sera' %}triggered_burglar_sera{% else %}triggered_burglar{% endif %}
 
   # ── SYNC OUT: ring_keypad → allarme-core ──────────────────────────────────
   # Quando il keypad cambia stato (per comando da tastiera), invia al core
@@ -599,7 +600,8 @@ automation:
                         target:
                           entity_id: input_select.ring_keypad_alarm_state
                         data:
-                          option: "triggered_burglar"
+                          option: >-
+                            {% if profilo_ac == 'sera' %}triggered_burglar_sera{% else %}triggered_burglar{% endif %}
               # RK-58: feedback immediato allo stato ripristinato dopo reset safety-core
               - action: script.ring_keypad_sync_all
 

@@ -1,7 +1,7 @@
 # Ring Keypad V2 — Analisi Tecnica
 
 > Ultima revisione: 2026-04-21  
-> Versione architettura: 5.12 (RK-63 pre-check in sync_all; RK-64 pre-check+post-ping in broadcast_alarm; RK-65 pre-check+post-ping in bypass_challenge; RK-66 pre-check in bypass_timeout)
+> Versione architettura: 5.13 (RK-63 pre-check in sync_all; RK-64 pre-check+post-ping in broadcast_alarm; RK-65 pre-check+post-ping in bypass_challenge; RK-66 pre-check in bypass_timeout; RK-67 triggered_burglar_sera silenzioso per profilo sera)
 
 ---
 
@@ -194,7 +194,7 @@ Usato da `ring_keypad_sync_all` e `ring_keypad_broadcast_alarm` per iterare su t
 
 | Entità | Valori possibili | Descrizione |
 |--------|-----------------|-------------|
-| `input_select.ring_keypad_alarm_state` | disarmed, armed_home, armed_away, armed_sera, arming, triggered_burglar, triggered_rapina, triggered_fire, triggered_medical, triggered_water | Stato interno del keypad (unica fonte di verità per gli indicatori) |
+| `input_select.ring_keypad_alarm_state` | disarmed, armed_home, armed_away, armed_sera, arming, triggered_burglar, triggered_burglar_sera, triggered_rapina, triggered_fire, triggered_medical, triggered_water | Stato interno del keypad (unica fonte di verità per gli indicatori) |
 | `input_select.ring_keypad_led_mode` | Spenti, Lampeggio (3s), Sempre accesi | Controlla System_Security_Mode_Display sulla tastiera |
 
 ### `input_text`
@@ -302,6 +302,7 @@ Quando attivo (`on`), i tasti Arm Away/Home senza codice (`data_type=0`) attivan
 | `ring_keypad_bypass_challenge` | keypad_id | `Bypass_challenge/1` payload 99 + avvia `bypass_keepalive` | Primo invio con voce; keepalive mantiene il LED acceso ogni 5s |
 | `ring_keypad_show_exit_delay` | keypad_id | `Exit_Delay/timeout` stringa `Xm Ys` | — |
 | `ring_keypad_alarm_burglar` | keypad_id | `Alarming/9` payload 99 | Intrusione CON suono |
+| `ring_keypad_alarm_burglar_sera` | keypad_id | `Alarming/9` payload 1 | Intrusione profilo sera — SILENZIOSO |
 | `ring_keypad_alarm_rapina` | keypad_id | `Alarming_Burglar/9` payload 1 | SEMPRE SILENZIOSO |
 | `ring_keypad_alarm_fire` | keypad_id | `Alarming_Smoke_-_Fire/9` payload 99 | — |
 | `ring_keypad_alarm_medical` | keypad_id | `Alarming_Medical/9` payload 99 | — |
@@ -521,7 +522,8 @@ allarme-core cambia stato
 | `armed` | `giorno` | `armed_away` | Armed Away |
 | `armed` | `tutti` | `armed_away` | Armed Away |
 | `armed` | `sera` | `armed_sera` | Armed Stay silenzioso + fast blink LED (~1s) |
-| `triggered` | qualsiasi | `triggered_burglar` | Alarming |
+| `triggered` | `sera` | `triggered_burglar_sera` | Alarming silenzioso (payload 1) |
+| `triggered` | altri profili | `triggered_burglar` | Alarming CON suono |
 
 Il trigger su `allarme_core_profilo` è condizionato a `stato == 'armed'` per evitare flickering durante la sequenza di armo dalla tastiera.
 

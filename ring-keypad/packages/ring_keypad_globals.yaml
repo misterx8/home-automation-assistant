@@ -29,8 +29,9 @@ input_select:
       - armed_away         # Armato in modalità fuori (profilo giorno/tutti)
       - armed_sera         # Armato profilo sera: Armed Stay silenzioso + LED fast blink (1s)
       - arming             # In fase di uscita (exit delay in corso)
-      - triggered_burglar  # Allarme intrusione (CON suono)
-      - triggered_rapina   # Anti-rapina (SEMPRE SILENZIOSO - Alarming_Burglar payload 1)
+      - triggered_burglar       # Allarme intrusione (CON suono)
+      - triggered_burglar_sera  # Allarme intrusione profilo sera (SILENZIOSO - Alarming payload 1)
+      - triggered_rapina        # Anti-rapina (SEMPRE SILENZIOSO - Alarming_Burglar payload 1)
       - triggered_fire     # Allarme fuoco
       - triggered_medical  # Allarme medico
       - triggered_water    # Allarme perdita acqua
