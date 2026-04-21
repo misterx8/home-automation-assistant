@@ -663,6 +663,71 @@ sections:
               opacity: 0.55;
               box-shadow: 0 0 0 2px grey;
             }
+      - type: button
+        name: Test Ping Z-Wave
+        icon: mdi:z-wave
+        grid_options:
+          columns: 6
+          rows: 2
+        tap_action:
+          action: perform-action
+          perform_action: browser_mod.popup
+          data:
+            title: Test Ping Z-Wave
+            content:
+              type: vertical-stack
+              cards:
+                - type: markdown
+                  content: >-
+                    Avvia il ping manuale su tutte le tastiere. Attendi ~12s per i risultati.
+                    I risultati mostrati qui sotto riguardano **solo questo test manuale**.
+                    Gli eventuali fail di sistema appaiono nel registro Critici.
+                - type: button
+                  name: Avvia Ping su tutte le tastiere
+                  icon: mdi:access-point-network
+                  tap_action:
+                    action: perform-action
+                    perform_action: script.ring_keypad_verify_all
+                    data:
+                      manual: true
+                - type: markdown
+                  content: >
+                    ### ⚙️ Risultati Ping
+                    {% set o_raw =
+                    state_attr('var.ring_keypad_timeline_operazioni_md','long_state')
+                    | default('', true) | string %} {% set o_list =
+                    o_raw.split('\n') | map('trim') | select('search','ping manuale OK') |
+                    list %} {{ o_list | join('\n') if o_list | length > 0 else
+                    '_Nessun risultato ancora — avvia il ping sopra._' }}
+                  card_mod:
+                    style: |
+                      ha-markdown {
+                        max-height: 150px;
+                        overflow-y: auto;
+                        display: block;
+                      }
+                - type: markdown
+                  content: >
+                    ### 🚨 Errori Ping
+                    {% set c_raw =
+                    state_attr('var.ring_keypad_timeline_critici_md','long_state')
+                    | default('', true) | string %} {% set c_list =
+                    c_raw.split('\n') | map('trim') | select('search','ping manuale FALLITO') |
+                    list %} {{ c_list | join('\n') if c_list | length > 0 else
+                    '_Nessun errore — tutte le tastiere raggiungibili._' }}
+                  card_mod:
+                    style: |
+                      ha-markdown {
+                        max-height: 150px;
+                        overflow-y: auto;
+                        display: block;
+                      }
+        card_mod:
+          style: |
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px #4a90d9;
+            }
   - type: grid
     cards:
       - type: heading

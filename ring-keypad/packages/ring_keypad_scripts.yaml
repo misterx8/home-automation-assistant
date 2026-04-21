@@ -157,6 +157,20 @@ script:
         description: "Topic base della tastiera"
         required: true
     sequence:
+      # ── Pre-check disponibilità (zero latenza) ────────────────────────────
+      - variables:
+          pre_eid_bypass_ch: >-
+            {{ ((states('input_text.ring_keypad_zwave_entity_ids') | trim | from_json(none)) or {}).get(keypad_id, '') | trim }}
+      - if:
+          - condition: template
+            value_template: >-
+              {{ pre_eid_bypass_ch | length > 0
+                 and states[pre_eid_bypass_ch] is not none
+                 and states(pre_eid_bypass_ch) in ['unavailable', 'unknown'] }}
+        then:
+          - action: script.ring_keypad_logbook_emit
+            data:
+              msg: "⚠️ NODO NON DISPONIBILE prima del bypass challenge: {{ keypad_id }}"
       # Primo invio: payload 99 = LED + voce
       - action: mqtt.publish
         data:
@@ -169,6 +183,14 @@ script:
         data:
           variables:
             keypad_id: "{{ keypad_id }}"
+      # ── Post-ping fire-and-forget (singola tastiera) ──────────────────────
+      - action: script.turn_on
+        target:
+          entity_id: script.ring_keypad_ping_verify
+        data:
+          variables:
+            keypad_id: "{{ keypad_id }}"
+            manual: "false"
 
   # ══════════════════════════════════════════════════════════════════════════
   # BYPASS KEEPALIVE — rinvia Bypass_challenge/1 ogni 5s (payload 1, solo LED)
@@ -476,13 +498,34 @@ script:
     alias: "Keypad → Sync tutte le tastiere"
     description: "Invia lo stato corrente a tutte le tastiere registrate in ring_keypad_active_keypads"
     sequence:
-      - repeat:
-          for_each: >
+      # ── Pre-check disponibilità (zero latenza, nessun ping) ───────────────
+      # Legge lo stato Z-Wave corrente PRIMA di inviare i comandi LED.
+      # Se un nodo è già unavailable/unknown, logga ⚠️ immediatamente così
+      # si può distinguere se il problema era pre-comando o post-comando.
+      - variables:
+          keypads_list: >-
             {{ states('input_text.ring_keypad_active_keypads')
-               .split(',')
-               | map('trim')
-               | select('ne', '')
-               | list }}
+               .split(',') | map('trim') | select('ne', '') | list }}
+          zwave_map: >-
+            {{ (states('input_text.ring_keypad_zwave_entity_ids') | trim | from_json(none)) or {} }}
+      - repeat:
+          for_each: "{{ keypads_list }}"
+          sequence:
+            - variables:
+                pre_eid: "{{ zwave_map.get(repeat.item, '') | trim }}"
+            - if:
+                - condition: template
+                  value_template: >-
+                    {{ pre_eid | length > 0
+                       and states[pre_eid] is not none
+                       and states(pre_eid) in ['unavailable', 'unknown'] }}
+              then:
+                - action: script.ring_keypad_logbook_emit
+                  data:
+                    msg: "⚠️ NODO NON DISPONIBILE prima dei comandi: {{ repeat.item }}"
+      # ── Invia comandi LED a tutte le tastiere ─────────────────────────────
+      - repeat:
+          for_each: "{{ keypads_list }}"
           sequence:
             - action: script.ring_keypad_sync_state
               data:
@@ -515,43 +558,68 @@ script:
       keypad_id:
         description: "Topic base della tastiera da verificare"
         required: true
+      manual:
+        description: "true = test manuale da dashboard (logga OK e FAIL); false = verifica sistema (logga solo FAIL)"
+        required: false
+        default: false
     sequence:
       - variables:
-          entity_ids_raw: "{{ states('input_text.ring_keypad_zwave_entity_ids') | trim }}"
-          zwave_entity_id: >
-            {% if entity_ids_raw | length > 0 %}
-              {% set mapping = entity_ids_raw | from_json %}
-              {{ mapping[keypad_id] if keypad_id in mapping else '' }}
-            {% else %}
-              {{ '' }}
-            {% endif %}
+          zwave_entity_id: >-
+            {{ ((states('input_text.ring_keypad_zwave_entity_ids') | trim | from_json(none)) or {}).get(keypad_id, '') | trim }}
+          is_manual: "{{ manual | default(false) | bool }}"
       # Salta se entity_id non configurato per questa tastiera
       - condition: template
-        value_template: "{{ zwave_entity_id | trim | length > 0 }}"
+        value_template: "{{ zwave_entity_id | length > 0 }}"
       # Breve attesa: lascia propagare il comando LED prima del ping
       - delay:
           seconds: 2
+      - variables:
+          pre_ping_ts: >-
+            {% set s = states[zwave_entity_id] %}
+            {{ s.last_updated if s is not none else none }}
       - action: zwave_js.ping
         data:
           entity_id: "{{ zwave_entity_id }}"
-        response_variable: ping_result
+        continue_on_error: true
+      # Attesa per elaborazione asincrona della risposta Z-Wave da parte di HA
+      - delay:
+          seconds: 2
       - variables:
-          ping_ok: >
-            {{ (ping_result.values() | list | first | default({})).get('success', false) | bool }}
+          ping_ok: >-
+            {% set s = states[zwave_entity_id] %}
+            {{ s is not none and s.last_updated != pre_ping_ts }}
+          log_fail_msg: >
+            {% if is_manual %}
+            🚨 Test ping manuale FALLITO: {{ keypad_id }} non risponde
+            {% else %}
+            🚨 PING FALLITO: {{ keypad_id }} non risponde —
+            il comando LED potrebbe non essere stato ricevuto
+            {% endif %}
       - if:
           - condition: template
             value_template: "{{ not ping_ok }}"
         then:
           - action: script.ring_keypad_logbook_emit
             data:
-              msg: >
-                🚨 PING FALLITO: {{ keypad_id }} non risponde —
-                il comando LED potrebbe non essere stato ricevuto
+              msg: "{{ log_fail_msg | trim }}"
+        else:
+          - if:
+              - condition: template
+                value_template: "{{ is_manual }}"
+            then:
+              - action: script.ring_keypad_logbook_emit
+                data:
+                  msg: "✅ Test ping manuale OK: {{ keypad_id }} raggiungibile"
 
   ring_keypad_verify_all:
     alias: "Keypad → Verifica ricezione comandi su tutte le tastiere"
     description: "Pinga ogni tastiera attiva in sequenza dopo un sync. mode:restart garantisce verifica sullo stato aggiornato."
     mode: restart
+    fields:
+      manual:
+        description: "true = test manuale da dashboard (logga OK e FAIL); false = verifica sistema (logga solo FAIL)"
+        required: false
+        default: false
     sequence:
       - repeat:
           for_each: >
@@ -564,6 +632,7 @@ script:
             - action: script.ring_keypad_ping_verify
               data:
                 keypad_id: "{{ repeat.item }}"
+                manual: "{{ manual | default(false) | bool | lower }}"
 
   # ══════════════════════════════════════════════════════════════════════════
   # BROADCAST ALLARME A TUTTE LE TASTIERE
@@ -578,13 +647,31 @@ script:
         description: "Tipo allarme: burglar | rapina | fire | medical | water"
         required: true
     sequence:
-      - repeat:
-          for_each: >
+      # ── Pre-check disponibilità (zero latenza, nessun ping) ───────────────
+      - variables:
+          keypads_list_alarm: >-
             {{ states('input_text.ring_keypad_active_keypads')
-               .split(',')
-               | map('trim')
-               | select('ne', '')
-               | list }}
+               .split(',') | map('trim') | select('ne', '') | list }}
+          zwave_map_alarm: >-
+            {{ (states('input_text.ring_keypad_zwave_entity_ids') | trim | from_json(none)) or {} }}
+      - repeat:
+          for_each: "{{ keypads_list_alarm }}"
+          sequence:
+            - variables:
+                pre_eid_alarm: "{{ zwave_map_alarm.get(repeat.item, '') | trim }}"
+            - if:
+                - condition: template
+                  value_template: >-
+                    {{ pre_eid_alarm | length > 0
+                       and states[pre_eid_alarm] is not none
+                       and states(pre_eid_alarm) in ['unavailable', 'unknown'] }}
+              then:
+                - action: script.ring_keypad_logbook_emit
+                  data:
+                    msg: "⚠️ NODO NON DISPONIBILE prima dell'allarme {{ alarm_type }}: {{ repeat.item }}"
+      # ── Invia comandi allarme (logica invariata) ───────────────────────────
+      - repeat:
+          for_each: "{{ keypads_list_alarm }}"
           sequence:
             - choose:
                 - conditions:
@@ -626,6 +713,10 @@ script:
                     - action: script.ring_keypad_alarm_water
                       data:
                         keypad_id: "{{ repeat.item }}"
+      # ── Post-ping fire-and-forget (verifica ricezione allarme) ────────────
+      - action: script.turn_on
+        target:
+          entity_id: script.ring_keypad_verify_all
 
   # ══════════════════════════════════════════════════════════════════════════
   # RISOLUZIONE UTENTE DA PIN
@@ -844,6 +935,20 @@ script:
               entity_id: input_text.ring_keypad_bypass_keypad
             data:
               value: ""
+          # ── Pre-check disponibilità (zero latenza) prima del ripristino LED
+          - variables:
+              pre_eid_bypass_to: >-
+                {{ ((states('input_text.ring_keypad_zwave_entity_ids') | trim | from_json(none)) or {}).get(kp, '') | trim }}
+          - if:
+              - condition: template
+                value_template: >-
+                  {{ pre_eid_bypass_to | length > 0
+                     and states[pre_eid_bypass_to] is not none
+                     and states(pre_eid_bypass_to) in ['unavailable', 'unknown'] }}
+            then:
+              - action: script.ring_keypad_logbook_emit
+                data:
+                  msg: "⚠️ NODO NON DISPONIBILE al ripristino LED post-bypass: {{ kp }}"
           # Ripristina LED corretto sulla tastiera (dopo il reset del flag)
           - action: script.ring_keypad_sync_state
             data:
