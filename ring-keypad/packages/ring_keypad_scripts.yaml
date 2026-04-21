@@ -487,6 +487,83 @@ script:
             - action: script.ring_keypad_sync_state
               data:
                 keypad_id: "{{ repeat.item }}"
+      # RK-59: verifica ricezione comandi in background (fire-and-forget).
+      # verify_all pinga ogni tastiera sequenzialmente e logga 🚨 se non risponde.
+      # Non blocca sync_all: i comandi LED sono già stati inviati sopra.
+      - action: script.turn_on
+        target:
+          entity_id: script.ring_keypad_verify_all
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # VERIFICA RICEZIONE COMANDI TRAMITE PING Z-WAVE (RK-59)
+  #
+  # ring_keypad_ping_verify: ping singola tastiera via servizio zwave_js.ping.
+  #   Usa l'entity_id zwave_js configurato in ring_keypad_zwave_entity_ids.
+  #   Se result:false → log 🚨 alert grave.
+  #   mode: queued — le chiamate si accodano, mai in parallelo.
+  #
+  # ring_keypad_verify_all: itera le tastiere attive e chiama ping_verify
+  #   in sequenza (blocking). mode: restart — se un nuovo sync parte mentre
+  #   la verifica è in corso, la verifica riparte per lo stato aggiornato.
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_ping_verify:
+    alias: "Keypad → Ping verifica ricezione comando (singola tastiera)"
+    mode: queued
+    max: 10
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera da verificare"
+        required: true
+    sequence:
+      - variables:
+          entity_ids_raw: "{{ states('input_text.ring_keypad_zwave_entity_ids') | trim }}"
+          zwave_entity_id: >
+            {% if entity_ids_raw | length > 0 %}
+              {% set mapping = entity_ids_raw | from_json %}
+              {{ mapping[keypad_id] if keypad_id in mapping else '' }}
+            {% else %}
+              {{ '' }}
+            {% endif %}
+      # Salta se entity_id non configurato per questa tastiera
+      - condition: template
+        value_template: "{{ zwave_entity_id | trim | length > 0 }}"
+      # Breve attesa: lascia propagare il comando LED prima del ping
+      - delay:
+          seconds: 2
+      - action: zwave_js.ping
+        data:
+          entity_id: "{{ zwave_entity_id }}"
+        response_variable: ping_result
+      - variables:
+          ping_ok: >
+            {{ (ping_result.values() | list | first | default({})).get('success', false) | bool }}
+      - if:
+          - condition: template
+            value_template: "{{ not ping_ok }}"
+        then:
+          - action: script.ring_keypad_logbook_emit
+            data:
+              msg: >
+                🚨 PING FALLITO: {{ keypad_id }} non risponde —
+                il comando LED potrebbe non essere stato ricevuto
+
+  ring_keypad_verify_all:
+    alias: "Keypad → Verifica ricezione comandi su tutte le tastiere"
+    description: "Pinga ogni tastiera attiva in sequenza dopo un sync. mode:restart garantisce verifica sullo stato aggiornato."
+    mode: restart
+    sequence:
+      - repeat:
+          for_each: >
+            {{ states('input_text.ring_keypad_active_keypads')
+               .split(',')
+               | map('trim')
+               | select('ne', '')
+               | list }}
+          sequence:
+            - action: script.ring_keypad_ping_verify
+              data:
+                keypad_id: "{{ repeat.item }}"
 
   # ══════════════════════════════════════════════════════════════════════════
   # BROADCAST ALLARME A TUTTE LE TASTIERE
@@ -992,6 +1069,9 @@ script:
           entity_id: input_select.ring_keypad_alarm_state
         data:
           option: "disarmed"
+      # RK-58: broadcast diretto a tutte le tastiere senza attendere
+      # ring_keypad_sync_on_state_change (elimina il hop automazione→script)
+      - action: script.ring_keypad_sync_all
       - action: input_text.set_value
         target:
           entity_id: input_text.ring_keypad_last_event

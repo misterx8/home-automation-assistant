@@ -580,6 +580,18 @@ sections:
                       name: Modalità LED
                     - entity: input_boolean.ring_keypad_voice_feedback
                       name: Feedback vocale
+                - type: markdown
+                  content: >-
+                    **Ping Z-Wave** — verifica che ogni comando LED sia effettivamente
+                    ricevuto dalla tastiera. Se il ping fallisce viene loggato un alert 🚨.
+                    Inserire un qualsiasi *entity_id* dell'integrazione **zwave_js** per ogni
+                    tastiera (es. sensore batteria o qualsiasi entità del dispositivo zwave_js).
+                    Formato JSON: `{"tastiera_allarme_camera": "sensor.ring_keypad_v2_battery_level"}`
+                - type: entities
+                  title: Ping Z-Wave
+                  entities:
+                    - entity: input_text.ring_keypad_zwave_entity_ids
+                      name: Entity IDs Z-Wave JS (JSON)
         card_mod:
           style: |
             ha-card {

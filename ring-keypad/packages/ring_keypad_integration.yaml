@@ -104,6 +104,9 @@ automation:
                   entity_id: input_select.ring_keypad_alarm_state
                 data:
                   option: "disarmed"
+              # RK-58: feedback immediato a tutte le tastiere senza attendere
+              # ring_keypad_sync_on_state_change (elimina il hop automazione→script)
+              - action: script.ring_keypad_sync_all
 
           - conditions:
               - condition: template
@@ -597,6 +600,8 @@ automation:
                           entity_id: input_select.ring_keypad_alarm_state
                         data:
                           option: "triggered_burglar"
+              # RK-58: feedback immediato allo stato ripristinato dopo reset safety-core
+              - action: script.ring_keypad_sync_all
 
   # ── SYNC OUT: ring_keypad tasto Fire → safety-core ───────────────────────
   # Il tasto Fire (hold 3s) imposta già triggered_fire sul keypad tramite

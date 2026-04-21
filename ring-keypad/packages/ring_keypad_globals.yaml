@@ -56,6 +56,16 @@ input_text:
     max: 255
     icon: mdi:keyboard-settings
 
+  # ── CONFIGURAZIONE PING Z-WAVE (RK-59) ────────────────────────────────────
+  # Usato da ring_keypad_ping_verify via servizio zwave_js.ping.
+  # ring_keypad_zwave_entity_ids: JSON {"<topic_base>": "<entity_id_zwave_js>"}
+  #   Qualsiasi entity_id dell'integrazione zwave_js appartenente al dispositivo.
+  #   Esempio: {"tastiera_allarme_camera": "sensor.ring_keypad_v2_battery_level"}
+  ring_keypad_zwave_entity_ids:
+    name: "Keypad - Entity IDs Z-Wave JS (JSON)"
+    max: 255
+    icon: mdi:identifier
+
   # ── LOG E TRACCIAMENTO ─────────────────────────────────────────────────────
   ring_keypad_last_user:
     name: "Keypad - Ultimo utente"
