@@ -53,6 +53,14 @@ script:
           name: "Ring Keypad"
           entity_id: input_text.ring_keypad_logbook_event
           message: "{{ msg | string }}"
+      # Reset a "" prima del valore reale: garantisce from_state != to_state in
+      # log_timeline_append anche se msg è identico al valore precedente (es. primo
+      # tentativo PIN errato di una nuova sessione dopo sliding window reset).
+      # La condizione trim != '' filtra il passaggio a "" senza generare righe vuote.
+      - action: input_text.set_value
+        data:
+          entity_id: input_text.ring_keypad_logbook_ultimo_evento
+          value: ""
       - action: input_text.set_value
         data:
           entity_id: input_text.ring_keypad_logbook_ultimo_evento
