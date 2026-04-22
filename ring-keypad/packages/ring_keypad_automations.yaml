@@ -606,3 +606,17 @@ automation:
           entity_id: input_number.ring_keypad_failed_attempts
         data:
           value: 0
+      # Svuota last_event e logbook_ultimo_evento: garantisce che il prossimo
+      # tentativo fallito produca un valore diverso da "" → le condizioni
+      # from_state != to_state in log_da_last_event e log_timeline_append passano.
+      # (le automazioni log ignorano valori vuoti per condizione trim != '')
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_last_event
+        data:
+          value: ""
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ring_keypad_logbook_ultimo_evento
+        data:
+          value: ""

@@ -31,7 +31,8 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:www.home-assistant.io)",
       "Bash(grep -rn \"bypass\\\\|sensori_aperti\\\\|aperto\" allarme-core/*.yaml)",
-      "Bash(grep -rn \"allarme_core_auto_reset_triggered\\\\|allarme_core_auto_reset_minuti\\\\|allarme_core_auto_reset_avviso\" allarme-core/*.yaml)"
+      "Bash(grep -rn \"allarme_core_auto_reset_triggered\\\\|allarme_core_auto_reset_minuti\\\\|allarme_core_auto_reset_avviso\" allarme-core/*.yaml)",
+      "Bash(claude plugin *)"
     ]
   }
 }

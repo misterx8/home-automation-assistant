@@ -249,6 +249,7 @@ script:
       Mostra countdown exit delay (legge input_number.ring_keypad_exit_delay).
       Payload formato stringa "XmYs" richiesto da zwave2mqtt per il campo timeout
       dell'Indicator CC (es. "0m30s", "1m30s").
+      Volume: silenzioso (1) se arming_target_mode=armed_home (profilo notte), sonoro (99) altrimenti.
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -256,6 +257,12 @@ script:
     sequence:
       - variables:
           s: "{{ states('input_number.ring_keypad_exit_delay') | int(30) }}"
+          exit_volume: >
+            {% if states('input_text.ring_keypad_arming_target_mode') == 'armed_home' %}1{% else %}99{% endif %}
+      - action: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Exit_Delay/9/set"
+          payload: '"{{ exit_volume }}"'
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Exit_Delay/timeout/set"
