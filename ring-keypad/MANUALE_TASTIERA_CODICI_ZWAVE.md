@@ -76,18 +76,20 @@ payload: 99
 conto alla rovescia ingresso (il formato del payload deve essere stringa "0m30s" questo esempio per 30 secondi)
 Topic: zwave2mqtt/tastiera_allarme_camera/indicator/endpoint_0/Entry_Delay/timeout/set
 payload: "0m5s"
-conto alla rovescia ingresso silenzioso da attivare prima che il topic timeout: zwave2mqtt/tastiera_allarme_camera/indicator/endpoint_0/Entry_Delay/9/set
-payload: 1
+
 
 conto alla rovescia uscita (il formato del payload deve essere stringa "0m30s" questo esempio per 30 secondi)
 Topic: zwave2mqtt/tastiera_allarme_camera/indicator/endpoint_0/Exit_Delay/timeout/set
 payload: "0m30s"
-conto alla rovescia uscita silenzioso da attivare prima che il topic timeout: zwave2mqtt/tastiera_allarme_camera/indicator/endpoint_0/Exit_Delay/9/set
-payload: 1
+
 
 impostare il volume della sirena della tastiera da 1 a  10
 topic: zwave2mqtt/tastiera_allarme_camera/configuration/endpoint_0/Siren_Volume/set
 payload: 5
+
+impostare il volume della tastiera degli annunci valori supportati da 0 a 10
+topic: zwave2mqtt/tastiera_allarme_sala/configuration/endpoint_0/Announcement_Audio_Volume/set
+payload: 7 
 
 
 imposta le luci degli allarmi quanto devono stare accese o spente oppure la durata del lampeggio:

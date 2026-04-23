@@ -176,6 +176,17 @@ input_number:
     step: 1
     icon: mdi:volume-high
 
+  # Volume degli annunci vocali della tastiera (Announcement_Audio_Volume Z-Wave CC).
+  # Impostato a 0 durante l'exit delay profilo notte per silenziare il beep,
+  # ripristinato al valore configurato al termine. Nessun `initial`: il valore
+  # viene mantenuto dal registry tra i riavvii.
+  ring_keypad_announcement_volume:
+    name: "Keypad - Volume Annunci (0-10)"
+    min: 0
+    max: 10
+    step: 1
+    icon: mdi:volume-medium
+
   # ── PROTEZIONE BRUTE-FORCE (FIX C-6) ───────────────────────────────────────
   # Contatore interno tentativi PIN falliti: helper tecnico, non modificato
   # dall'utente → accettato `initial: 0`. Resetta automaticamente dopo 60s

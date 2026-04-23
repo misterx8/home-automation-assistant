@@ -140,7 +140,7 @@ Ring Keypad V2 è un tastierino Z-Wave (via zwave2mqtt) integrato in Home Assist
 
 **Armo:**
 - FR-16: `ring_keypad_arming_target_mode` impostato PRIMA di `alarm_state = "arming"` in entrambi i flussi (tastiera e esterno)
-- FR-17: Exit delay volume: payload `1` se `arming_target_mode == armed_home`, `99` altrimenti
+- FR-17: Exit delay silenzioso notte: `do_arm` imposta `Announcement_Audio_Volume = 0` su tutte le tastiere prima del cambio stato arming se `mode == armed_home`, ripristina a `ring_keypad_announcement_volume` dopo il delay e in `do_disarm` (safety net). Per altri profili ripristina sempre all'inizio di `do_arm` (gestisce restart da notte). `show_exit_delay` usa payload voice_feedback-aware per tutti i profili (payload `1` fisso rimosso: non funzionava).
 - FR-18: Payload sub_cmd 9 (level): intero senza virgolette (`1` o `99`)
 - FR-19: Payload sub_cmd timeout: stringa JSON con virgolette (`"XmYs"`)
 - FR-20: `ring_keypad_exit_delay` sempre sincronizzato con `allarme_core_arming_delay`
@@ -312,6 +312,7 @@ Topic: `zwave2mqtt/{keypad_id}/configuration/endpoint_0/System_Security_Mode_Dis
 | `ring_keypad_exit_delay` | 30s | Read-only — sincronizzato da `allarme_core_arming_delay` |
 | `ring_keypad_bypass_timeout` | 30s (range 5-60) | Timeout conferma bypass |
 | `ring_keypad_siren_volume` | 5 (range 1-10) | Volume sirena via Siren_Volume CC |
+| `ring_keypad_announcement_volume` | nessun `initial` (range 0-10) | Volume annunci vocali; impostato a 0 durante exit delay notte, ripristinato dopo |
 | `ring_keypad_failed_attempts` | 0 (`initial: 0` ok — tecnico interno) | Contatore PIN falliti |
 | `ring_keypad_max_failed_attempts` | 5 (range 3-10) | Soglia lockout |
 
@@ -376,6 +377,8 @@ Tastiere attive:
 |--------|--------|
 | `ring_keypad_set_siren_volume` | Pubblica volume sirena su singola tastiera |
 | `ring_keypad_set_siren_volume_all` | Itera tastiere → `set_siren_volume` |
+| `ring_keypad_set_announcement_volume` | Pubblica `Announcement_Audio_Volume` su singola tastiera (campo `volume` opzionale: default da helper) |
+| `ring_keypad_set_announcement_volume_all` | Itera tastiere → `set_announcement_volume`; campo `volume` opzionale |
 
 **Script sincronizzazione:**
 

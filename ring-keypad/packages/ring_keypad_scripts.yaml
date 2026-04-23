@@ -249,7 +249,9 @@ script:
       Mostra countdown exit delay (legge input_number.ring_keypad_exit_delay).
       Payload formato stringa "XmYs" richiesto da zwave2mqtt per il campo timeout
       dell'Indicator CC (es. "0m30s", "1m30s").
-      Volume: silenzioso (1) se arming_target_mode=armed_home (profilo notte), sonoro (99) altrimenti.
+      Il silenziamento per il profilo notte è gestito via Announcement_Audio_Volume
+      (impostato a 0 da do_arm prima del cambio stato arming): questo script usa
+      sempre voice_feedback come gli altri stati.
     fields:
       keypad_id:
         description: "Topic base della tastiera"
@@ -257,8 +259,7 @@ script:
     sequence:
       - variables:
           s: "{{ states('input_number.ring_keypad_exit_delay') | int(30) }}"
-          exit_volume: >
-            {% if states('input_text.ring_keypad_arming_target_mode') == 'armed_home' %}1{% else %}99{% endif %}
+          exit_volume: "{{ '99' if is_state('input_boolean.ring_keypad_voice_feedback', 'on') else '1' }}"
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Exit_Delay/9/set"
@@ -1202,6 +1203,15 @@ script:
     sequence:
       # Cancella eventuale bypass pendente (reset flag + ferma timer timeout)
       - action: script.ring_keypad_bypass_cancel
+      # Safety net: se stiamo interrompendo un exit delay profilo notte, il do_arm
+      # viene killato prima di eseguire il proprio restore → ripristina il volume qui.
+      - if:
+          - condition: template
+            value_template: >
+              {{ is_state('input_select.ring_keypad_alarm_state', 'arming')
+                 and states('input_text.ring_keypad_arming_target_mode') == 'armed_home' }}
+        then:
+          - action: script.ring_keypad_set_announcement_volume_all
       # FIX RK-30: ferma ring_keypad_do_arm se ancora in esecuzione (exit delay in corso).
       # Senza questo, il delay del do_arm continua in background e al termine
       # sovrascrive lo stato con "armed_home/away", ri-armando allarme-core.
@@ -1259,6 +1269,12 @@ script:
           entity_id: input_text.ring_keypad_arming_target_mode
         data:
           value: "{{ mode }}"
+      # Gestione volume annunci exit delay: muto su tutte le tastiere per il profilo notte,
+      # ripristina per gli altri profili. Il ripristino gestisce anche il restart da armed_home
+      # verso un altro profilo (il run precedente aveva azzerato il volume).
+      - action: script.ring_keypad_set_announcement_volume_all
+        data:
+          volume: "{{ 0 if mode == 'armed_home' else states('input_number.ring_keypad_announcement_volume') | int(7) }}"
       - action: input_select.select_option
         target:
           entity_id: input_select.ring_keypad_alarm_state
@@ -1280,6 +1296,8 @@ script:
       # Attende exit delay (default 30s se il valore fosse unknown)
       - delay:
           seconds: "{{ states('input_number.ring_keypad_exit_delay') | int(30) }}"
+      # Ripristina volume annunci al termine dell'exit delay (idempotente: noop se non era muto)
+      - action: script.ring_keypad_set_announcement_volume_all
       - action: input_select.select_option
         target:
           entity_id: input_select.ring_keypad_alarm_state
@@ -1320,3 +1338,52 @@ script:
             - action: script.ring_keypad_set_siren_volume
               data:
                 keypad_id: "{{ repeat.item }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # VOLUME ANNUNCI
+  # topic: zwave2mqtt/{keypad_id}/configuration/endpoint_0/Announcement_Audio_Volume/set
+  # payload: intero 0-10 (0 = muto)
+  # Usato per silenziare il beep dell'exit delay nel profilo notte (armed_home):
+  # do_arm abbassa a 0 prima del cambio stato arming, ripristina dopo il delay.
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_set_announcement_volume:
+    alias: "Keypad → Imposta volume annunci (singola tastiera)"
+    description: "Pubblica il volume annunci (0-10) su una tastiera. Se volume non passato, legge ring_keypad_announcement_volume."
+    fields:
+      keypad_id:
+        description: "Topic base della tastiera"
+        required: true
+      volume:
+        description: "Valore 0-10 (0=muto). Default: ring_keypad_announcement_volume"
+        required: false
+    sequence:
+      - action: mqtt.publish
+        data:
+          topic: "zwave2mqtt/{{ keypad_id }}/configuration/endpoint_0/Announcement_Audio_Volume/set"
+          payload: "{{ volume | default(states('input_number.ring_keypad_announcement_volume') | int(7)) }}"
+
+  ring_keypad_set_announcement_volume_all:
+    alias: "Keypad → Imposta volume annunci (tutte le tastiere)"
+    description: "Itera ring_keypad_active_keypads e chiama set_announcement_volume su ognuna"
+    fields:
+      volume:
+        description: "Valore 0-10 (0=muto). Default: ring_keypad_announcement_volume"
+        required: false
+    sequence:
+      - variables:
+          # Calcola il volume finale una sola volta: usa il parametro se passato,
+          # altrimenti legge dal helper (valore configurato dall'utente).
+          final_volume: "{{ volume | default(states('input_number.ring_keypad_announcement_volume') | int(7)) }}"
+      - repeat:
+          for_each: >
+            {{ states('input_text.ring_keypad_active_keypads')
+               .split(',')
+               | map('trim')
+               | select('ne', '')
+               | list }}
+          sequence:
+            - action: script.ring_keypad_set_announcement_volume
+              data:
+                keypad_id: "{{ repeat.item }}"
+                volume: "{{ final_volume }}"

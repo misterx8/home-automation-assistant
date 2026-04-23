@@ -415,6 +415,25 @@ sections:
               padding-left: 12px;
             }
       - type: tile
+        entity: input_number.ring_keypad_announcement_volume
+        name: Volume Annunci (0-10)
+        vertical: false
+        features_position: bottom
+        features:
+          - type: numeric-input
+            style: buttons
+        grid_options:
+          columns: 6
+          rows: 2
+        card_mod:
+          style: >
+            {% set vol = states('input_number.ring_keypad_announcement_volume') | int(7) %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'grey' if vol == 0 else ('#4a90d9' if vol <= 4 else ('orange' if vol <= 7 else 'red')) }};
+              padding-left: 12px;
+            }
+      - type: tile
         entity: input_number.ring_keypad_bypass_timeout
         name: Timeout Bypass (sec)
         vertical: false
