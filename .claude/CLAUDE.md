@@ -4,6 +4,39 @@ This repository uses a multi-agent architecture powered by Claude Code.
 
 ---
 
+# Regola Obbligatoria — Istruzioni di Ricarica Home Assistant
+
+**REGOLA OBBLIGATORIA — Dopo ogni modifica indicare cosa ricaricare in HA:**
+Al termine di qualsiasi modifica a file di questo repository, Claude DEVE sempre
+indicare all'utente esattamente cosa ricaricare in Home Assistant.
+NON dire mai "ricarica tutto" o "riavvia HA" come prima opzione.
+
+Usare questa mappatura precisa:
+
+| File modificato | Cosa ricaricare in HA |
+|---|---|
+| `automations.yaml` o package con `automation:` | Strumenti → Ricarica automazioni |
+| `scripts.yaml` o package con `script:` | Strumenti → Ricarica script |
+| `configuration.yaml` con `input_*`, `template:`, `sensor:` | Strumenti → Ricarica helper / Ricarica template |
+| Package con `input_select/boolean/text/number:` | Strumenti → Ricarica helper |
+| Package con `template:` o `sensor:` | Strumenti → Ricarica template |
+| `mqtt:` sensor/binary_sensor in package | Strumenti → Ricarica MQTT |
+| `lovelace` / dashboard YAML | UI → Ricarica risorse oppure F5 nel browser |
+| `var:` (integrazione var) | Strumenti → Ricarica integrazioni (var) |
+| Più domini nello stesso file | Elencare ogni ricarica separatamente nell'ordine: helper → template → script → automazioni |
+| Nuovo file package mai caricato prima | Riavvio completo HA obbligatorio (unica eccezione accettata) |
+
+**Formato obbligatorio della risposta finale:**
+Dopo ogni sessione di modifiche, includere sempre un blocco come questo:
+
+```
+## Cosa ricaricare in HA
+1. Strumenti → Ricarica script  (modificato ring_keypad_scripts.yaml)
+2. Strumenti → Ricarica automazioni  (modificato ring_keypad_integration.yaml)
+```
+
+---
+
 # Regole YAML — Helper configurabili dall'utente
 
 **REGOLA OBBLIGATORIA — Nessun `initial` su helper configurabili dall'utente:**

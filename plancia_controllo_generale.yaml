@@ -3,73 +3,65 @@ max_columns: 3
 title: Controllo Generale
 path: controllo-generale
 icon: mdi:security
-header:
-  cards:
-    - type: conditional
-      conditions:
-        - condition: state
-          entity: input_select.allarme_core_stato
-          state: triggered
-      card:
-        type: markdown
-        content: >-
-          <ha-alert alert-type="error">🚨 ALLARME CORE ATTIVO — Intrusione
-          rilevata</ha-alert>
-    - type: conditional
-      conditions:
-        - condition: state
-          entity: input_select.safety_core_stato
-          state: triggered
-      card:
-        type: markdown
-        content: >-
-          {% set cat = states('input_select.safety_core_ultima_categoria') %}
-          <ha-alert alert-type="error">🔥 SAFETY CORE — Allarme {{ cat | upper
-          }} in corso</ha-alert>
-    - type: conditional
-      conditions:
-        - condition: or
-          conditions:
-            - condition: state
-              entity: input_select.ring_keypad_alarm_state
-              state: triggered_burglar
-            - condition: state
-              entity: input_select.ring_keypad_alarm_state
-              state: triggered_rapina
-            - condition: state
-              entity: input_select.ring_keypad_alarm_state
-              state: triggered_fire
-            - condition: state
-              entity: input_select.ring_keypad_alarm_state
-              state: triggered_medical
-            - condition: state
-              entity: input_select.ring_keypad_alarm_state
-              state: triggered_water
-      card:
-        type: markdown
-        content: >-
-          {% set stato = states('input_select.ring_keypad_alarm_state') %} {%
-          set mappa = {
-            'triggered_burglar': 'INTRUSIONE',
-            'triggered_rapina':  'ANTI-RAPINA SILENZIOSO',
-            'triggered_fire':    'INCENDIO',
-            'triggered_medical': 'EMERGENZA MEDICA',
-            'triggered_water':   'PERDITA ACQUA'
-          } %} <ha-alert alert-type="error">🔑 TASTIERA — {{ mappa[stato] if
-          stato in mappa else stato | upper }}</ha-alert>
-    - type: conditional
-      conditions:
-        - condition: state
-          entity: input_boolean.allarme_core_modalita_test
-          state: "on"
-      card:
-        type: markdown
-        content: >-
-          <ha-alert alert-type="warning">🧪 MODALITÀ TEST ATTIVA — Sirene e
-          notifiche disabilitate</ha-alert>
 sections:
   - type: grid
     cards:
+      - type: conditional
+        conditions:
+          - condition: or
+            conditions:
+              - condition: state
+                entity: input_select.allarme_core_stato
+                state: triggered
+              - condition: state
+                entity: input_select.safety_core_stato
+                state: triggered
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_burglar
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_rapina
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_fire
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_medical
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_water
+              - condition: state
+                entity: input_boolean.allarme_core_modalita_test
+                state: "on"
+              - condition: state
+                entity: input_boolean.ring_keypad_debug
+                state: "on"
+        grid_options:
+          columns: 12
+        card:
+          type: markdown
+          content: |
+            {%- set out = namespace(v=[]) -%}
+            {%- if is_state('input_select.allarme_core_stato','triggered') -%}
+              {%- set out.v = out.v + ['<ha-alert alert-type="error">🚨 ALLARME CORE ATTIVO — Intrusione rilevata</ha-alert>'] -%}
+            {%- endif -%}
+            {%- if is_state('input_select.safety_core_stato','triggered') -%}
+              {%- set cat = states('input_select.safety_core_ultima_categoria') | upper -%}
+              {%- set out.v = out.v + ['<ha-alert alert-type="error">🔥 SAFETY CORE — Allarme ' ~ cat ~ ' in corso</ha-alert>'] -%}
+            {%- endif -%}
+            {%- set kp = states('input_select.ring_keypad_alarm_state') -%}
+            {%- set kp_mappa = {'triggered_burglar':'INTRUSIONE','triggered_rapina':'ANTI-RAPINA SILENZIOSO','triggered_fire':'INCENDIO','triggered_medical':'EMERGENZA MEDICA','triggered_water':'PERDITA ACQUA'} -%}
+            {%- if kp in kp_mappa -%}
+              {%- set out.v = out.v + ['<ha-alert alert-type="error">🔑 TASTIERA — ' ~ kp_mappa[kp] ~ '</ha-alert>'] -%}
+            {%- endif -%}
+            {%- if is_state('input_boolean.allarme_core_modalita_test','on') -%}
+              {%- set out.v = out.v + ['<ha-alert alert-type="warning">🧪 MODALITÀ TEST ATTIVA — Sirene e notifiche disabilitate</ha-alert>'] -%}
+            {%- endif -%}
+            {%- if is_state('input_boolean.ring_keypad_debug','on') -%}
+              {%- set out.v = out.v + ['<ha-alert alert-type="warning">🔧 RING KEYPAD DEBUG ATTIVO — propagazione verso allarme-core e safety-core BLOCCATA</ha-alert>'] -%}
+            {%- endif -%}
+            {{ out.v | join('\n') }}
       - type: heading
         heading: Allarme Core
         heading_style: title

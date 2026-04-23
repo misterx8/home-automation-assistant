@@ -582,6 +582,28 @@ automation:
           value: "Lockout reset automatico dopo 5 minuti"
 
   # ════════════════════════════════════════════════════════════════════════
+  # LOG ATTIVAZIONE / DISATTIVAZIONE DEBUG MODE
+  # ════════════════════════════════════════════════════════════════════════
+  - id: ring_keypad_log_debug_mode
+    alias: "Keypad - Log Debug Mode on/off"
+    trigger:
+      - platform: state
+        entity_id: input_boolean.ring_keypad_debug
+        to: "on"
+      - platform: state
+        entity_id: input_boolean.ring_keypad_debug
+        to: "off"
+    action:
+      - action: script.ring_keypad_logbook_emit
+        data:
+          msg: >
+            {% if trigger.to_state.state == 'on' %}
+              🔧 Debug ATTIVATO — propagazione verso core BLOCCATA
+            {% else %}
+              🔧 Debug DISATTIVATO — sistema operativo
+            {% endif %}
+
+  # ════════════════════════════════════════════════════════════════════════
   # FIX C-6: RESET CONTATORE TENTATIVI DOPO 60s DI INATTIVITÀ (sliding window)
   # Se il valore di failed_attempts resta invariato per 60s e il lockout NON
   # è attivo, azzera il contatore. Permette all'utente legittimo che sbaglia

@@ -5,80 +5,64 @@ path: ring-keypad
 icon: mdi:keyboard-settings
 subview: true
 back_path: /home-new/controllo-generale
-header:
-  cards:
-    - type: conditional
-      conditions:
-        - condition: state
-          entity: input_boolean.ring_keypad_debug
-          state: "on"
-      card:
-        type: markdown
-        content: >-
-          <ha-alert alert-type="warning">DEBUG ATTIVO — la modalità debug è
-          abilitata sul sistema keypad</ha-alert>
-    - type: conditional
-      conditions:
-        - condition: or
-          conditions:
-            - condition: state
-              entity: input_select.ring_keypad_alarm_state
-              state: triggered_burglar
-            - condition: state
-              entity: input_select.ring_keypad_alarm_state
-              state: triggered_rapina
-            - condition: state
-              entity: input_select.ring_keypad_alarm_state
-              state: triggered_fire
-            - condition: state
-              entity: input_select.ring_keypad_alarm_state
-              state: triggered_medical
-            - condition: state
-              entity: input_select.ring_keypad_alarm_state
-              state: triggered_water
-      card:
-        type: markdown
-        content: >-
-          {% set stato = states('input_select.ring_keypad_alarm_state') %} {%
-          set etichette = {
-            'triggered_burglar': 'INTRUSIONE',
-            'triggered_rapina':  'ANTI-RAPINA SILENZIOSO',
-            'triggered_fire':    'INCENDIO / FUMO',
-            'triggered_medical': 'EMERGENZA MEDICA',
-            'triggered_water':   'PERDITA ACQUA'
-          } %} <ha-alert alert-type="error">ALLARME IN CORSO — {{
-          etichette.get(stato, stato | replace('triggered_','') | upper)
-          }}</ha-alert>
-    - type: conditional
-      conditions:
-        - condition: state
-          entity: input_boolean.ring_keypad_bypass_pending
-          state: "on"
-      card:
-        type: markdown
-        content: >-
-          <ha-alert alert-type="warning">BYPASS IN ATTESA — premere V per confermare o X per annullare</ha-alert>
-    - type: conditional
-      conditions:
-        - condition: state
-          entity: input_boolean.ring_keypad_lockout_active
-          state: "on"
-      card:
-        type: markdown
-        content: >-
-          <ha-alert alert-type="error">🔒 LOCKOUT ATTIVO — tastiera bloccata per troppi PIN errati. Reset automatico dopo 5 minuti.</ha-alert>
-    - type: conditional
-      conditions:
-        - condition: state
-          entity: binary_sensor.keypad_collisione_pin
-          state: "on"
-      card:
-        type: markdown
-        content: >-
-          <ha-alert alert-type="warning">⚠️ COLLISIONE PIN — due o più utenti hanno lo stesso PIN. Verificare la configurazione.</ha-alert>
 sections:
   - type: grid
     cards:
+      - type: conditional
+        conditions:
+          - condition: or
+            conditions:
+              - condition: state
+                entity: input_boolean.ring_keypad_debug
+                state: "on"
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_burglar
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_rapina
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_fire
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_medical
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_water
+              - condition: state
+                entity: input_boolean.ring_keypad_bypass_pending
+                state: "on"
+              - condition: state
+                entity: input_boolean.ring_keypad_lockout_active
+                state: "on"
+              - condition: state
+                entity: binary_sensor.keypad_collisione_pin
+                state: "on"
+        grid_options:
+          columns: 12
+        card:
+          type: markdown
+          content: |
+            {%- set out = namespace(v=[]) -%}
+            {%- if is_state('input_boolean.ring_keypad_debug','on') -%}
+              {%- set out.v = out.v + ['<ha-alert alert-type="warning">DEBUG ATTIVO — propagazione verso allarme-core e safety-core BLOCCATA</ha-alert>'] -%}
+            {%- endif -%}
+            {%- set stato = states('input_select.ring_keypad_alarm_state') -%}
+            {%- set etichette = {'triggered_burglar':'INTRUSIONE','triggered_rapina':'ANTI-RAPINA SILENZIOSO','triggered_fire':'INCENDIO / FUMO','triggered_medical':'EMERGENZA MEDICA','triggered_water':'PERDITA ACQUA'} -%}
+            {%- if stato in etichette -%}
+              {%- set out.v = out.v + ['<ha-alert alert-type="error">ALLARME IN CORSO — ' ~ etichette[stato] ~ '</ha-alert>'] -%}
+            {%- endif -%}
+            {%- if is_state('input_boolean.ring_keypad_bypass_pending','on') -%}
+              {%- set out.v = out.v + ['<ha-alert alert-type="warning">BYPASS IN ATTESA — premere V per confermare o X per annullare</ha-alert>'] -%}
+            {%- endif -%}
+            {%- if is_state('input_boolean.ring_keypad_lockout_active','on') -%}
+              {%- set out.v = out.v + ['<ha-alert alert-type="error">🔒 LOCKOUT ATTIVO — tastiera bloccata per troppi PIN errati. Reset automatico dopo 5 minuti.</ha-alert>'] -%}
+            {%- endif -%}
+            {%- if is_state('binary_sensor.keypad_collisione_pin','on') -%}
+              {%- set out.v = out.v + ['<ha-alert alert-type="warning">⚠️ COLLISIONE PIN — due o più utenti hanno lo stesso PIN. Verificare la configurazione.</ha-alert>'] -%}
+            {%- endif -%}
+            {{ out.v | join('\n') }}
       - type: heading
         heading: Controllo Tastiere Ring
         heading_style: title

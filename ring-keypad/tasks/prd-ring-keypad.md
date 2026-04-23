@@ -439,6 +439,7 @@ Tastiere attive:
 | `ring_keypad_sync_siren_volume_on_change` | State: `siren_volume` | `set_siren_volume_all` |
 | `ring_keypad_lockout_reset` | State: `lockout_active=on` | delay 5 min → se ancora on: disattiva + azzera + log; `mode:restart` |
 | `ring_keypad_failed_attempts_reset` | State: `failed_attempts` invariato 60s (+ lockout off + > 0) | Azzera contatore + svuota `last_event` e `logbook_ultimo_evento` |
+| `ring_keypad_log_debug_mode` | State: `ring_keypad_debug` → on/off | `logbook_emit` con messaggio attivazione/disattivazione |
 
 ### Integrazione Sistemi Esterni (ring_keypad_integration.yaml)
 
