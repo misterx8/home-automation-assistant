@@ -112,6 +112,16 @@ automation:
               - condition: template
                 value_template: "{{ stato == 'arming' }}"
             sequence:
+              # Aggiorna arming_target_mode dal profilo corrente di allarme-core.
+              # Necessario quando l'armo arriva dall'esterno (dashboard/allarme-core):
+              # in quel caso do_arm non viene eseguito e arming_target_mode rimarrebbe
+              # con il valore residuo della sessione precedente → show_exit_delay userebbe
+              # il volume sbagliato (es. 99 invece di 1 per profilo notte).
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_arming_target_mode
+                data:
+                  value: "{{ 'armed_home' if profilo == 'notte' else ('armed_sera' if profilo == 'sera' else 'armed_away') }}"
               - action: input_select.select_option
                 target:
                   entity_id: input_select.ring_keypad_alarm_state

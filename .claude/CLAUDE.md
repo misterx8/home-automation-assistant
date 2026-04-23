@@ -281,28 +281,26 @@ master switch per categoria, sensori aggregati, reset manuale con finestra di gr
 
 ## Ring Keypad
 
-Il file `ring-keypad/ANALISI_TECNICA.md` contiene l'analisi tecnica completa e aggiornata del progetto Ring Keypad V2:
-struttura file (5 package), protocollo Z-Wave/MQTT (Entry Control CC 111 + Indicator CC 135), architettura
-multi-tastiera con wildcard MQTT, entità helper (input_select, input_text, input_number, input_boolean),
-sensori MQTT per tastiera (batteria + connettività), script parametrici, automazioni, integrazione bidirezionale
-con allarme-core, prevenzione loop, gestione PIN, flussi operativi e bug noti.
+Il file `ring-keypad/tasks/prd-ring-keypad.md` è il documento di riferimento principale per il progetto Ring Keypad V2.
+Contiene: architettura, protocollo Z-Wave/MQTT completo, state machine (11 stati), entità helper, script, automazioni,
+integrazione bidirezionale con allarme-core e safety-core, regole implementative critiche e flussi operativi.
 
 **REGOLA OBBLIGATORIA — Lettura preliminare:** Prima di rispondere a qualsiasi richiesta riguardante il
 progetto ring-keypad (modifiche, nuove feature, dashboard, debug, integrazioni), Claude DEVE leggere
-`ring-keypad/ANALISI_TECNICA.md` per avere il contesto aggiornato del progetto.
+`ring-keypad/tasks/prd-ring-keypad.md` per avere il contesto aggiornato del progetto.
 
-**REGOLA OBBLIGATORIA — Aggiornamento analisi:** Ogni volta che si effettua una modifica strutturale
+**REGOLA OBBLIGATORIA — Aggiornamento PRD:** Ogni volta che si effettua una modifica strutturale
 al progetto Ring Keypad (nuovi file, nuove automazioni, nuovi script, nuove entità, nuove tastiere,
-modifiche architetturali, bug corretti), Claude DEVE aggiornare `ring-keypad/ANALISI_TECNICA.md`.
+modifiche architetturali), Claude DEVE aggiornare `ring-keypad/tasks/prd-ring-keypad.md`.
 
 Sezioni da aggiornare per **ring-keypad** a seconda della modifica:
-- Nuova tastiera → sezione 3 (multi-tastiera) e sezione 4 (sensori MQTT)
-- Nuova entità helper → sezione 4 (entità helper)
-- Nuovo script → sezione 6
-- Nuova automazione → sezione 7
-- Nuova integrazione esterna → sezione 9
-- Bug corretto → sezione 12
+- Nuova tastiera → sezione "Aggiungere una Nuova Tastiera" + tabella Sensori MQTT
+- Nuova entità helper → tabella entità corrispondente (input_select/text/number/boolean)
+- Nuovo script → Script Reference
+- Nuova automazione → Automazioni Reference
+- Nuova integrazione esterna → sezione Integrazione Sistemi Esterni
 - Nuova feature → sezione appropriata o nuova sezione
+- Nuova regola implementativa → Functional Requirements o Critical Implementation Rules
 
 **REGOLA OBBLIGATORIA — Aggiornamento analisi:** Ogni volta che si effettua una modifica strutturale a uno dei progetti Core
 (aggiunta/rimozione sensori, nuovi file, nuove automazioni, nuovi script, nuove entità, modifiche architetturali)

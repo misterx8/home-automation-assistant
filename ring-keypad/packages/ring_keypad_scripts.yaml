@@ -262,7 +262,7 @@ script:
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Exit_Delay/9/set"
-          payload: '"{{ exit_volume }}"'
+          payload: "{{ exit_volume }}"
       - action: mqtt.publish
         data:
           topic: "zwave2mqtt/{{ keypad_id }}/indicator/endpoint_0/Exit_Delay/timeout/set"
