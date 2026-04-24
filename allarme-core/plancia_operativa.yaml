@@ -19,10 +19,13 @@ sections:
         card:
           type: markdown
           content: >
-            {% set sensori = state_attr('sensor.allarme_core_ultimo_trigger','sensori_nomi') | default('—') %}
-            {% set zone = state_attr('sensor.allarme_core_ultimo_trigger','zone') | default('—') %}
-            {% set data = state_attr('sensor.allarme_core_ultimo_trigger','data_evento') | default('') %}
-            <div style="text-align:center; padding: 6px 0 2px;">
+            {% set sensori =
+            state_attr('sensor.allarme_core_ultimo_trigger','sensori_nomi') |
+            default('—') %} {% set zone =
+            state_attr('sensor.allarme_core_ultimo_trigger','zone') |
+            default('—') %} {% set data =
+            state_attr('sensor.allarme_core_ultimo_trigger','data_evento') |
+            default('') %} <div style="text-align:center; padding: 6px 0 2px;">
               <div style="font-size:3.6em; line-height:1.1;">🚨</div>
               <div style="font-size:1.1em; font-weight:700; letter-spacing:0.08em; color:#ff4444; margin: 4px 0 6px;">ALLARME ATTIVO</div>
               <div style="font-size:0.82em; color: var(--secondary-text-color); margin-bottom:10px;">{{ data }}</div>
@@ -103,48 +106,20 @@ sections:
           {% endfor %}
 
           {% endif %}
-      - type: button
-        name: PANICO
-        icon: mdi:alarm-light
-        grid_options:
-          columns: 12
-          rows: 2
-        tap_action:
-          action: call-service
-          service: script.turn_on
-          target:
-            entity_id: script.allarme_core_attiva_panico
-          confirmation:
-            text: >-
-              ⚠️ Confermi attivazione PANICO? L'allarme scatterà immediatamente
-              su canale prioritario.
-        card_mod:
-          style: |
-            ha-card {
-              background: #c0392b;
-              color: white;
-              border-radius: 30px;
-              box-shadow: 0 0 0 4px #e74c3c;
-            }
-      # ─── Info Allarme ────────────────────────────────────────────────────────
       - type: heading
         heading: Info Allarme
         heading_style: title
         icon: mdi:shield-alert-outline
         grid_options:
           columns: 12
-
-      # Card 1 — Chips zona (1 riga, 5 chip)
       - type: custom:mushroom-chips-card
         grid_options:
           columns: 12
         chips:
           - type: template
-            # Zona Sera
             icon: mdi:weather-sunset
-            content: >-
-              Sera · {{ states('sensor.allarme_core_count_zona_sera') }}
-            icon_color: >-
+            content: Sera · {{ states('sensor.allarme_core_count_zona_sera') }}
+            icon_color: |-
               {% if is_state('binary_sensor.allarme_core_zona_sera', 'on') %}
                 red
               {% else %}
@@ -153,11 +128,9 @@ sections:
             tap_action:
               action: none
           - type: template
-            # Zona Giorno
             icon: mdi:weather-sunny
-            content: >-
-              Giorno · {{ states('sensor.allarme_core_count_zona_giorno') }}
-            icon_color: >-
+            content: Giorno · {{ states('sensor.allarme_core_count_zona_giorno') }}
+            icon_color: |-
               {% if is_state('binary_sensor.allarme_core_zona_giorno', 'on') %}
                 red
               {% else %}
@@ -166,11 +139,9 @@ sections:
             tap_action:
               action: none
           - type: template
-            # Zona Notte
             icon: mdi:weather-night
-            content: >-
-              Notte · {{ states('sensor.allarme_core_count_zona_notte') }}
-            icon_color: >-
+            content: Notte · {{ states('sensor.allarme_core_count_zona_notte') }}
+            icon_color: |-
               {% if is_state('binary_sensor.allarme_core_zona_notte', 'on') %}
                 red
               {% else %}
@@ -179,12 +150,13 @@ sections:
             tap_action:
               action: none
           - type: template
-            # Zona Perimetrali
             icon: mdi:door-closed
             content: >-
-              Perimetrali · {{ states('sensor.allarme_core_count_zona_perimetrali') }}
+              Perimetrali · {{
+              states('sensor.allarme_core_count_zona_perimetrali') }}
             icon_color: >-
-              {% if is_state('binary_sensor.allarme_core_zona_perimetrali', 'on') %}
+              {% if is_state('binary_sensor.allarme_core_zona_perimetrali',
+              'on') %}
                 red
               {% else %}
                 green
@@ -192,20 +164,19 @@ sections:
             tap_action:
               action: none
           - type: template
-            # Zona Volumetrici
             icon: mdi:motion-sensor
             content: >-
-              Volumetrici · {{ states('sensor.allarme_core_count_zona_volumetrici') }}
+              Volumetrici · {{
+              states('sensor.allarme_core_count_zona_volumetrici') }}
             icon_color: >-
-              {% if is_state('binary_sensor.allarme_core_zona_volumetrici', 'on') %}
+              {% if is_state('binary_sensor.allarme_core_zona_volumetrici',
+              'on') %}
                 red
               {% else %}
                 green
               {% endif %}
             tap_action:
               action: none
-
-      # Card 2 — Sensori attivi (mushroom-template-card)
       - type: custom:mushroom-template-card
         grid_options:
           columns: 12
@@ -213,7 +184,8 @@ sections:
         secondary: Sensori attualmente rilevati
         icon: mdi:motion-sensor
         icon_color: >-
-          {% if is_state('sensor.allarme_core_sensori_attivi', 'Nessun sensore attivo') %}
+          {% if is_state('sensor.allarme_core_sensori_attivi', 'Nessun sensore
+          attivo') %}
             green
           {% else %}
             red
@@ -221,18 +193,17 @@ sections:
         fill_container: false
         tap_action:
           action: none
-
-      # Card 3 — Ultimo trigger (mushroom-template-card, tappable)
       - type: custom:mushroom-template-card
         grid_options:
           columns: 12
         primary: "{{ states('sensor.allarme_core_ultimo_trigger') }}"
-        secondary: >-
+        secondary: |-
           {{ state_attr('sensor.allarme_core_ultimo_trigger', 'data_evento')
              | default('Nessun evento registrato') }}
         icon: mdi:alarm-light
         icon_color: >-
-          {% if is_state('sensor.allarme_core_ultimo_trigger', 'Nessun evento') %}
+          {% if is_state('sensor.allarme_core_ultimo_trigger', 'Nessun evento')
+          %}
             disabled
           {% else %}
             red
@@ -276,35 +247,27 @@ sections:
                 - type: markdown
                   title: Media Disponibili
                   content: >
-                    {% set clips = state_attr('sensor.allarme_core_ultimo_trigger', 'clip_urls') %}
-                    {% set snaps = state_attr('sensor.allarme_core_ultimo_trigger', 'snapshot_urls') %}
+                    {% set clips =
+                    state_attr('sensor.allarme_core_ultimo_trigger',
+                    'clip_urls') %} {% set snaps =
+                    state_attr('sensor.allarme_core_ultimo_trigger',
+                    'snapshot_urls') %}
 
-                    {% if clips and clips | length > 0 %}
-                    **Clip video:**
+                    {% if clips and clips | length > 0 %} **Clip video:**
 
-                    {% for url in clips %}
-                    - [Clip {{ loop.index }}]({{ url }})
-                    {% endfor %}
-                    {% else %}
-                    *Nessuna clip disponibile.*
+                    {% for url in clips %} - [Clip {{ loop.index }}]({{ url }})
+                    {% endfor %} {% else %} *Nessuna clip disponibile.* {% endif
+                    %}
+
+                    {% if snaps and snaps | length > 0 %} **Snapshot:**
+
+                    {% for url in snaps %} - [Snapshot {{ loop.index }}]({{ url
+                    }}) {% endfor %} {% else %} *Nessuno snapshot disponibile.*
                     {% endif %}
-
-                    {% if snaps and snaps | length > 0 %}
-                    **Snapshot:**
-
-                    {% for url in snaps %}
-                    - [Snapshot {{ loop.index }}]({{ url }})
-                    {% endfor %}
-                    {% else %}
-                    *Nessuno snapshot disponibile.*
-                    {% endif %}
-
       - type: heading
         heading: Configurazione
         heading_style: title
         icon: mdi:cog-outline
-
-      # --- Riga stato: Test Mode + Auto-Reset ---
       - type: tile
         entity: input_boolean.allarme_core_modalita_test
         name: Modalità Test
@@ -315,8 +278,9 @@ sections:
           rows: 1
         card_mod:
           style: >
-            {% set on = is_state('input_boolean.allarme_core_modalita_test','on') %}
-            ha-card {
+            {% set on =
+            is_state('input_boolean.allarme_core_modalita_test','on') %} ha-card
+            {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ 'orange' if on else 'green' }};
               padding-left: 12px;
@@ -331,14 +295,13 @@ sections:
           rows: 1
         card_mod:
           style: >
-            {% set on = is_state('input_boolean.allarme_core_auto_reset_triggered','on') %}
+            {% set on =
+            is_state('input_boolean.allarme_core_auto_reset_triggered','on') %}
             ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ 'orange' if on else 'green' }};
               padding-left: 12px;
             }
-
-      # --- Riga azioni test ---
       - type: tile
         entity: script.allarme_core_attiva_test_mode
         name: Attiva Test
@@ -367,8 +330,6 @@ sections:
         grid_options:
           columns: 6
           rows: 1
-
-      # --- Configurazione avanzata + Debug ---
       - type: button
         name: Configurazione Avanzata
         icon: mdi:cog-outline
@@ -379,26 +340,26 @@ sections:
           action: perform-action
           perform_action: browser_mod.popup
           data:
-            title: "⚙️ Configurazione Avanzata"
+            title: ⚙️ Configurazione Avanzata
             content:
               type: vertical-stack
               cards:
                 - type: entities
-                  title: "🧪 Modalità Test"
+                  title: 🧪 Modalità Test
                   entities:
                     - entity: input_number.allarme_core_test_timeout_minuti
                       name: Timeout (minuti)
                     - entity: sensor.allarme_core_test_minuti_rimanenti
                       name: Scade tra
                 - type: entities
-                  title: "🔁 Auto-Reset Triggered"
+                  title: 🔁 Auto-Reset Triggered
                   entities:
                     - entity: input_boolean.allarme_core_auto_reset_triggered
                       name: Auto-Reset al timeout
                     - entity: input_number.allarme_core_auto_reset_minuti
                       name: Minuti prima del reset
                 - type: entities
-                  title: "🔗 URL & Credenziali"
+                  title: 🔗 URL & Credenziali
                   entities:
                     - entity: input_text.allarme_core_url_base_ha
                       name: URL Home Assistant
@@ -407,7 +368,7 @@ sections:
                     - entity: input_text.allarme_core_frigate_token
                       name: Token Frigate
                 - type: entities
-                  title: "⏱️ Timing & Notifiche"
+                  title: ⏱️ Timing & Notifiche
                   entities:
                     - entity: input_number.allarme_core_arming_delay
                       name: Ritardo armamento (s)
@@ -419,19 +380,19 @@ sections:
                       name: Clip — secondi dopo
         card_mod:
           style: >
-            {% set ha_ok = states('input_text.allarme_core_url_base_ha') not in ['','unknown','unavailable'] %}
-            {% set fr_ok = states('input_text.allarme_core_url_base_frigate') not in ['','unknown','unavailable'] %}
-            {% set tk_ok = states('input_text.allarme_core_frigate_token') not in ['','unknown','unavailable'] %}
-            {% set all_ok = ha_ok and fr_ok and tk_ok %}
-            {% set none_ok = not ha_ok and not fr_ok and not tk_ok %}
-            {% set border_color = 'green' if all_ok else ('red' if none_ok else 'orange') %}
-            ha-card {
+            {% set ha_ok = states('input_text.allarme_core_url_base_ha') not in
+            ['','unknown','unavailable'] %} {% set fr_ok =
+            states('input_text.allarme_core_url_base_frigate') not in
+            ['','unknown','unavailable'] %} {% set tk_ok =
+            states('input_text.allarme_core_frigate_token') not in
+            ['','unknown','unavailable'] %} {% set all_ok = ha_ok and fr_ok and
+            tk_ok %} {% set none_ok = not ha_ok and not fr_ok and not tk_ok %}
+            {% set border_color = 'green' if all_ok else ('red' if none_ok else
+            'orange') %} ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 3px {{ border_color }};
               position: relative;
-            }
-            {% if not all_ok %}
-            ha-card::after {
+            } {% if not all_ok %} ha-card::after {
               content: "⚠️";
               position: absolute;
               top: 6px;
@@ -439,8 +400,7 @@ sections:
               font-size: 0.85em;
               pointer-events: none;
               z-index: 1;
-            }
-            {% endif %}
+            } {% endif %}
       - type: button
         name: Debug
         icon: mdi:bug-outline
@@ -458,7 +418,7 @@ sections:
           action: perform-action
           perform_action: browser_mod.popup
           data:
-            title: "🐛 Debug — Variabili"
+            title: 🐛 Debug — Variabili
             content:
               type: entities
               entities:

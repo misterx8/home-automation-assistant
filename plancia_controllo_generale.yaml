@@ -41,26 +41,37 @@ sections:
           columns: 12
         card:
           type: markdown
-          content: |
+          content: >
             {%- set out = namespace(v=[]) -%}
+
             {%- if is_state('input_select.allarme_core_stato','triggered') -%}
               {%- set out.v = out.v + ['<ha-alert alert-type="error">🚨 ALLARME CORE ATTIVO — Intrusione rilevata</ha-alert>'] -%}
             {%- endif -%}
+
             {%- if is_state('input_select.safety_core_stato','triggered') -%}
               {%- set cat = states('input_select.safety_core_ultima_categoria') | upper -%}
               {%- set out.v = out.v + ['<ha-alert alert-type="error">🔥 SAFETY CORE — Allarme ' ~ cat ~ ' in corso</ha-alert>'] -%}
             {%- endif -%}
+
             {%- set kp = states('input_select.ring_keypad_alarm_state') -%}
-            {%- set kp_mappa = {'triggered_burglar':'INTRUSIONE','triggered_rapina':'ANTI-RAPINA SILENZIOSO','triggered_fire':'INCENDIO','triggered_medical':'EMERGENZA MEDICA','triggered_water':'PERDITA ACQUA'} -%}
+
+            {%- set kp_mappa =
+            {'triggered_burglar':'INTRUSIONE','triggered_rapina':'ANTI-RAPINA
+            SILENZIOSO','triggered_fire':'INCENDIO','triggered_medical':'EMERGENZA
+            MEDICA','triggered_water':'PERDITA ACQUA'} -%}
+
             {%- if kp in kp_mappa -%}
               {%- set out.v = out.v + ['<ha-alert alert-type="error">🔑 TASTIERA — ' ~ kp_mappa[kp] ~ '</ha-alert>'] -%}
             {%- endif -%}
+
             {%- if is_state('input_boolean.allarme_core_modalita_test','on') -%}
               {%- set out.v = out.v + ['<ha-alert alert-type="warning">🧪 MODALITÀ TEST ATTIVA — Sirene e notifiche disabilitate</ha-alert>'] -%}
             {%- endif -%}
+
             {%- if is_state('input_boolean.ring_keypad_debug','on') -%}
               {%- set out.v = out.v + ['<ha-alert alert-type="warning">🔧 RING KEYPAD DEBUG ATTIVO — propagazione verso allarme-core e safety-core BLOCCATA</ha-alert>'] -%}
             {%- endif -%}
+
             {{ out.v | join('\n') }}
       - type: heading
         heading: Allarme Core
@@ -525,6 +536,79 @@ sections:
               box-shadow: 0 0 0 2px #4a90d9;
             }
   - type: grid
+    cards:
+      - type: heading
+        heading: Funzionalità Speciali
+        heading_style: title
+      - type: tile
+        entity: script.attiva_panico_allarme_casa
+        name: Allarme Panico
+        icon: mdi:bell-ring-outline
+        hide_state: true
+        vertical: true
+        tap_action:
+          action: toggle
+          confirmation:
+            text: Sei sicuro di voler attivare allarme anti panico?
+        icon_tap_action:
+          action: toggle
+          confirmation:
+            text: Sei sicuro di voler attivare allarme anti panico?
+      - type: tile
+        entity: script.stop_suono_allarme_casa
+        name: Stop Allarmi
+        icon: mdi:alpha-x-circle-outline
+        hide_state: true
+        vertical: true
+        tap_action:
+          action: toggle
+        icon_tap_action:
+          action: toggle
+      - type: tile
+        grid_options:
+          columns: 12
+          rows: 2
+        entity: switch.eth_rly16_board4_relay_7
+        name: Semaforo
+        hide_state: true
+        vertical: true
+        tap_action:
+          action: toggle
+        icon_tap_action:
+          action: toggle
+        features_position: bottom
+      - type: tile
+        features_position: bottom
+        vertical: true
+        entity: script.gestione_ladri_rilevati_perimetro
+        name: Ladri RIlevati
+        icon: mdi:domino-mask
+        hide_state: true
+        show_entity_picture: false
+        grid_options:
+          rows: 2
+          columns: 6
+        tap_action:
+          action: more-info
+        icon_tap_action:
+          action: more-info
+      - type: tile
+        features_position: bottom
+        vertical: true
+        entity: script.gestione_stop_ladri_rilevati_perimetro
+        name: Stop Ladri RIlevati
+        icon: mdi:stop-circle
+        hide_state: true
+        show_entity_picture: false
+        grid_options:
+          rows: 2
+          columns: 6
+        tap_action:
+          action: more-info
+        icon_tap_action:
+          action: toggle
+    column_span: 3
+  - type: grid
     column_span: 3
     columns: 12
     cards:
@@ -543,7 +627,7 @@ sections:
           red: 0
         needle: true
         grid_options:
-          columns: 4
+          columns: 9
           rows: 3
       - type: gauge
         entity: sensor.safety_core_batteria_minima
@@ -556,7 +640,7 @@ sections:
           red: 0
         needle: true
         grid_options:
-          columns: 4
+          columns: 9
           rows: 3
       - type: custom:mushroom-template-card
         primary: Allarme Core
