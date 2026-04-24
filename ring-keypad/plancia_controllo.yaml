@@ -202,6 +202,51 @@ sections:
             stato == 'triggered_rapina' %}Allarme silenzioso attivo. Contattare
             le autorità.{% else %}Intervenire immediatamente o inserire il PIN
             sulla tastiera per disattivare.{% endif %}</ha-alert>
+      - type: conditional
+        conditions:
+          - condition: or
+            conditions:
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_rapina
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_fire
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_medical
+        grid_options:
+          columns: 12
+          rows: 1
+        card:
+          type: tile
+          entity: script.ring_keypad_reset_alarm
+          name: Reset Allarme Tastiera
+          icon: mdi:shield-off-outline
+          vertical: false
+          features_position: bottom
+          tap_action:
+            action: perform-action
+            perform_action: script.turn_on
+            target:
+              entity_id: script.ring_keypad_reset_alarm
+            confirmation:
+              text: >-
+                {% set stato = states('input_select.ring_keypad_alarm_state') %}
+                {% set mappa = {
+                  'triggered_rapina':  'ANTI-RAPINA SILENZIOSO',
+                  'triggered_fire':    'INCENDIO / FUMO',
+                  'triggered_medical': 'EMERGENZA MEDICA'
+                } %}
+                Confermi il reset dell'allarme {{ mappa.get(stato, stato) }}?
+                {% if stato == 'triggered_fire' %}Verrà resettato anche safety-core.{% endif %}
+          card_mod:
+            style: |
+              ha-card {
+                border-radius: 30px;
+                box-shadow: 0 0 0 3px red;
+                padding-left: 12px;
+              }
   - type: grid
     cards:
       - type: heading
@@ -478,6 +523,25 @@ sections:
               padding-left: 12px;
             }
       - type: tile
+        entity: input_number.ring_keypad_duress_delay
+        name: Delay Codice Coercizione (sec)
+        vertical: false
+        features_position: bottom
+        features:
+          - type: numeric-input
+            style: buttons
+        grid_options:
+          columns: 6
+          rows: 2
+        card_mod:
+          style: >
+            {% set t = states('input_number.ring_keypad_duress_delay') | int(2) %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ '#4a90d9' if t <= 3 else ('#f0a500' if t <= 7 else '#9b59b6') }};
+              padding-left: 12px;
+            }
+      - type: tile
         entity: input_boolean.ring_keypad_lockout_active
         name: Lockout Brute-Force
         vertical: false
@@ -565,6 +629,9 @@ sections:
                       name: Nome Utente 3
                     - entity: input_text.ring_keypad_pin_user3
                       name: PIN Utente 3
+                    - type: divider
+                    - entity: input_text.ring_keypad_pin_rapina
+                      name: PIN Coercizione (anti-rapina silenzioso)
                 - type: conditional
                   conditions:
                     - condition: state

@@ -582,6 +582,31 @@ automation:
           value: "Lockout reset automatico dopo 5 minuti"
 
   # ════════════════════════════════════════════════════════════════════════
+  # RESET AUTOMATICO DEBUG MODE DOPO 15 MINUTI
+  # Evita che il debug resti attivo per errore bloccando la propagazione.
+  # mode: restart: se il debug viene riattivato il timer riparte da zero.
+  # ════════════════════════════════════════════════════════════════════════
+  - id: ring_keypad_debug_auto_reset
+    alias: "Keypad - Reset automatico debug mode (15 min)"
+    mode: restart
+    trigger:
+      - platform: state
+        entity_id: input_boolean.ring_keypad_debug
+        to: "on"
+    action:
+      - delay:
+          minutes: 15
+      - condition: state
+        entity_id: input_boolean.ring_keypad_debug
+        state: "on"
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ring_keypad_debug
+      - action: script.ring_keypad_logbook_emit
+        data:
+          msg: "🔧 Debug DISATTIVATO automaticamente (timeout 15 min)"
+
+  # ════════════════════════════════════════════════════════════════════════
   # LOG ATTIVAZIONE / DISATTIVAZIONE DEBUG MODE
   # ════════════════════════════════════════════════════════════════════════
   - id: ring_keypad_log_debug_mode

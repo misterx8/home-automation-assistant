@@ -130,6 +130,13 @@ input_text:
     pattern: "^$|^[0-9]{4,8}$"
     icon: mdi:account-key
 
+  ring_keypad_pin_rapina:
+    name: "Keypad PIN - Coercizione (anti-rapina silenzioso)"
+    max: 16
+    mode: password
+    pattern: "^$|^[0-9]{4,8}$"
+    icon: mdi:shield-alert
+
   # ── NOMI UTENTI ────────────────────────────────────────────────────────────
   ring_keypad_name_master:
     name: "Keypad Nome - Master"
@@ -210,6 +217,17 @@ input_number:
     mode: box
     icon: mdi:shield-lock
 
+  # Delay del finto disarmo per il codice coercizione: per quanti secondi mostrare
+  # il LED "disarmato" prima di attivare silenziosamente l'anti-rapina.
+  ring_keypad_duress_delay:
+    name: "Keypad - Delay Codice Coercizione (sec)"
+    min: 1
+    max: 10
+    step: 1
+    unit_of_measurement: s
+    icon: mdi:timer-lock-outline
+    mode: slider
+
 
 input_boolean:
 
@@ -262,6 +280,7 @@ template:
             states('input_text.ring_keypad_pin_master'),
             states('input_text.ring_keypad_pin_user1'),
             states('input_text.ring_keypad_pin_user2'),
-            states('input_text.ring_keypad_pin_user3')
+            states('input_text.ring_keypad_pin_user3'),
+            states('input_text.ring_keypad_pin_rapina')
           ] | select('match', '.{4,}') | list %}
           {{ pins | count != pins | unique | list | count }}

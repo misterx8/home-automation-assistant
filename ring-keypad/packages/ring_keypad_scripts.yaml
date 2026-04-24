@@ -1010,6 +1010,51 @@ script:
         required: true
     sequence:
       - choose:
+          # CASO 0: codice coercizione — finto disarmo + anti-rapina silenzioso.
+          # Controllato PRIMA del lockout: deve funzionare anche sotto coercizione.
+          - conditions:
+              - condition: template
+                value_template: >
+                  {{ states('input_text.ring_keypad_pin_rapina') | length >= 4 and
+                     code == states('input_text.ring_keypad_pin_rapina') }}
+            sequence:
+              # Mostra LED disarmed su tutte le tastiere: all'aggressore sembra un disarmo riuscito
+              - repeat:
+                  for_each: >
+                    {{ states('input_text.ring_keypad_active_keypads')
+                       .split(',') | map('trim') | select('ne', '') | list }}
+                  sequence:
+                    - action: script.ring_keypad_show_disarmed
+                      data:
+                        keypad_id: "{{ repeat.item }}"
+              # last_event neutro: camouflage per chi guarda la dashboard durante la coercizione
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_last_event
+                data:
+                  value: "Disarmato"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.ring_keypad_last_keypad
+                data:
+                  value: "{{ keypad_id }}"
+              # Delay configurabile: mantiene il LED disarmed convincente prima dell'attivazione
+              - delay:
+                  seconds: "{{ states('input_number.ring_keypad_duress_delay') | int(2) }}"
+              # Attiva anti-rapina silenzioso (Alarming_Burglar payload 1, nessun suono)
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.ring_keypad_alarm_state
+                data:
+                  option: "triggered_rapina"
+              - action: script.ring_keypad_broadcast_alarm
+                data:
+                  alarm_type: "rapina"
+              # Log critico solo nel logbook (non sovrascrive last_event visibile)
+              - action: script.ring_keypad_logbook_emit
+                data:
+                  msg: "⚠️ CODICE COERCIZIONE — anti-rapina silenzioso da {{ keypad_id }}"
+
           # CASO 1: lockout attivo → code_rejected, feedback identico a PIN errato
           # (non rivela all'attaccante che è in lockout).
           - conditions:
@@ -1303,6 +1348,40 @@ script:
           entity_id: input_select.ring_keypad_alarm_state
         data:
           option: "{{ mode }}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # RESET MANUALE ALLARME TASTIERA (rapina / fuoco / medico)
+  # Resetta alarm_state → disarmed. Per triggered_fire resetta anche safety-core.
+  # Non agisce su triggered_burglar: quello è gestito da allarme-core.
+  # Richiamabile da dashboard, Node-RED o automazioni esterne.
+  # ══════════════════════════════════════════════════════════════════════════
+
+  ring_keypad_reset_alarm:
+    alias: "Keypad - Reset manuale allarme (rapina/fuoco/medico)"
+    description: >
+      Resetta alarm_state da triggered_rapina/fire/medical a disarmed.
+      Per triggered_fire reimposta anche safety-core a ok.
+      Non interviene su triggered_burglar (gestito da allarme-core).
+    sequence:
+      - variables:
+          stato_pre: "{{ states('input_select.ring_keypad_alarm_state') }}"
+      - condition: template
+        value_template: "{{ stato_pre in ['triggered_rapina', 'triggered_fire', 'triggered_medical'] }}"
+      # do_disarm: bypass_cancel + turn_off do_arm + alarm_state=disarmed + sync_all + log
+      - action: script.ring_keypad_do_disarm
+        data:
+          keypad_id: "dashboard"
+      # Per triggered_fire: resetta anche safety-core (fire-and-forget)
+      - if:
+          - condition: template
+            value_template: "{{ stato_pre == 'triggered_fire' }}"
+        then:
+          - action: script.turn_on
+            target:
+              entity_id: script.safety_core_reset
+      - action: script.ring_keypad_logbook_emit
+        data:
+          msg: "🔄 Reset manuale allarme {{ stato_pre }} da dashboard"
 
   # ══════════════════════════════════════════════════════════════════════════
   # VOLUME SIRENA

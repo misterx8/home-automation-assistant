@@ -299,6 +299,7 @@ Topic: `zwave2mqtt/{keypad_id}/configuration/endpoint_0/System_Security_Mode_Dis
 | `ring_keypad_last_keypad` | Topic base ultima tastiera | Log |
 | `ring_keypad_pin_master` | PIN master | mode: password |
 | `ring_keypad_pin_user1/2/3` | PIN utenti | mode: password |
+| `ring_keypad_pin_rapina` | PIN coercizione (duress code) | mode: password — inserito al posto del disarmo, attiva anti-rapina silenzioso |
 | `ring_keypad_name_master` | Nome master | Log |
 | `ring_keypad_name_user1/2/3` | Nomi utenti | Log |
 | `ring_keypad_logbook_event` | Dummy per Logbook card | |
@@ -315,6 +316,7 @@ Topic: `zwave2mqtt/{keypad_id}/configuration/endpoint_0/System_Security_Mode_Dis
 | `ring_keypad_announcement_volume` | nessun `initial` (range 0-10) | Volume annunci vocali; impostato a 0 durante exit delay notte, ripristinato dopo |
 | `ring_keypad_failed_attempts` | 0 (`initial: 0` ok — tecnico interno) | Contatore PIN falliti |
 | `ring_keypad_max_failed_attempts` | 5 (range 3-10) | Soglia lockout |
+| `ring_keypad_duress_delay` | nessun `initial` (range 1-10s) | Delay finto disarmo per codice coercizione |
 
 #### `input_boolean`
 
@@ -412,6 +414,7 @@ Tastiere attive:
 | `ring_keypad_logbook_nota` | Prefissa `📝 Nota:` → `logbook_emit` |
 | `ring_keypad_logbook_nota_da_ui` | Legge `nota_manuale` → `logbook_emit` → svuota campo |
 | `ring_keypad_logbook_cancella_tutto` | Azzera 4 `var.*` timeline |
+| `ring_keypad_reset_alarm` | Resetta `alarm_state` da `triggered_rapina/fire/medical` → `disarmed`; per `fire` resetta anche safety-core; non agisce su `triggered_burglar` |
 
 ### Automazioni Reference
 
@@ -443,6 +446,7 @@ Tastiere attive:
 | `ring_keypad_lockout_reset` | State: `lockout_active=on` | delay 5 min → se ancora on: disattiva + azzera + log; `mode:restart` |
 | `ring_keypad_failed_attempts_reset` | State: `failed_attempts` invariato 60s (+ lockout off + > 0) | Azzera contatore + svuota `last_event` e `logbook_ultimo_evento` |
 | `ring_keypad_log_debug_mode` | State: `ring_keypad_debug` → on/off | `logbook_emit` con messaggio attivazione/disattivazione |
+| `ring_keypad_debug_auto_reset` | State: `ring_keypad_debug` → on | delay 15 min → se ancora on: disattiva + logbook_emit; `mode:restart` |
 
 ### Integrazione Sistemi Esterni (ring_keypad_integration.yaml)
 

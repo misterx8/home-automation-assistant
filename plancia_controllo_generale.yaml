@@ -520,6 +520,51 @@ sections:
           rows: 1
         tap_action:
           action: none
+      - type: conditional
+        conditions:
+          - condition: or
+            conditions:
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_rapina
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_fire
+              - condition: state
+                entity: input_select.ring_keypad_alarm_state
+                state: triggered_medical
+        grid_options:
+          columns: 12
+          rows: 1
+        card:
+          type: tile
+          entity: script.ring_keypad_reset_alarm
+          name: Reset Allarme Tastiera
+          icon: mdi:shield-off-outline
+          vertical: false
+          features_position: bottom
+          tap_action:
+            action: perform-action
+            perform_action: script.turn_on
+            target:
+              entity_id: script.ring_keypad_reset_alarm
+            confirmation:
+              text: >-
+                {% set stato = states('input_select.ring_keypad_alarm_state') %}
+                {% set mappa = {
+                  'triggered_rapina':  'ANTI-RAPINA SILENZIOSO',
+                  'triggered_fire':    'INCENDIO / FUMO',
+                  'triggered_medical': 'EMERGENZA MEDICA'
+                } %}
+                Confermi il reset dell'allarme {{ mappa.get(stato, stato) }}?
+                {% if stato == 'triggered_fire' %}Verrà resettato anche safety-core.{% endif %}
+          card_mod:
+            style: |
+              ha-card {
+                border-radius: 30px;
+                box-shadow: 0 0 0 3px red;
+                padding-left: 12px;
+              }
       - type: button
         name: Ring Keypad — Dettaglio
         icon: mdi:keyboard-settings
