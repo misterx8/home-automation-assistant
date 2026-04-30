@@ -343,6 +343,7 @@ Pattern `default_entity_id`:
 Tastiere attive:
 - `tastiera_allarme_camera` → `sensor.tastiera_camera_allarme_batteria`, `binary_sensor.tastiera_camera_allarme_online`
 - `tastiera_allarme_sala` → `sensor.tastiera_sala_allarme_batteria`, `binary_sensor.tastiera_sala_allarme_online`
+- `tastiera_allarme_taverna` → `sensor.tastiera_taverna_allarme_batteria`, `binary_sensor.tastiera_taverna_allarme_online`
 
 ### Script Reference (ring_keypad_scripts.yaml)
 
@@ -564,6 +565,8 @@ I banner appaiono in cima alla view in base allo stato. Sono `conditional` cards
 | Tile Batteria Camera | `sensor.tastiera_camera_allarme_batteria` | Bordo verde>30%, arancio>15%, rosso≤15%; `columns: 6` |
 | Tile Online Sala | `binary_sensor.tastiera_sala_allarme_online` | Stessa logica Camera; `columns: 6` |
 | Tile Batteria Sala | `sensor.tastiera_sala_allarme_batteria` | Stessa logica Camera; `columns: 6` |
+| Tile Online Taverna | `binary_sensor.tastiera_taverna_allarme_online` | Stessa logica Camera; `columns: 6` |
+| Tile Batteria Taverna | `sensor.tastiera_taverna_allarme_batteria` | Stessa logica Camera; `columns: 6` |
 | Mushroom Tastiere attive | template su `ring_keypad_active_keypads` | Lista CSV → join con `•` + conteggio; icona verde/rosso; `columns: 12` |
 
 **Aggiungere tastiera in hardware:** replicare i due tile (Online + Batteria) nella sezione con le entity ID della nuova tastiera.

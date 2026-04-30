@@ -411,7 +411,7 @@ sections:
         vertical: false
         features_position: bottom
         grid_options:
-          columns: 3
+          columns: 4
           rows: 1
         card_mod:
           style: >
@@ -428,7 +428,7 @@ sections:
         vertical: false
         features_position: bottom
         grid_options:
-          columns: 3
+          columns: 4
           rows: 1
         card_mod:
           style: >
@@ -444,7 +444,7 @@ sections:
         vertical: false
         features_position: bottom
         grid_options:
-          columns: 3
+          columns: 4
           rows: 1
         card_mod:
           style: >
@@ -461,11 +461,44 @@ sections:
         vertical: false
         features_position: bottom
         grid_options:
-          columns: 3
+          columns: 4
           rows: 1
         card_mod:
           style: >
             {% set b = states('sensor.tastiera_sala_allarme_batteria') | int(0)
+            %} ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'green' if b > 30 else ('orange' if b > 15 else 'red') }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: binary_sensor.tastiera_taverna_allarme_online
+        name: Taverna
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: >
+            {% set ok =
+            is_state('binary_sensor.tastiera_taverna_allarme_online','on') %}
+            ha-card {
+              border-radius: 30px;
+              box-shadow: 0 0 0 2px {{ 'green' if ok else 'red' }};
+              padding-left: 12px;
+            }
+      - type: tile
+        entity: sensor.tastiera_taverna_allarme_batteria
+        name: Batt.
+        vertical: false
+        features_position: bottom
+        grid_options:
+          columns: 4
+          rows: 1
+        card_mod:
+          style: >
+            {% set b = states('sensor.tastiera_taverna_allarme_batteria') | int(0)
             %} ha-card {
               border-radius: 30px;
               box-shadow: 0 0 0 2px {{ 'green' if b > 30 else ('orange' if b > 15 else 'red') }};
@@ -732,23 +765,22 @@ sections:
       - type: custom:mushroom-template-card
         primary: Ring Keypad
         secondary: >
-          {% set cb = states('sensor.tastiera_camera_allarme_batteria') | int(0)
-          %} {% set sb = states('sensor.tastiera_sala_allarme_batteria') |
-          int(0) %} {% set co =
-          is_state('binary_sensor.tastiera_camera_allarme_online','on') %} {%
-          set so = is_state('binary_sensor.tastiera_sala_allarme_online','on')
-          %} Camera: {{ cb }}%{% if not co %} (offline){% endif %} — Sala: {{ sb
-          }}%{% if not so %} (offline){% endif %}
+          {% set cb = states('sensor.tastiera_camera_allarme_batteria') | int(0) %}
+          {% set sb = states('sensor.tastiera_sala_allarme_batteria') | int(0) %}
+          {% set tb = states('sensor.tastiera_taverna_allarme_batteria') | int(0) %}
+          {% set co = is_state('binary_sensor.tastiera_camera_allarme_online','on') %}
+          {% set so = is_state('binary_sensor.tastiera_sala_allarme_online','on') %}
+          {% set to = is_state('binary_sensor.tastiera_taverna_allarme_online','on') %}
+          Camera: {{ cb }}%{% if not co %} (offline){% endif %} — Sala: {{ sb }}%{% if not so %} (offline){% endif %} — Taverna: {{ tb }}%{% if not to %} (offline){% endif %}
         icon: mdi:keyboard-settings
         icon_color: >
-          {% set cb = states('sensor.tastiera_camera_allarme_batteria') |
-          int(100) %} {% set sb =
-          states('sensor.tastiera_sala_allarme_batteria') | int(100) %} {% set
-          co = is_state('binary_sensor.tastiera_camera_allarme_online','on') %}
-          {% set so =
-          is_state('binary_sensor.tastiera_sala_allarme_online','on') %} {{
-          'red' if (not co or not so or cb < 15 or sb < 15) else ('orange' if
-          (cb < 30 or sb < 30) else 'green') }}
+          {% set cb = states('sensor.tastiera_camera_allarme_batteria') | int(100) %}
+          {% set sb = states('sensor.tastiera_sala_allarme_batteria') | int(100) %}
+          {% set tb = states('sensor.tastiera_taverna_allarme_batteria') | int(100) %}
+          {% set co = is_state('binary_sensor.tastiera_camera_allarme_online','on') %}
+          {% set so = is_state('binary_sensor.tastiera_sala_allarme_online','on') %}
+          {% set to = is_state('binary_sensor.tastiera_taverna_allarme_online','on') %}
+          {{ 'red' if (not co or not so or not to or cb < 15 or sb < 15 or tb < 15) else ('orange' if (cb < 30 or sb < 30 or tb < 30) else 'green') }}
         tap_action:
           action: none
         grid_options:
