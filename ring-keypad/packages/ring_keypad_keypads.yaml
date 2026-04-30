@@ -43,6 +43,16 @@ mqtt:
       unit_of_measurement: "%"
       icon: mdi:battery
 
+    # ── TASTIERA 3: tastiera_allarme_taverna ───────────────────────────────
+    - name: "Tastiera Taverna - Batteria"
+      unique_id: ring_keypad_tastiera_allarme_taverna_battery
+      default_entity_id: sensor.tastiera_taverna_allarme_batteria
+      state_topic: "zwave2mqtt/tastiera_allarme_taverna/battery/endpoint_0/level"
+      value_template: "{{ value_json.value }}"
+      device_class: battery
+      unit_of_measurement: "%"
+      icon: mdi:battery
+
     # ── TEMPLATE NUOVA TASTIERA - BATTERIA (decommentare e modificare) ─────
     # IMPORTANTE: default_entity_id deve seguire il pattern
     # "sensor.<topic_base>_batteria" per garantire entity ID prevedibili ed
@@ -85,6 +95,18 @@ mqtt:
       unique_id: ring_keypad_tastiera_allarme_sala_online
       default_entity_id: binary_sensor.tastiera_sala_allarme_online
       state_topic: "zwave2mqtt/tastiera_allarme_sala/status"
+      # Payload JSON: {"time":..., "value":true, "status":"Alive", "nodeId":N}
+      value_template: "{{ value_json.status }}"
+      payload_on: "Alive"
+      payload_off: "Dead"
+      device_class: connectivity
+      icon: mdi:keyboard
+
+    # ── TASTIERA 3: tastiera_allarme_taverna ───────────────────────────────
+    - name: "Tastiera Taverna - Online"
+      unique_id: ring_keypad_tastiera_allarme_taverna_online
+      default_entity_id: binary_sensor.tastiera_taverna_allarme_online
+      state_topic: "zwave2mqtt/tastiera_allarme_taverna/status"
       # Payload JSON: {"time":..., "value":true, "status":"Alive", "nodeId":N}
       value_template: "{{ value_json.status }}"
       payload_on: "Alive"
